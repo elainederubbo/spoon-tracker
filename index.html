@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="Spoon Tracker" />
+  <meta name="theme-color" content="#6366f1" />
+  <title>CMT Energy Tracker</title>
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="manifest" href="manifest.json" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body>
+<div id="app">
+
+  <!-- ══════════════ TODAY PAGE ══════════════ -->
+  <main id="page-today" class="page">
+    <div class="page-header">
+      <h1>🥄 My Spoons</h1>
+      <span class="date-badge" id="today-date"></span>
+    </div>
+
+    <!-- Morning check-in prompt -->
+    <div class="morning-prompt-banner" id="morning-prompt" hidden>
+      <span class="emoji">🌅</span>
+      <div class="text">
+        <div class="title">Complete Morning Check-In</div>
+        <div class="sub">Tap to set your energy budget for today</div>
+      </div>
+      <span class="arrow">›</span>
+    </div>
+
+    <!-- Spoon meter -->
+    <div class="card spoon-meter">
+      <div class="spoon-count green" id="spoon-count">10</div>
+      <div class="spoon-label">spoons remaining</div>
+      <div class="progress-bar-wrap">
+        <div class="progress-bar-fill green" id="spoon-bar" style="width:100%"></div>
+      </div>
+      <div class="spoon-stats">
+        <span><strong id="spoon-used">0</strong> used</span>
+        <span>of <strong id="spoon-budget">10</strong> today</span>
+        <span id="spoon-recovered" hidden style="color:var(--green)"></span>
+      </div>
+      <div class="budget-source" id="budget-source"></div>
+    </div>
+
+    <!-- Alerts -->
+    <div id="today-alerts"></div>
+
+    <!-- Quick log -->
+    <div class="card">
+      <div class="card-title">Quick Log</div>
+      <div class="quick-grid" id="quick-grid"></div>
+    </div>
+
+    <!-- Log symptom & detailed log -->
+    <div style="display:flex;gap:10px;margin-bottom:12px">
+      <button class="btn btn-secondary" id="log-symptom-btn" style="flex:1">📊 Log Symptoms</button>
+      <button class="btn btn-primary" onclick="showPage('log')" style="flex:1">+ Log Activity</button>
+    </div>
+
+    <!-- Today's activities -->
+    <div class="card">
+      <div class="card-title">Today's Activities</div>
+      <div id="today-activities"></div>
+    </div>
+  </main>
+
+  <!-- ══════════════ LOG PAGE ══════════════ -->
+  <main id="page-log" class="page" hidden>
+    <div class="page-header">
+      <h1>Log Activity</h1>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Select Activity</div>
+      <div class="activity-grid" id="log-activity-grid"></div>
+      <button class="btn btn-secondary btn-sm" id="log-custom-toggle">+ Custom Activity</button>
+    </div>
+
+    <!-- Custom activity inputs -->
+    <div class="card" id="log-custom-section" hidden>
+      <div class="card-title">Custom Activity</div>
+      <div class="row" style="margin-bottom:12px">
+        <div class="form-group" style="flex:0 0 60px;margin-bottom:0">
+          <label class="form-label">Emoji</label>
+          <input type="text" id="custom-emoji" placeholder="⚡" maxlength="2" style="text-align:center" />
+        </div>
+        <div class="form-group" style="flex:1;margin-bottom:0">
+          <label class="form-label">Activity Name</label>
+          <input type="text" id="custom-name" placeholder="e.g. Aqua therapy" />
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Spoon Cost <span class="hint">(negative = recovery)</span></label>
+        <input type="number" id="custom-spoons" placeholder="e.g. 2" min="-5" max="10" step="0.5" />
+      </div>
+    </div>
+
+    <!-- When & Notes -->
+    <div class="card">
+      <div class="form-group">
+        <label class="form-label">When <span class="hint">(defaults to now)</span></label>
+        <input type="datetime-local" id="log-timestamp" />
+      </div>
+      <div class="form-group" style="margin-bottom:0">
+        <label class="form-label">Notes <span class="hint">(optional)</span></label>
+        <textarea id="log-note" placeholder="How did it go? Any voice note or context..."></textarea>
+      </div>
+    </div>
+
+    <button class="btn btn-primary" id="log-submit">Save Activity</button>
+    <button class="btn btn-secondary" onclick="showPage('today')" style="margin-top:8px">Cancel</button>
+  </main>
+
+  <!-- ══════════════ HISTORY PAGE ══════════════ -->
+  <main id="page-history" class="page" hidden>
+    <div class="page-header">
+      <h1>History</h1>
+      <span class="date-badge">Last 7 days</span>
+    </div>
+    <div id="history-list"></div>
+  </main>
+
+  <!-- ══════════════ WEEKLY PAGE ══════════════ -->
+  <main id="page-weekly" class="page" hidden>
+    <div class="page-header">
+      <h1>Weekly View</h1>
+    </div>
+
+    <!-- Summary stats -->
+    <div class="card">
+      <div class="card-title">This Week</div>
+      <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px">
+        <div style="text-align:center;padding:8px;background:var(--surface2);border-radius:10px">
+          <div style="font-size:28px;font-weight:800;color:var(--primary)" id="weekly-total-used">—</div>
+          <div style="font-size:12px;color:var(--text-muted)">Total Spoons Used</div>
+        </div>
+        <div style="text-align:center;padding:8px;background:var(--surface2);border-radius:10px">
+          <div style="font-size:28px;font-weight:800;color:var(--yellow)" id="weekly-avg-used">—</div>
+          <div style="font-size:12px;color:var(--text-muted)">Avg Per Day</div>
+        </div>
+        <div style="text-align:center;padding:8px;background:var(--surface2);border-radius:10px">
+          <div style="font-size:28px;font-weight:800;color:var(--red)" id="weekly-days-fatigue">—</div>
+          <div style="font-size:12px;color:var(--text-muted)">High-Fatigue Days</div>
+        </div>
+        <div style="text-align:center;padding:8px;background:var(--surface2);border-radius:10px">
+          <div style="font-size:28px;font-weight:800;color:var(--green)" id="weekly-avg-energy">—</div>
+          <div style="font-size:12px;color:var(--text-muted)">Avg Morning Energy</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Charts -->
+    <div class="card">
+      <div class="card-title">Daily Spoon Usage vs. Budget</div>
+      <div class="chart-container"><canvas id="chart-spoons"></canvas></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Morning Energy vs. Next-Day Fatigue</div>
+      <div class="chart-container"><canvas id="chart-energy"></canvas></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Sleep Hours</div>
+      <div class="chart-container"><canvas id="chart-sleep"></canvas></div>
+    </div>
+
+    <!-- Patterns -->
+    <div class="card">
+      <div class="card-title">Crash Patterns (30-day)</div>
+      <div id="weekly-patterns"></div>
+    </div>
+
+    <!-- Export -->
+    <div class="card">
+      <div class="card-title">Share & Export</div>
+      <button class="btn btn-secondary" id="share-btn" style="margin-bottom:8px">📤 Share Spoon Count with Dan</button>
+      <button class="btn btn-secondary" id="export-csv-btn">📊 Export Last 30 Days (CSV)</button>
+    </div>
+  </main>
+
+  <!-- ══════════════ SETTINGS PAGE ══════════════ -->
+  <main id="page-settings" class="page" hidden>
+    <div class="page-header">
+      <h1>Settings</h1>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Energy Budget</div>
+      <div class="settings-item">
+        <div>
+          <div class="s-label">Base Daily Budget</div>
+          <div class="s-sub">Adjusted by morning check-in (good day: +2, poor day: -4)</div>
+        </div>
+        <input type="number" id="set-base-budget" min="4" max="20" step="1" />
+      </div>
+      <div class="settings-item">
+        <div>
+          <div class="s-label">After-6pm Modifier</div>
+          <div class="s-sub">Activities after 6 PM cost +0.5 spoons</div>
+        </div>
+        <label style="position:relative;display:inline-block;width:44px;height:24px">
+          <input type="checkbox" id="set-after-six" style="opacity:0;width:0;height:0;position:absolute" />
+          <span id="set-after-six-visual" onclick="this.previousElementSibling.click();this.style.background=this.previousElementSibling.checked?'var(--primary)':'#ccc'"
+            style="position:absolute;inset:0;border-radius:12px;background:#ccc;transition:.3s;cursor:pointer"></span>
+        </label>
+      </div>
+      <div class="settings-item">
+        <div>
+          <div class="s-label">Stacking Penalty</div>
+          <div class="s-sub">2+ high-cost activities (3+ spoons) same day = +1 spoon penalty</div>
+        </div>
+        <label style="position:relative;display:inline-block;width:44px;height:24px">
+          <input type="checkbox" id="set-stacking" style="opacity:0;width:0;height:0;position:absolute" />
+          <span id="set-stacking-visual" onclick="this.previousElementSibling.click();this.style.background=this.previousElementSibling.checked?'var(--primary)':'#ccc'"
+            style="position:absolute;inset:0;border-radius:12px;background:#ccc;transition:.3s;cursor:pointer"></span>
+        </label>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Customize Spoon Costs</div>
+      <p style="font-size:13px;color:var(--text-muted);margin-bottom:12px">Override default spoon costs based on YOUR experience</p>
+      <table style="width:100%;border-collapse:collapse">
+        <tbody id="spoon-overrides-body"></tbody>
+      </table>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Custom Activities</div>
+      <div id="custom-activities-list"></div>
+      <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border)">
+        <div class="card-title">Add New</div>
+        <div class="row" style="margin-bottom:10px">
+          <div style="flex:0 0 70px">
+            <label class="form-label">Emoji</label>
+            <input type="text" id="new-custom-emoji" placeholder="⚡" maxlength="2" style="text-align:center" />
+          </div>
+          <div style="flex:1">
+            <label class="form-label">Name</label>
+            <input type="text" id="new-custom-name" placeholder="Activity name" />
+          </div>
+          <div style="flex:0 0 90px">
+            <label class="form-label">Spoons</label>
+            <input type="number" id="new-custom-spoons" placeholder="1" min="-5" max="10" step="0.5" />
+          </div>
+        </div>
+        <button class="btn btn-secondary" id="add-custom-btn">+ Add Activity</button>
+      </div>
+    </div>
+
+    <button class="btn btn-primary" id="settings-save">Save Settings</button>
+
+    <div class="card" style="margin-top:12px">
+      <div class="card-title">Data</div>
+      <button class="btn btn-secondary" id="load-sample-btn" style="margin-bottom:8px">📋 Load Sample Data</button>
+      <button class="btn btn-danger" id="clear-data-btn">🗑 Clear All Data</button>
+    </div>
+  </main>
+
+  <!-- ══════════════ NAVIGATION ══════════════ -->
+  <nav>
+    <button id="nav-today" data-page="today" class="active">
+      <span class="nav-icon">🥄</span>Today
+    </button>
+    <button id="nav-log" data-page="log">
+      <span class="nav-icon">➕</span>Log
+    </button>
+    <button id="nav-history" data-page="history">
+      <span class="nav-icon">📋</span>History
+    </button>
+    <button id="nav-weekly" data-page="weekly">
+      <span class="nav-icon">📈</span>Weekly
+    </button>
+    <button id="nav-settings" data-page="settings">
+      <span class="nav-icon">⚙️</span>Settings
+    </button>
+  </nav>
+
+</div>
+<script src="app.js"></script>
+</body>
+</html>
