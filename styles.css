@@ -641,3 +641,235 @@ textarea { resize: vertical; min-height: 80px; }
 
 .pattern-warning .pw-title { font-size: 13px; font-weight: 700; color: #9a3412; margin-bottom: 4px; }
 .pattern-warning .pw-text { font-size: 13px; color: #7c2d12; line-height: 1.4; }
+
+/* ── Nav 6-item adjustment ── */
+nav button { padding: 8px 2px 6px; font-size: 9px; }
+nav button .nav-icon { font-size: 20px; }
+
+/* ── Zone dot (inline indicator) ── */
+.zone-dot {
+  display: inline-block;
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  margin-left: 5px;
+  vertical-align: middle;
+  flex-shrink: 0;
+}
+
+.quick-zone-dot {
+  display: block;
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  margin: 2px auto 0;
+}
+
+/* ── Zone picker row (Log page) ── */
+.zone-picker-row {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+
+.zone-pick-btn {
+  flex: 1;
+  min-width: 56px;
+  padding: 8px 4px;
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  transition: all 0.15s;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.zone-pick-btn span:first-child { font-size: 18px; line-height: 1; }
+.zpb-label { font-size: 10px; color: var(--text-muted); font-weight: 500; text-align: center; line-height: 1.2; }
+
+.zone-pick-btn.selected {
+  border-color: var(--zone-color, var(--primary));
+  background: var(--zone-bg, var(--primary-light));
+}
+.zone-pick-btn.selected .zpb-label { color: var(--zone-color, var(--primary)); font-weight: 700; }
+
+.zone-legend {
+  font-size: 11px;
+  color: var(--text-muted);
+  line-height: 1.5;
+  padding-top: 6px;
+  border-top: 1px solid var(--border);
+}
+
+/* ── Energy direction picker ── */
+.dir-picker-row {
+  display: flex;
+  gap: 8px;
+}
+
+.dir-pick-btn {
+  flex: 1;
+  padding: 10px 6px;
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.15s;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.dir-label { font-size: 22px; font-weight: 800; color: var(--dir-color, var(--text-muted)); line-height: 1; }
+.dir-title  { font-size: 11px; color: var(--text-muted); }
+
+.dir-pick-btn.selected {
+  border-color: var(--dir-color, var(--primary));
+  background: color-mix(in srgb, var(--dir-color) 10%, white);
+}
+.dir-pick-btn.selected .dir-title { color: var(--dir-color); font-weight: 600; }
+
+/* ── Energy direction badge (on activity items) ── */
+.energy-dir-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px; height: 20px;
+  border-radius: 50%;
+  font-size: 11px;
+  font-weight: 800;
+  margin-right: 4px;
+  flex-shrink: 0;
+}
+.energy-dir-badge.gave    { background: #dcfce7; color: #16a34a; }
+.energy-dir-badge.neutral { background: #f1f5f9; color: #64748b; }
+.energy-dir-badge.drained { background: #fee2e2; color: #dc2626; }
+
+/* ── act-right wrapper ── */
+.act-right {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+/* ── Incompetence flag ── */
+.incomp-flag {
+  font-size: 11px;
+  color: #dc2626;
+  font-weight: 500;
+  margin-top: 2px;
+}
+
+/* ══════════════ ZONES AUDIT PAGE ══════════════ */
+
+/* Genius callout card */
+.genius-callout-card {
+  background: linear-gradient(135deg, #14532d, #16a34a);
+  color: white;
+}
+
+.genius-callout { text-align: center; }
+.genius-num { font-size: 52px; font-weight: 900; line-height: 1; margin-bottom: 4px; }
+.genius-label { font-size: 14px; font-weight: 600; opacity: 0.9; margin-bottom: 6px; }
+.genius-trend {
+  display: inline-block;
+  background: rgba(255,255,255,0.2);
+  border-radius: 20px;
+  padding: 4px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+.genius-sub { font-size: 12px; opacity: 0.75; line-height: 1.4; }
+
+/* Leak warning — blue alert variant */
+.alert.blue { background: #dbeafe; color: #1e3a5f; }
+
+/* Zone breakdown bars */
+.zone-bar-row { margin-bottom: 14px; }
+.zone-bar-row:last-child { margin-bottom: 0; }
+
+.zb-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 5px;
+}
+.zb-label { font-size: 13px; font-weight: 600; color: var(--text); }
+.zb-stats  { font-size: 12px; color: var(--text-muted); }
+
+.zb-track {
+  height: 10px;
+  background: var(--border);
+  border-radius: 100px;
+  overflow: hidden;
+}
+.zb-fill {
+  height: 100%;
+  border-radius: 100px;
+  transition: width 0.5s ease;
+}
+
+/* Energy direction summary */
+.dir-summary-row {
+  display: flex;
+  gap: 8px;
+}
+
+.dir-sum-item {
+  flex: 1;
+  text-align: center;
+  padding: 12px 6px;
+  border-radius: 12px;
+  background: var(--surface2);
+  border: 1.5px solid var(--border);
+}
+.dir-sum-item.gave    { border-color: #86efac; background: #f0fdf4; }
+.dir-sum-item.neutral { border-color: var(--border); background: var(--surface2); }
+.dir-sum-item.drained { border-color: #fca5a5; background: #fff1f2; }
+
+.dir-sum-num   { display: block; font-size: 26px; font-weight: 800; color: var(--text); }
+.dir-sum-label { display: block; font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+
+/* Zone reference list */
+.zone-ref-list { display: flex; flex-direction: column; gap: 10px; }
+.zone-ref-item { display: flex; align-items: flex-start; gap: 10px; font-size: 13px; line-height: 1.4; color: var(--text); }
+.zone-ref-dot  { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; margin-top: 2px; }
+
+/* ══════════════ QUICK PICKER (Settings) ══════════════ */
+.quick-picker-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 6px;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.quick-pick-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 10px;
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  cursor: pointer;
+  text-align: left;
+  font-size: 13px;
+  color: var(--text);
+  transition: all 0.15s;
+}
+.quick-pick-btn.selected {
+  border-color: var(--primary);
+  background: var(--primary-light);
+}
+.qp-emoji { font-size: 18px; flex-shrink: 0; }
+.qp-name  { flex: 1; font-size: 12px; font-weight: 500; line-height: 1.2; }
+.qp-check { font-size: 14px; color: var(--primary); font-weight: 700; flex-shrink: 0; min-width: 14px; }
+
