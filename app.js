@@ -13,23 +13,53 @@ const KEYS = {
 };
 
 const DEFAULT_ACTIVITIES = [
-  { id: 'pt',          name: 'PT Session',            emoji: '🏥', spoons: 4,  category: 'medical',   recovery: false },
-  { id: 'cmt_class',   name: 'CMT Exercise Class',    emoji: '💪', spoons: 3,  category: 'exercise',  recovery: false },
-  { id: 'doctor',      name: 'Doctor Appointment',    emoji: '👨‍⚕️', spoons: 2,  category: 'medical',   recovery: false },
-  { id: 'grocery',     name: 'Grocery Shopping',      emoji: '🛒', spoons: 2,  category: 'errand',    recovery: false },
-  { id: 'cooking',     name: 'Cooking Meal',          emoji: '🍳', spoons: 1,  category: 'household', recovery: false },
-  { id: 'driving',     name: 'Driving',               emoji: '🚗', spoons: 1,  category: 'errand',    recovery: false },
-  { id: 'social',      name: 'Social Outing',         emoji: '👥', spoons: 2,  category: 'social',    recovery: false },
-  { id: 'chores_lt',   name: 'Light Chores',          emoji: '🧹', spoons: 1,  category: 'household', recovery: false },
-  { id: 'chores_hv',   name: 'Heavy Chores',          emoji: '🏠', spoons: 2,  category: 'household', recovery: false },
-  { id: 'dog_walk',    name: 'Walking Dog',           emoji: '🐕', spoons: 1,  category: 'exercise',  recovery: false },
-  { id: 'tv_rest',     name: 'Watching TV / Resting', emoji: '📺', spoons: 0,  category: 'rest',      recovery: false },
-  { id: 'yoga',        name: 'Yoga',                  emoji: '🧘', spoons: 2,  category: 'exercise',  recovery: false },
-  { id: 'gym',         name: 'Gym',                   emoji: '🏋️', spoons: 3,  category: 'exercise',  recovery: false },
-  { id: 'journaling',  name: 'Journaling',            emoji: '✍️', spoons: 0,  category: 'rest',      recovery: false },
-  { id: 'meditation',  name: 'Meditation',            emoji: '🧘‍♀️', spoons: -1, category: 'recovery',  recovery: true  },
-  { id: 'nap',         name: 'Nap',                   emoji: '😴', spoons: -1, category: 'recovery',  recovery: true  },
-  { id: 'sleep',       name: 'Full Night Sleep',      emoji: '🌙', spoons: -5, category: 'recovery',  recovery: true  },
+  // Medical / therapy
+  { id: 'pt',            name: 'PT Session',              emoji: '🏥', spoons: 4,  category: 'medical',    recovery: false },
+  { id: 'pt_ex',         name: 'PT Exercises',            emoji: '🦵', spoons: 1,  category: 'medical',    recovery: false },
+  { id: 'ot_ex',         name: 'OT Exercises',            emoji: '🤲', spoons: 1,  category: 'medical',    recovery: false },
+  { id: 'slp',           name: 'SLP Work',                emoji: '🗣️', spoons: 1,  category: 'medical',    recovery: false },
+  { id: 'doctor',        name: 'Doctor Appointment',      emoji: '👨‍⚕️', spoons: 2,  category: 'medical',    recovery: false },
+  { id: 'cmt_class',     name: 'CMT Exercise Class',      emoji: '💪', spoons: 3,  category: 'exercise',   recovery: false },
+
+  // Exercise
+  { id: 'daily_workout', name: 'Daily Workout (15 min)',  emoji: '🏃', spoons: 2,  category: 'exercise',   recovery: false },
+  { id: 'yoga',          name: 'Yoga',                    emoji: '🧘', spoons: 2,  category: 'exercise',   recovery: false },
+  { id: 'gym',           name: 'Gym',                     emoji: '🏋️', spoons: 3,  category: 'exercise',   recovery: false },
+  { id: 'dog_walk',      name: 'Walking Dog',             emoji: '🐕', spoons: 1,  category: 'exercise',   recovery: false },
+
+  // Work / job search
+  { id: 'work_block',    name: 'Work / Job Search Block', emoji: '💻', spoons: 3,  category: 'work',       recovery: false },
+  { id: 'admin',         name: 'Admin / Paperwork',       emoji: '📋', spoons: 1,  category: 'work',       recovery: false },
+
+  // Social
+  { id: 'social',        name: 'Social Outing',           emoji: '👥', spoons: 2,  category: 'social',     recovery: false },
+  { id: 'call',          name: 'Phone/Video Catch-up',    emoji: '📞', spoons: 1,  category: 'social',     recovery: false },
+  { id: 'restaurant',    name: 'Restaurant Meal',         emoji: '🍽️', spoons: 2,  category: 'social',     recovery: false },
+  { id: 'event',         name: 'Movie / Live Event',      emoji: '🎬', spoons: 2,  category: 'social',     recovery: false },
+
+  // Errands / travel
+  { id: 'grocery',       name: 'Grocery Shopping',        emoji: '🛒', spoons: 2,  category: 'errand',     recovery: false },
+  { id: 'errand',        name: 'Quick Errand',            emoji: '📮', spoons: 1,  category: 'errand',     recovery: false },
+  { id: 'driving',       name: 'Driving',                 emoji: '🚗', spoons: 1,  category: 'errand',     recovery: false },
+  { id: 'pet_care',      name: 'Pet Care (vet/boarding)', emoji: '🐾', spoons: 2,  category: 'errand',     recovery: false },
+  { id: 'travel_day',    name: 'Travel Day (Flight)',      emoji: '✈️', spoons: 5,  category: 'travel',     recovery: false },
+  { id: 'packing',       name: 'Packing for Trip',        emoji: '🧳', spoons: 2,  category: 'travel',     recovery: false },
+
+  // Household
+  { id: 'cooking',       name: 'Cooking Meal',            emoji: '🍳', spoons: 1,  category: 'household',  recovery: false },
+  { id: 'baking',        name: 'Baking Project',          emoji: '🥧', spoons: 2,  category: 'household',  recovery: false },
+  { id: 'chores_lt',     name: 'Light Chores',            emoji: '🧹', spoons: 1,  category: 'household',  recovery: false },
+  { id: 'chores_hv',     name: 'Heavy Chores',            emoji: '🏠', spoons: 2,  category: 'household',  recovery: false },
+  { id: 'declutter',     name: 'Decluttering Session',    emoji: '📦', spoons: 3,  category: 'household',  recovery: false },
+
+  // Self-care / rest / recovery
+  { id: 'shower',        name: 'Shower',                  emoji: '🚿', spoons: 1,  category: 'self-care',  recovery: false },
+  { id: 'tv_rest',       name: 'Watching TV / Resting',   emoji: '📺', spoons: 0,  category: 'rest',       recovery: false },
+  { id: 'journaling',    name: 'Journaling',              emoji: '✍️', spoons: 0,  category: 'rest',       recovery: false },
+  { id: 'meditation',    name: 'Meditation',              emoji: '🧘‍♀️', spoons: -1, category: 'recovery',   recovery: true  },
+  { id: 'massage',       name: 'Massage',                 emoji: '💆', spoons: -2, category: 'recovery',   recovery: true  },
+  { id: 'nap',           name: 'Nap',                     emoji: '😴', spoons: -1, category: 'recovery',   recovery: true  },
+  { id: 'sleep',         name: 'Full Night Sleep',        emoji: '🌙', spoons: -5, category: 'recovery',   recovery: true  },
 ];
 
 // Zone definitions
@@ -43,13 +73,24 @@ const ZONES = [
 
 // Default zone per preset activity
 const DEFAULT_ZONES = {
-  pt: 'maintenance', cmt_class: 'maintenance', doctor: 'maintenance',
-  grocery: 'competence', cooking: 'competence', driving: 'competence',
-  social: 'competence', chores_lt: 'competence', chores_hv: 'competence',
-  dog_walk: 'competence', tv_rest: 'competence',
-  yoga: 'maintenance', gym: 'competence',
-  meditation: 'genius', journaling: 'genius',
-  nap: 'maintenance', sleep: 'maintenance',
+  // Medical
+  pt: 'maintenance', pt_ex: 'maintenance', ot_ex: 'maintenance', slp: 'maintenance',
+  doctor: 'maintenance', cmt_class: 'maintenance',
+  // Exercise
+  daily_workout: 'maintenance', yoga: 'maintenance', gym: 'competence', dog_walk: 'competence',
+  // Work
+  work_block: 'excellence', admin: 'competence',
+  // Social
+  social: 'competence', call: 'competence', restaurant: 'competence', event: 'competence',
+  // Errand / travel
+  grocery: 'competence', errand: 'competence', driving: 'competence',
+  pet_care: 'competence', travel_day: 'competence', packing: 'competence',
+  // Household
+  cooking: 'competence', baking: 'competence', chores_lt: 'competence',
+  chores_hv: 'competence', declutter: 'competence',
+  // Self-care / rest / recovery
+  shower: 'maintenance', tv_rest: 'competence', journaling: 'genius',
+  meditation: 'genius', massage: 'maintenance', nap: 'maintenance', sleep: 'maintenance',
 };
 
 // Energy direction options
@@ -59,7 +100,7 @@ const ENERGY_DIRS = [
   { id: 'drained', label: '−', title: 'Drained',       color: '#dc2626' },
 ];
 
-const QUICK_IDS = ['pt', 'cmt_class', 'yoga', 'meditation', 'nap'];
+const QUICK_IDS = ['daily_workout', 'ot_ex', 'pt_ex', 'call', 'meditation'];
 
 const DEFAULT_SETTINGS = {
   baseBudget: 10,

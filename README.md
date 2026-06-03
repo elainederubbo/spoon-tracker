@@ -96,23 +96,69 @@ When you first open the app, it will ask for notification permission. If you all
 
 ## Activity Presets & Default Costs
 
-| Activity | Default Cost |
-|----------|-------------|
-| PT Session | 4 spoons |
-| CMT Exercise Class | 3 spoons |
-| Doctor Appointment | 2 spoons |
-| Grocery Shopping | 2 spoons |
-| Social Outing | 2 spoons |
-| Heavy Chores | 2 spoons |
-| Cooking Meal | 1 spoon |
-| Driving | 1 spoon |
-| Light Chores | 1 spoon |
-| Walking Dog | 1 spoon |
-| Watching TV / Resting | 0 spoons |
-| Nap | +1 recovery |
-| Full Night Sleep | +5 recovery |
+All costs can be overridden in ⚙️ Settings → Customize Spoon Costs.
 
-All of these can be changed in Settings to match your actual energy experience.
+**Medical / Therapy**
+| Activity | Cost | Default Zone |
+|----------|------|-------------|
+| 🏥 PT Session | 4 spoons | 🔵 Maintenance |
+| 🦵 PT Exercises | 1 spoon | 🔵 Maintenance |
+| 🤲 OT Exercises | 1 spoon | 🔵 Maintenance |
+| 🗣️ SLP Work | 1 spoon | 🔵 Maintenance |
+| 👨‍⚕️ Doctor Appointment | 2 spoons | 🔵 Maintenance |
+| 💪 CMT Exercise Class | 3 spoons | 🔵 Maintenance |
+
+**Exercise**
+| Activity | Cost | Default Zone |
+|----------|------|-------------|
+| 🏃 Daily Workout (15 min) | 2 spoons | 🔵 Maintenance |
+| 🧘 Yoga | 2 spoons | 🔵 Maintenance |
+| 🏋️ Gym | 3 spoons | ⚪ Competence |
+| 🐕 Walking Dog | 1 spoon | ⚪ Competence |
+
+**Work / Job Search**
+| Activity | Cost | Default Zone |
+|----------|------|-------------|
+| 💻 Work / Job Search Block | 3 spoons | 🟠 Excellence |
+| 📋 Admin / Paperwork | 1 spoon | ⚪ Competence |
+
+**Social**
+| Activity | Cost | Default Zone |
+|----------|------|-------------|
+| 👥 Social Outing | 2 spoons | ⚪ Competence |
+| 📞 Phone/Video Catch-up | 1 spoon | ⚪ Competence |
+| 🍽️ Restaurant Meal | 2 spoons | ⚪ Competence |
+| 🎬 Movie / Live Event | 2 spoons | ⚪ Competence |
+
+**Errands / Travel**
+| Activity | Cost | Default Zone |
+|----------|------|-------------|
+| 🛒 Grocery Shopping | 2 spoons | ⚪ Competence |
+| 📮 Quick Errand | 1 spoon | ⚪ Competence |
+| 🚗 Driving | 1 spoon | ⚪ Competence |
+| 🐾 Pet Care (vet/boarding) | 2 spoons | ⚪ Competence |
+| ✈️ Travel Day (Flight) | 5 spoons | ⚪ Competence |
+| 🧳 Packing for Trip | 2 spoons | ⚪ Competence |
+
+**Household**
+| Activity | Cost | Default Zone |
+|----------|------|-------------|
+| 🍳 Cooking Meal | 1 spoon | ⚪ Competence |
+| 🥧 Baking Project | 2 spoons | ⚪ Competence |
+| 🧹 Light Chores | 1 spoon | ⚪ Competence |
+| 🏠 Heavy Chores | 2 spoons | ⚪ Competence |
+| 📦 Decluttering Session | 3 spoons | ⚪ Competence |
+
+**Self-Care / Rest / Recovery**
+| Activity | Cost | Default Zone |
+|----------|------|-------------|
+| 🚿 Shower | 1 spoon | 🔵 Maintenance |
+| 📺 Watching TV / Resting | 0 spoons | ⚪ Competence |
+| ✍️ Journaling | 0 spoons | 🟢 Genius |
+| 🧘‍♀️ Meditation | +1 recovery | 🟢 Genius |
+| 💆 Massage | +2 recovery | 🔵 Maintenance |
+| 😴 Nap | +1 recovery | 🔵 Maintenance |
+| 🌙 Full Night Sleep | +5 recovery | 🔵 Maintenance |
 
 ---
 
