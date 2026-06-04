@@ -1,0 +1,671 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <title>CMT Energy Tracker — Demo</title>
+  <link rel="stylesheet" href="styles.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    /* ── Demo banner ── */
+    .demo-banner {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 400;
+      background: #0d9488;
+      color: white;
+      font-size: 13px;
+      font-weight: 600;
+      text-align: center;
+      padding: 9px 16px;
+      letter-spacing: 0.01em;
+    }
+    .demo-banner a {
+      color: #ccfbf1;
+      text-decoration: underline;
+      margin-left: 10px;
+    }
+
+    #app { padding-top: 38px; }
+
+    /* ── Today "Wednesday" heading chip ── */
+    .demo-day-chip {
+      background: #0d9488;
+      color: white;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 10px;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    /* ── Activity list ── */
+    .act-right { display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
+
+    .zone-dot {
+      display: inline-block;
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      margin-left: 5px;
+      vertical-align: middle;
+      flex-shrink: 0;
+    }
+
+    .energy-dir-badge {
+      display: inline-flex;
+      align-items: center; justify-content: center;
+      width: 20px; height: 20px;
+      border-radius: 50%;
+      font-size: 11px; font-weight: 800;
+      flex-shrink: 0;
+    }
+    .energy-dir-badge.gave    { background: #dcfce7; color: #16a34a; }
+    .energy-dir-badge.neutral { background: #f1f5f9; color: #64748b; }
+    .energy-dir-badge.drained { background: #fee2e2; color: #dc2626; }
+
+    /* ── Weekly bars ── */
+    .week-bars { display: flex; align-items: flex-end; gap: 6px; height: 120px; margin: 12px 0 8px; }
+    .day-bar-wrap { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; height: 100%; justify-content: flex-end; }
+    .day-bar { width: 100%; border-radius: 6px 6px 0 0; transition: height .3s ease; min-height: 4px; }
+    .day-bar.today { outline: 2px solid #6366f1; outline-offset: 1px; }
+    .day-label { font-size: 10px; font-weight: 600; color: var(--text-muted); text-align: center; margin-top: 4px; }
+    .day-val   { font-size: 11px; font-weight: 700; color: var(--text); text-align: center; }
+    .day-budget-line { position: relative; }
+
+    /* ── Zone bars ── */
+    .zone-bar-row { margin-bottom: 14px; }
+    .zone-bar-row:last-child { margin-bottom: 0; }
+    .zb-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
+    .zb-label  { font-size: 13px; font-weight: 600; color: var(--text); }
+    .zb-stats  { font-size: 12px; color: var(--text-muted); }
+    .zb-track  { height: 10px; background: var(--border); border-radius: 100px; overflow: hidden; }
+    .zb-fill   { height: 100%; border-radius: 100px; transition: width .5s ease; }
+
+    /* ── Genius callout card ── */
+    .genius-callout-card { background: linear-gradient(135deg, #14532d, #16a34a); color: white; }
+    .genius-callout { text-align: center; }
+    .genius-num   { font-size: 52px; font-weight: 900; line-height: 1; margin-bottom: 4px; }
+    .genius-label { font-size: 14px; font-weight: 600; opacity: .9; margin-bottom: 6px; }
+    .genius-trend { display: inline-block; background: rgba(255,255,255,.2); border-radius: 20px; padding: 4px 12px; font-size: 13px; font-weight: 600; margin-bottom: 8px; }
+    .genius-sub   { font-size: 12px; opacity: .75; line-height: 1.4; }
+
+    /* ── Alert blue ── */
+    .alert.blue { background: #dbeafe; color: #1e3a5f; }
+
+    /* ── Dir summary ── */
+    .dir-summary-row { display: flex; gap: 8px; }
+    .dir-sum-item { flex: 1; text-align: center; padding: 12px 6px; border-radius: 12px; background: var(--surface2); border: 1.5px solid var(--border); }
+    .dir-sum-item.gave    { border-color: #86efac; background: #f0fdf4; }
+    .dir-sum-item.neutral { }
+    .dir-sum-item.drained { border-color: #fca5a5; background: #fff1f2; }
+    .dir-sum-num   { display: block; font-size: 26px; font-weight: 800; color: var(--text); }
+    .dir-sum-label { display: block; font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+
+    /* ── Zone ref ── */
+    .zone-ref-list { display: flex; flex-direction: column; gap: 10px; }
+    .zone-ref-item { display: flex; align-items: flex-start; gap: 10px; font-size: 13px; line-height: 1.4; }
+    .zone-ref-dot  { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; margin-top: 2px; }
+
+    /* ── Stacking note ── */
+    .stacking-note {
+      font-size: 12px; color: #78350f; background: #fef3c7;
+      border-radius: 8px; padding: 6px 10px; margin-top: 4px;
+    }
+
+    /* ── Budget compare row in weekly ── */
+    .budget-key { display: flex; gap: 16px; font-size: 12px; color: var(--text-muted); justify-content: center; margin-top: 4px; }
+    .budget-key span { display: flex; align-items: center; gap: 5px; }
+    .key-swatch { width: 14px; height: 8px; border-radius: 3px; flex-shrink: 0; }
+
+    /* ── Day list for weekly ── */
+    .weekly-day-row {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 0; border-bottom: 1px solid var(--border);
+    }
+    .weekly-day-row:last-child { border-bottom: none; }
+    .wd-name { font-size: 13px; font-weight: 700; min-width: 28px; color: var(--text-muted); }
+    .wd-name.today-day { color: var(--primary); }
+    .wd-bar-track { flex: 1; height: 12px; background: var(--border); border-radius: 100px; overflow: hidden; position: relative; }
+    .wd-bar-fill  { height: 100%; border-radius: 100px; }
+    .wd-stats { font-size: 12px; color: var(--text-muted); min-width: 60px; text-align: right; }
+    .wd-chip  { font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 20px; flex-shrink: 0; }
+  </style>
+</head>
+<body>
+
+<div class="demo-banner">
+  📊 Demo Mode — Sample Data &nbsp;·&nbsp; Not connected to any personal data
+  <a href="index.html">Open Live App →</a>
+</div>
+
+<div id="app">
+
+  <!-- ══════════════ TODAY PAGE ══════════════ -->
+  <main id="page-today" class="page" hidden>
+    <div class="page-header">
+      <h1>🥄 My Spoons</h1>
+      <span class="demo-day-chip">Wed · Demo</span>
+    </div>
+
+    <!-- Spoon meter -->
+    <div class="card spoon-meter">
+      <div class="spoon-count green" id="today-spoon-count">8</div>
+      <div class="spoon-label">spoons remaining</div>
+      <div class="progress-bar-wrap">
+        <div class="progress-bar-fill green" id="today-spoon-bar" style="width:67%"></div>
+      </div>
+      <div class="spoon-stats">
+        <span><strong>5</strong> used</span>
+        <span>of <strong>12</strong> today</span>
+        <span style="color:var(--green)">+1 recovered</span>
+      </div>
+      <div class="budget-source">Morning check-in: +2 spoons (energy 8/10, CPAP 7h, no symptoms)</div>
+    </div>
+
+    <!-- Stacking alert -->
+    <div class="alert yellow">
+      <span class="alert-icon">📈</span>
+      <span class="alert-text">Work / Job Search Block was your 2nd high-cost activity today (alongside SLP). Stacking note: two cognitively demanding tasks back-to-back.</span>
+    </div>
+
+    <!-- Today's activity list -->
+    <div class="card">
+      <div class="card-title">Wednesday's Activities — logged so far</div>
+      <div id="today-list"></div>
+    </div>
+
+    <!-- Morning check-in summary -->
+    <div class="card">
+      <div class="card-title">Morning Check-In</div>
+      <div class="tag-row">
+        <span class="tag">⚡ Energy 8/10</span>
+        <span class="tag">💤 7.5h sleep</span>
+        <span class="tag">😷 CPAP 7h</span>
+        <span class="tag">💊 Trazodone</span>
+        <span class="tag">🟢 Good day → 12 spoons</span>
+      </div>
+    </div>
+  </main>
+
+  <!-- ══════════════ WEEKLY PAGE ══════════════ -->
+  <main id="page-weekly" class="page" hidden>
+    <div class="page-header">
+      <h1>Weekly View</h1>
+      <span class="date-badge">Mon – Sun</span>
+    </div>
+
+    <!-- Summary stats -->
+    <div class="card">
+      <div class="card-title">This Week</div>
+      <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px">
+        <div style="text-align:center;padding:8px;background:var(--surface2);border-radius:10px">
+          <div style="font-size:28px;font-weight:800;color:var(--primary)">42</div>
+          <div style="font-size:12px;color:var(--text-muted)">Total Spoons Used</div>
+        </div>
+        <div style="text-align:center;padding:8px;background:var(--surface2);border-radius:10px">
+          <div style="font-size:28px;font-weight:800;color:var(--yellow)">6.0</div>
+          <div style="font-size:12px;color:var(--text-muted)">Avg Per Day</div>
+        </div>
+        <div style="text-align:center;padding:8px;background:var(--surface2);border-radius:10px">
+          <div style="font-size:28px;font-weight:800;color:var(--red)">1</div>
+          <div style="font-size:12px;color:var(--text-muted)">High-Fatigue Days</div>
+        </div>
+        <div style="text-align:center;padding:8px;background:var(--surface2);border-radius:10px">
+          <div style="font-size:28px;font-weight:800;color:var(--green)">7.4</div>
+          <div style="font-size:12px;color:var(--text-muted)">Avg Morning Energy</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Day-by-day breakdown -->
+    <div class="card">
+      <div class="card-title">Daily Spoon Usage</div>
+      <div id="weekly-days"></div>
+      <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border);font-size:12px;color:var(--text-muted)">
+        Dashed line = daily budget (10–12 spoons). <strong style="color:#6366f1">Purple</strong> = today (Wednesday).
+      </div>
+    </div>
+
+    <!-- Chart -->
+    <div class="card">
+      <div class="card-title">Energy Usage Chart</div>
+      <div style="position:relative;height:200px"><canvas id="weekly-chart"></canvas></div>
+    </div>
+
+    <!-- Pattern callout -->
+    <div class="card">
+      <div class="card-title">Crash Patterns</div>
+      <div class="pattern-warning">
+        <div class="pw-title">⚠️ Tuesday Pattern Detected</div>
+        <div class="pw-text">PT Session + CMT Exercise Class on the same day used 9 spoons — above your typical daily budget. Next-day fatigue was rated 4/5 on Wednesday morning. Consider spacing these on separate days.</div>
+      </div>
+    </div>
+  </main>
+
+  <!-- ══════════════ ZONES PAGE (DEFAULT) ══════════════ -->
+  <main id="page-zones" class="page">
+    <div class="page-header">
+      <h1>🎯 Zone Audit</h1>
+      <span class="date-badge">This week</span>
+    </div>
+
+    <!-- Genius callout -->
+    <div class="card genius-callout-card">
+      <div class="genius-callout">
+        <div class="genius-num">6</div>
+        <div class="genius-label">Genius zone activities this week</div>
+        <div class="genius-trend">↑ +2 vs last week</div>
+        <div class="genius-sub">4 meditation sessions · 2 journaling sessions · 4 spoons recovered · ~2.5 hrs of restorative flow time. These activities cost nothing and give energy back.</div>
+      </div>
+    </div>
+
+    <!-- Leak warning -->
+    <div class="alert yellow" style="margin-bottom:8px">
+      <span class="alert-icon">⚠️</span>
+      <span class="alert-text"><strong>Leak zones: 30%</strong> (Competence 30% + Incompetence 0%) — above your 20% target. This is energy you need for your job search. Look for tasks you can delegate.</span>
+    </div>
+    <div class="alert blue" style="margin-bottom:12px">
+      <span class="alert-icon">🔵</span>
+      <span class="alert-text"><strong>Maintenance (protected): 44%</strong> — PT, OT, SLP, CMT class, medical appointments. Not a leak — this is your infrastructure.</span>
+    </div>
+
+    <!-- Zone breakdown bars -->
+    <div class="card">
+      <div class="card-title">Spoon Allocation by Zone</div>
+      <div id="zone-bars"></div>
+    </div>
+
+    <!-- Zone doughnut -->
+    <div class="card">
+      <div class="card-title">Zone Distribution</div>
+      <div style="position:relative;height:200px"><canvas id="zone-chart"></canvas></div>
+    </div>
+
+    <!-- Energy direction -->
+    <div class="card">
+      <div class="card-title">Energy Direction This Week</div>
+      <div class="dir-summary-row">
+        <div class="dir-sum-item gave">
+          <span class="dir-sum-num">14</span>
+          <span class="dir-sum-label">+ gave energy</span>
+        </div>
+        <div class="dir-sum-item neutral">
+          <span class="dir-sum-num">1</span>
+          <span class="dir-sum-label">0 neutral</span>
+        </div>
+        <div class="dir-sum-item drained">
+          <span class="dir-sum-num">18</span>
+          <span class="dir-sum-label">− drained</span>
+        </div>
+      </div>
+      <p style="font-size:12px;color:var(--text-muted);margin-top:10px;line-height:1.5">More activities drain than restore — this is typical for CMT management weeks. The weekend pattern (14 "gave" tags heavily weighted Sat/Sun) shows intentional recovery scheduling.</p>
+    </div>
+
+    <!-- Zone reference -->
+    <div class="card">
+      <div class="card-title">Zone Reference</div>
+      <div class="zone-ref-list">
+        <div class="zone-ref-item"><span class="zone-ref-dot" style="background:#16a34a"></span><div><strong>Zone of Genius 🟢</strong> — lose track of time; this is the target. Costs ½ spoons (or restores energy).</div></div>
+        <div class="zone-ref-item"><span class="zone-ref-dot" style="background:#ea580c"></span><div><strong>Zone of Excellence 🟠</strong> — great at it but it drains you. Costs +0.5 extra spoons.</div></div>
+        <div class="zone-ref-item"><span class="zone-ref-dot" style="background:#2563eb"></span><div><strong>Maintenance 🔵</strong> — PT, OT, SLP, CMT class, medical. Protected infrastructure.</div></div>
+        <div class="zone-ref-item"><span class="zone-ref-dot" style="background:#64748b"></span><div><strong>Zone of Competence ⚪</strong> — can do it but it's not special. Full cost. Watch for delegation opportunities.</div></div>
+        <div class="zone-ref-item"><span class="zone-ref-dot" style="background:#dc2626"></span><div><strong>Zone of Incompetence 🔴</strong> — someone else should do this. Flagged in your log.</div></div>
+      </div>
+    </div>
+  </main>
+
+  <!-- ══════════════ NAVIGATION ══════════════ -->
+  <nav style="display:flex">
+    <button id="nav-today" data-tab="today" style="flex:1;background:none;border:none;padding:10px 4px 8px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px;color:var(--text-muted);font-size:10px;font-weight:500">
+      <span style="font-size:22px">🥄</span>Today
+    </button>
+    <button id="nav-weekly" data-tab="weekly" style="flex:1;background:none;border:none;padding:10px 4px 8px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px;color:var(--text-muted);font-size:10px;font-weight:500">
+      <span style="font-size:22px">📈</span>Weekly
+    </button>
+    <button id="nav-zones" data-tab="zones" class="active" style="flex:1;background:none;border:none;padding:10px 4px 8px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px;color:var(--primary);font-size:10px;font-weight:500">
+      <span style="font-size:22px">🎯</span>Zones
+    </button>
+  </nav>
+
+</div><!-- #app -->
+
+<script>
+'use strict';
+
+// ═══════════════════════════════════════════════════════
+// HARDCODED SAMPLE DATA  —  no localStorage used
+// ═══════════════════════════════════════════════════════
+
+const ZONES_META = {
+  genius:       { label: 'Zone of Genius',       emoji: '🟢', color: '#16a34a', bg: '#dcfce7' },
+  excellence:   { label: 'Zone of Excellence',   emoji: '🟠', color: '#ea580c', bg: '#ffedd5' },
+  maintenance:  { label: 'Maintenance',          emoji: '🔵', color: '#2563eb', bg: '#dbeafe' },
+  competence:   { label: 'Zone of Competence',   emoji: '⚪', color: '#64748b', bg: '#f1f5f9' },
+  incompetence: { label: 'Zone of Incompetence', emoji: '🔴', color: '#dc2626', bg: '#fee2e2' },
+};
+
+// Wednesday "today" — only shows activities logged so far (morning session)
+const TODAY_ENTRIES = [
+  { name: 'OT Exercises',            emoji: '🤲', cost: 1,  isRecov: false, zone: 'maintenance', dir: 'drained',  time: '7:30 AM' },
+  { name: 'SLP Work',                emoji: '🗣️', cost: 1,  isRecov: false, zone: 'maintenance', dir: 'drained',  time: '8:15 AM' },
+  { name: 'Work / Job Search Block', emoji: '💻', cost: 3,  isRecov: false, zone: 'excellence',  dir: 'drained',  time: '9:00 AM' },
+  { name: 'Meditation',              emoji: '🧘‍♀️', cost: -1, isRecov: true,  zone: 'genius',      dir: 'gave',     time: '12:30 PM' },
+];
+
+// Full week data for Weekly view and Zone audit
+const WEEK = [
+  {
+    label: 'Mon', budget: 10,
+    entries: [
+      { name: 'OT Exercises',            emoji: '🤲', cost: 1,  isRecov: false, zone: 'maintenance', dir: 'drained' },
+      { name: 'SLP Work',                emoji: '🗣️', cost: 1,  isRecov: false, zone: 'maintenance', dir: 'drained' },
+      { name: 'Work / Job Search Block', emoji: '💻', cost: 3,  isRecov: false, zone: 'excellence',  dir: 'drained' },
+      { name: 'Phone/Video Catch-up',    emoji: '📞', cost: 1,  isRecov: false, zone: 'competence',  dir: 'gave'    },
+      { name: 'Meditation',              emoji: '🧘‍♀️', cost: -1, isRecov: true,  zone: 'genius',      dir: 'gave'    },
+      { name: 'Full Night Sleep',        emoji: '🌙', cost: -5, isRecov: true,  zone: 'maintenance', dir: 'gave'    },
+    ],
+  },
+  {
+    label: 'Tue', budget: 10, highDay: true,
+    entries: [
+      { name: 'OT Exercises',            emoji: '🤲', cost: 1,  isRecov: false, zone: 'maintenance', dir: 'drained' },
+      { name: 'PT Session',              emoji: '🏥', cost: 4,  isRecov: false, zone: 'maintenance', dir: 'drained' },
+      { name: 'CMT Exercise Class',      emoji: '💪', cost: 3,  isRecov: false, zone: 'maintenance', dir: 'drained' },
+      { name: 'Nap',                     emoji: '😴', cost: -1, isRecov: true,  zone: 'maintenance', dir: 'gave'    },
+      { name: 'Cooking Meal',            emoji: '🍳', cost: 1,  isRecov: false, zone: 'competence',  dir: 'neutral' },
+      { name: 'Full Night Sleep',        emoji: '🌙', cost: -5, isRecov: true,  zone: 'maintenance', dir: 'gave'    },
+    ],
+  },
+  {
+    label: 'Wed', budget: 12, isToday: true,
+    entries: [
+      { name: 'OT Exercises',            emoji: '🤲', cost: 1,  isRecov: false, zone: 'maintenance', dir: 'drained' },
+      { name: 'SLP Work',                emoji: '🗣️', cost: 1,  isRecov: false, zone: 'maintenance', dir: 'drained' },
+      { name: 'Work / Job Search Block', emoji: '💻', cost: 3,  isRecov: false, zone: 'excellence',  dir: 'drained' },
+      { name: 'Journaling',              emoji: '✍️', cost: 0,  isRecov: false, zone: 'genius',      dir: 'gave'    },
+      { name: 'Light Chores',            emoji: '🧹', cost: 1,  isRecov: false, zone: 'competence',  dir: 'drained' },
+      { name: 'Meditation',              emoji: '🧘‍♀️', cost: -1, isRecov: true,  zone: 'genius',      dir: 'gave'    },
+      { name: 'Full Night Sleep',        emoji: '🌙', cost: -5, isRecov: true,  zone: 'maintenance', dir: 'gave'    },
+    ],
+  },
+  {
+    label: 'Thu', budget: 10,
+    entries: [
+      { name: 'OT Exercises',            emoji: '🤲', cost: 1,  isRecov: false, zone: 'maintenance', dir: 'drained' },
+      { name: 'Doctor Appointment',      emoji: '👨‍⚕️', cost: 2,  isRecov: false, zone: 'maintenance', dir: 'drained' },
+      { name: 'Shower',                  emoji: '🚿', cost: 1,  isRecov: false, zone: 'maintenance', dir: 'drained' },
+      { name: 'Grocery Shopping',        emoji: '🛒', cost: 2,  isRecov: false, zone: 'competence',  dir: 'drained' },
+      { name: 'Nap',                     emoji: '😴', cost: -1, isRecov: true,  zone: 'maintenance', dir: 'gave'    },
+      { name: 'Phone/Video Catch-up',    emoji: '📞', cost: 1,  isRecov: false, zone: 'competence',  dir: 'gave'    },
+      { name: 'Full Night Sleep',        emoji: '🌙', cost: -5, isRecov: true,  zone: 'maintenance', dir: 'gave'    },
+    ],
+  },
+  {
+    label: 'Fri', budget: 10,
+    entries: [
+      { name: 'OT Exercises',            emoji: '🤲', cost: 1,  isRecov: false, zone: 'maintenance', dir: 'drained' },
+      { name: 'Work / Job Search Block', emoji: '💻', cost: 3,  isRecov: false, zone: 'excellence',  dir: 'drained' },
+      { name: 'Admin / Paperwork',       emoji: '📋', cost: 1,  isRecov: false, zone: 'competence',  dir: 'drained' },
+      { name: 'Social Outing',           emoji: '👥', cost: 2,  isRecov: false, zone: 'competence',  dir: 'gave'    },
+      { name: 'Meditation',              emoji: '🧘‍♀️', cost: -1, isRecov: true,  zone: 'genius',      dir: 'gave'    },
+      { name: 'Full Night Sleep',        emoji: '🌙', cost: -5, isRecov: true,  zone: 'maintenance', dir: 'gave'    },
+    ],
+  },
+  {
+    label: 'Sat', budget: 10, lowDay: true,
+    entries: [
+      { name: 'Yoga',                    emoji: '🧘', cost: 2,  isRecov: false, zone: 'maintenance', dir: 'gave'    },
+      { name: 'Baking Project',          emoji: '🥧', cost: 2,  isRecov: false, zone: 'competence',  dir: 'gave'    },
+      { name: 'Journaling',              emoji: '✍️', cost: 0,  isRecov: false, zone: 'genius',      dir: 'gave'    },
+      { name: 'Phone/Video Catch-up',    emoji: '📞', cost: 1,  isRecov: false, zone: 'competence',  dir: 'gave'    },
+      { name: 'Full Night Sleep',        emoji: '🌙', cost: -5, isRecov: true,  zone: 'maintenance', dir: 'gave'    },
+    ],
+  },
+  {
+    label: 'Sun', budget: 10, lowDay: true,
+    entries: [
+      { name: 'Walking Dog',             emoji: '🐕', cost: 1,  isRecov: false, zone: 'competence',  dir: 'gave'    },
+      { name: 'Light Chores',            emoji: '🧹', cost: 1,  isRecov: false, zone: 'competence',  dir: 'drained' },
+      { name: 'Watching TV / Resting',   emoji: '📺', cost: 0,  isRecov: false, zone: 'competence',  dir: 'gave'    },
+      { name: 'Meditation',              emoji: '🧘‍♀️', cost: -1, isRecov: true,  zone: 'genius',      dir: 'gave'    },
+      { name: 'Full Night Sleep',        emoji: '🌙', cost: -5, isRecov: true,  zone: 'maintenance', dir: 'gave'    },
+    ],
+  },
+];
+
+// ═══════════════════════════════════════════════════════
+// COMPUTED ZONE AUDIT  (positive-cost activities only)
+// ═══════════════════════════════════════════════════════
+
+function buildZoneAudit() {
+  const totals = { genius: 0, excellence: 0, maintenance: 0, competence: 0, incompetence: 0 };
+  let grandTotal = 0;
+  WEEK.forEach(day => {
+    day.entries.forEach(e => {
+      if (!e.isRecov && e.cost > 0) {
+        totals[e.zone] = (totals[e.zone] || 0) + e.cost;
+        grandTotal += e.cost;
+      }
+    });
+  });
+  return { totals, grandTotal };
+}
+
+// Gross spoons used per day (positive costs only, no recovery)
+function dayGrossSpent(day) {
+  return day.entries.filter(e => !e.isRecov && e.cost > 0).reduce((s, e) => s + e.cost, 0);
+}
+
+// ═══════════════════════════════════════════════════════
+// RENDER FUNCTIONS
+// ═══════════════════════════════════════════════════════
+
+function renderToday() {
+  const list = document.getElementById('today-list');
+  list.innerHTML = '';
+  TODAY_ENTRIES.forEach(e => {
+    const z = ZONES_META[e.zone];
+    const costDisplay = e.isRecov ? `+${Math.abs(e.cost)}` : e.cost === 0 ? '—' : `-${e.cost}`;
+    const costClass = e.isRecov ? 'positive' : e.cost === 0 ? 'zero' : 'negative';
+    const div = document.createElement('div');
+    div.className = 'activity-item';
+    div.innerHTML = `
+      <span class="act-icon">${e.emoji}</span>
+      <div class="act-info">
+        <div class="name">${e.name}<span class="zone-dot" style="background:${z.color}" title="${z.label}"></span></div>
+        <div class="time">${e.time}</div>
+      </div>
+      <div class="act-right">
+        <span class="energy-dir-badge ${e.dir}">${e.dir === 'gave' ? '+' : e.dir === 'drained' ? '−' : '0'}</span>
+        <span class="act-cost ${costClass}">${costDisplay}</span>
+      </div>`;
+    list.appendChild(div);
+  });
+}
+
+function renderWeekly() {
+  // Day rows
+  const container = document.getElementById('weekly-days');
+  container.innerHTML = '';
+  const maxSpent = Math.max(...WEEK.map(dayGrossSpent));
+
+  WEEK.forEach(day => {
+    const spent = dayGrossSpent(day);
+    const pct = Math.round((spent / maxSpent) * 100);
+    const color = day.isToday ? '#6366f1' : day.highDay ? '#ef4444' : day.lowDay ? '#16a34a' : '#94a3b8';
+    const chipText = day.highDay ? '⚠️ High' : day.lowDay ? '✅ Low' : day.isToday ? '📍 Today' : null;
+    const chipStyle = day.highDay ? 'background:#fee2e2;color:#dc2626'
+      : day.lowDay ? 'background:#dcfce7;color:#16a34a'
+      : day.isToday ? 'background:#eef2ff;color:#6366f1' : '';
+
+    const row = document.createElement('div');
+    row.className = 'weekly-day-row';
+    row.innerHTML = `
+      <span class="wd-name ${day.isToday ? 'today-day' : ''}">${day.label}</span>
+      <div class="wd-bar-track">
+        <div class="wd-bar-fill" style="width:${pct}%;background:${color}"></div>
+      </div>
+      <span class="wd-stats">${spent} / ${day.budget}</span>
+      ${chipText ? `<span class="wd-chip" style="${chipStyle}">${chipText}</span>` : '<span class="wd-chip"></span>'}`;
+    container.appendChild(row);
+  });
+
+  // Chart
+  if (typeof Chart === 'undefined') return;
+  const ctx = document.getElementById('weekly-chart');
+  if (!ctx) return;
+  if (window._weeklyChart) window._weeklyChart.destroy();
+  const spentData = WEEK.map(dayGrossSpent);
+  const budgetData = WEEK.map(d => d.budget);
+  const colors = WEEK.map(d => d.isToday ? '#6366f1cc' : d.highDay ? '#ef4444cc' : '#94a3b8cc');
+
+  window._weeklyChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: WEEK.map(d => d.label),
+      datasets: [
+        {
+          label: 'Spoons Used',
+          data: spentData,
+          backgroundColor: colors,
+          borderColor: colors.map(c => c.replace('cc', '')),
+          borderWidth: 2,
+          borderRadius: 6,
+        },
+        {
+          label: 'Daily Budget',
+          data: budgetData,
+          type: 'line',
+          borderColor: '#16a34a',
+          borderWidth: 2,
+          pointRadius: 3,
+          fill: false,
+          tension: 0.4,
+          borderDash: [4, 4],
+        },
+      ],
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { position: 'bottom', labels: { font: { size: 11 } } } },
+      scales: {
+        x: { grid: { display: false }, ticks: { font: { size: 11 } } },
+        y: { beginAtZero: true, max: 14, grid: { color: '#e2e8f0' }, ticks: { font: { size: 11 } } },
+      },
+    },
+  });
+}
+
+function renderZones() {
+  const { totals, grandTotal } = buildZoneAudit();
+
+  // Zone bars (order: genius first, then others)
+  const barsContainer = document.getElementById('zone-bars');
+  barsContainer.innerHTML = '';
+
+  const order = ['genius', 'excellence', 'maintenance', 'competence', 'incompetence'];
+  order.forEach(zId => {
+    const z = ZONES_META[zId];
+    const spoons = totals[zId] || 0;
+    const pct = grandTotal > 0 ? Math.round((spoons / grandTotal) * 100) : 0;
+
+    const row = document.createElement('div');
+    row.className = 'zone-bar-row';
+
+    if (zId === 'genius') {
+      // Special treatment for genius — show recovery value
+      row.innerHTML = `
+        <div class="zb-header">
+          <span class="zb-label">${z.emoji} ${z.label}</span>
+          <span class="zb-stats">+4 recovery · 6 activities · 0% of cost budget</span>
+        </div>
+        <div class="zb-track">
+          <div class="zb-fill" style="width:100%;background:${z.color};opacity:.35"></div>
+        </div>
+        <div style="font-size:11px;color:#16a34a;margin-top:4px;font-weight:600">
+          ✨ These activities gave energy back — they don't appear in the cost breakdown below.
+        </div>`;
+    } else {
+      row.innerHTML = `
+        <div class="zb-header">
+          <span class="zb-label">${z.emoji} ${z.label}</span>
+          <span class="zb-stats">${spoons} spoons · ${pct}%</span>
+        </div>
+        <div class="zb-track">
+          <div class="zb-fill" style="width:${pct}%;background:${z.color}"></div>
+        </div>`;
+    }
+    barsContainer.appendChild(row);
+  });
+
+  // Zone doughnut chart (excluding genius from cost calc)
+  if (typeof Chart !== 'undefined') {
+    const ctx = document.getElementById('zone-chart');
+    if (ctx) {
+      if (window._zoneChart) window._zoneChart.destroy();
+      const nonGeniusOrder = ['excellence', 'maintenance', 'competence', 'incompetence'];
+      window._zoneChart = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+          labels: nonGeniusOrder.map(id => ZONES_META[id].label),
+          datasets: [{
+            data: nonGeniusOrder.map(id => totals[id] || 0),
+            backgroundColor: nonGeniusOrder.map(id => ZONES_META[id].color),
+            borderWidth: 2,
+            borderColor: '#fff',
+          }],
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          cutout: '62%',
+          plugins: {
+            legend: { position: 'right', labels: { font: { size: 11 }, boxWidth: 12, padding: 10 } },
+            tooltip: {
+              callbacks: {
+                label: (ctx) => {
+                  const val = ctx.raw;
+                  const pct = Math.round((val / grandTotal) * 100);
+                  return ` ${val} spoons (${pct}%)`;
+                },
+              },
+            },
+          },
+        },
+      });
+    }
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+// TAB NAVIGATION
+// ═══════════════════════════════════════════════════════
+
+function showTab(name) {
+  document.querySelectorAll('.page').forEach(p => p.hidden = true);
+  const page = document.getElementById('page-' + name);
+  if (page) page.hidden = false;
+
+  document.querySelectorAll('nav button').forEach(b => {
+    b.style.color = b.dataset.tab === name ? 'var(--primary)' : 'var(--text-muted)';
+  });
+
+  if (name === 'today')   renderToday();
+  if (name === 'weekly')  renderWeekly();
+  if (name === 'zones')   renderZones();
+}
+
+document.querySelectorAll('nav button[data-tab]').forEach(btn => {
+  btn.addEventListener('click', () => showTab(btn.dataset.tab));
+});
+
+// ═══════════════════════════════════════════════════════
+// INIT — Zones tab default
+// ═══════════════════════════════════════════════════════
+document.addEventListener('DOMContentLoaded', () => {
+  showTab('zones');
+});
+</script>
+</body>
+</html>
