@@ -1,0 +1,1209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Spoon Tracker — UX Research Case Study</title>
+  <link href="https://fonts.googleapis.com/css2?family=Josefin+Sans:ital,wght@0,300;0,400;0,600;0,700;1,400&family=Josefin+Slab:ital,wght@0,300;0,400;0,600;0,700;1,300;1,400&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --purple:     #69306D;
+      --teal:       #138070;
+      --teal-light: #34D1BF;
+      --gray:       #A59DA2;
+      --near-black: #070707;
+      --white:      #FFFFFF;
+      --bg:         #FAFAF9;
+      --border:     #E8E3E6;
+      --purple-10:  #F4EEF4;
+      --teal-10:    #EAF5F3;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Josefin Sans', sans-serif;
+      font-size: 17px;
+      line-height: 1.75;
+      color: var(--near-black);
+      background: var(--bg);
+    }
+
+    /* ── NAVIGATION ── */
+    nav {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: var(--white);
+      border-bottom: 2px solid var(--purple);
+      padding: 0 40px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 56px;
+    }
+    .nav-brand {
+      font-family: 'Josefin Slab', serif;
+      font-weight: 700;
+      font-size: 15px;
+      color: var(--purple);
+      letter-spacing: 0.04em;
+      text-decoration: none;
+    }
+    .nav-links {
+      display: flex;
+      gap: 28px;
+      list-style: none;
+    }
+    .nav-links a {
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--gray);
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+    .nav-links a:hover { color: var(--purple); }
+
+    /* ── HERO ── */
+    .hero {
+      background: var(--purple);
+      color: var(--white);
+      padding: 80px 40px 72px;
+    }
+    .hero-inner {
+      max-width: 860px;
+      margin: 0 auto;
+    }
+    .hero-tag {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--teal-light);
+      margin-bottom: 20px;
+    }
+    .hero h1 {
+      font-family: 'Josefin Slab', serif;
+      font-size: clamp(32px, 5vw, 52px);
+      font-weight: 700;
+      line-height: 1.15;
+      margin-bottom: 20px;
+    }
+    .hero-sub {
+      font-size: 19px;
+      font-weight: 300;
+      line-height: 1.6;
+      max-width: 620px;
+      opacity: 0.92;
+      margin-bottom: 48px;
+    }
+    .hero-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 32px;
+    }
+    .meta-item label {
+      display: block;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--teal-light);
+      margin-bottom: 4px;
+    }
+    .meta-item span {
+      font-size: 14px;
+      font-weight: 400;
+      opacity: 0.95;
+    }
+
+    /* ── LAYOUT ── */
+    .page { max-width: 860px; margin: 0 auto; padding: 0 40px; }
+
+    section { padding: 72px 0; border-bottom: 1px solid var(--border); }
+    section:last-child { border-bottom: none; }
+
+    /* ── SECTION HEADINGS ── */
+    .section-label {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--teal);
+      margin-bottom: 12px;
+    }
+    h2 {
+      font-family: 'Josefin Slab', serif;
+      font-size: clamp(24px, 3.5vw, 34px);
+      font-weight: 700;
+      line-height: 1.2;
+      color: var(--purple);
+      margin-bottom: 24px;
+    }
+    h3 {
+      font-family: 'Josefin Slab', serif;
+      font-size: 20px;
+      font-weight: 600;
+      color: var(--near-black);
+      margin-bottom: 14px;
+      margin-top: 44px;
+    }
+    h3:first-of-type { margin-top: 0; }
+
+    p { margin-bottom: 18px; }
+    p:last-child { margin-bottom: 0; }
+
+    /* ── CALLOUT / HIGHLIGHT BOX ── */
+    .callout {
+      background: var(--purple-10);
+      border-left: 4px solid var(--purple);
+      border-radius: 0 8px 8px 0;
+      padding: 24px 28px;
+      margin: 36px 0;
+    }
+    .callout.teal {
+      background: var(--teal-10);
+      border-left-color: var(--teal);
+    }
+    .callout p { margin-bottom: 0; }
+    .callout strong { color: var(--purple); }
+    .callout.teal strong { color: var(--teal); }
+
+    /* ── STAT ROW ── */
+    .stat-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 20px;
+      margin: 40px 0;
+    }
+    .stat-card {
+      flex: 1;
+      min-width: 140px;
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 24px 20px;
+      text-align: center;
+    }
+    .stat-card .num {
+      font-family: 'Josefin Slab', serif;
+      font-size: 42px;
+      font-weight: 700;
+      color: var(--purple);
+      line-height: 1;
+      margin-bottom: 6px;
+    }
+    .stat-card .label {
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      color: var(--gray);
+      text-transform: uppercase;
+    }
+
+    /* ── RESEARCH QUESTIONS ── */
+    .rq-list {
+      list-style: none;
+      counter-reset: rq;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      margin-top: 8px;
+    }
+    .rq-list li {
+      counter-increment: rq;
+      display: flex;
+      gap: 18px;
+      align-items: flex-start;
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 20px 24px;
+    }
+    .rq-list li::before {
+      content: "RQ" counter(rq);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      color: var(--teal);
+      flex-shrink: 0;
+      padding-top: 2px;
+      width: 32px;
+    }
+    .rq-list li p { margin: 0; font-size: 16px; }
+
+    /* ── METHOD STEPS ── */
+    .method-steps {
+      list-style: none;
+      counter-reset: step;
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      position: relative;
+      margin-top: 8px;
+    }
+    .method-steps li {
+      counter-increment: step;
+      display: flex;
+      gap: 24px;
+      align-items: flex-start;
+      padding: 28px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .method-steps li:last-child { border-bottom: none; }
+    .step-num {
+      font-family: 'Josefin Slab', serif;
+      font-size: 28px;
+      font-weight: 700;
+      color: var(--purple-10);
+      -webkit-text-stroke: 2px var(--purple);
+      flex-shrink: 0;
+      width: 40px;
+      line-height: 1;
+      padding-top: 2px;
+    }
+    .step-body h4 {
+      font-family: 'Josefin Sans', sans-serif;
+      font-size: 15px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      color: var(--purple);
+      margin-bottom: 6px;
+      text-transform: uppercase;
+    }
+    .step-body p { margin-bottom: 0; font-size: 15px; }
+
+    /* ── FINDINGS TABLE ── */
+    .findings-table-wrap {
+      overflow-x: auto;
+      margin: 28px 0;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+    thead {
+      background: var(--purple);
+      color: var(--white);
+    }
+    thead th {
+      padding: 12px 16px;
+      text-align: left;
+      font-weight: 700;
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+    tbody tr { background: var(--white); }
+    tbody tr:nth-child(even) { background: var(--bg); }
+    tbody td {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+      line-height: 1.5;
+    }
+    tbody tr:last-child td { border-bottom: none; }
+    .emoji-col { font-size: 18px; width: 40px; text-align: center; }
+    .spoon-neg { color: var(--teal); font-weight: 700; }
+    .spoon-pos { color: var(--purple); font-weight: 700; }
+
+    /* ── TIER BADGES ── */
+    .tier-1 {
+      display: inline-block;
+      background: var(--purple);
+      color: var(--white);
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 3px 8px;
+      border-radius: 4px;
+    }
+    .tier-2 {
+      display: inline-block;
+      background: var(--teal);
+      color: var(--white);
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 3px 8px;
+      border-radius: 4px;
+    }
+    .tier-3 {
+      display: inline-block;
+      background: var(--gray);
+      color: var(--white);
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 3px 8px;
+      border-radius: 4px;
+    }
+
+    /* ── PATTERN CARDS ── */
+    .pattern-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 20px;
+      margin-top: 28px;
+    }
+    .pattern-card {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 24px;
+    }
+    .pattern-card .pattern-icon {
+      font-size: 28px;
+      margin-bottom: 12px;
+    }
+    .pattern-card h4 {
+      font-family: 'Josefin Sans', sans-serif;
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--purple);
+      margin-bottom: 8px;
+    }
+    .pattern-card p {
+      font-size: 14px;
+      line-height: 1.6;
+      color: #444;
+      margin: 0;
+    }
+
+    /* ── SHOWER CALLOUT (special) ── */
+    .shower-block {
+      background: var(--near-black);
+      color: var(--white);
+      border-radius: 12px;
+      padding: 40px 44px;
+      margin: 44px 0;
+      position: relative;
+      overflow: hidden;
+    }
+    .shower-block::before {
+      content: '"';
+      font-family: 'Josefin Slab', serif;
+      font-size: 200px;
+      color: var(--purple);
+      opacity: 0.3;
+      position: absolute;
+      top: -40px;
+      left: 20px;
+      line-height: 1;
+      pointer-events: none;
+    }
+    .shower-block p {
+      font-family: 'Josefin Slab', serif;
+      font-size: 22px;
+      font-weight: 300;
+      line-height: 1.5;
+      position: relative;
+      margin-bottom: 20px;
+    }
+    .shower-block .attribution {
+      font-size: 13px;
+      font-weight: 400;
+      color: var(--teal-light);
+      letter-spacing: 0.06em;
+    }
+
+    /* ── CATEGORY TAGS ── */
+    .cat-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin: 24px 0;
+    }
+    .cat-tag {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 8px 14px;
+      font-size: 13px;
+      font-weight: 600;
+    }
+    .cat-tag.new {
+      border-color: var(--purple);
+      background: var(--purple-10);
+      color: var(--purple);
+    }
+    .cat-tag .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    /* ── OUTCOMES ── */
+    .outcome-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1px;
+      background: var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+      margin: 32px 0;
+    }
+    .outcome-cell {
+      background: var(--white);
+      padding: 24px 28px;
+    }
+    .outcome-cell .oc-label {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--gray);
+      margin-bottom: 6px;
+    }
+    .outcome-cell .oc-before {
+      font-size: 28px;
+      font-family: 'Josefin Slab', serif;
+      font-weight: 700;
+      color: var(--gray);
+      margin-bottom: 2px;
+      text-decoration: line-through;
+    }
+    .outcome-cell .oc-after {
+      font-size: 28px;
+      font-family: 'Josefin Slab', serif;
+      font-weight: 700;
+      color: var(--purple);
+    }
+    .outcome-cell .oc-note {
+      font-size: 13px;
+      color: #666;
+      margin-top: 4px;
+    }
+
+    /* ── FOOTER ── */
+    footer {
+      background: var(--purple);
+      color: rgba(255,255,255,0.7);
+      padding: 48px 40px;
+      text-align: center;
+      font-size: 13px;
+    }
+    footer a {
+      color: var(--teal-light);
+      text-decoration: none;
+    }
+    footer a:hover { text-decoration: underline; }
+    footer .footer-name {
+      font-family: 'Josefin Slab', serif;
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--white);
+      margin-bottom: 8px;
+    }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 640px) {
+      nav { padding: 0 20px; }
+      .nav-links { display: none; }
+      .hero { padding: 56px 20px 52px; }
+      .page { padding: 0 20px; }
+      section { padding: 52px 0; }
+      .outcome-row { grid-template-columns: 1fr; }
+      .shower-block { padding: 28px 24px; }
+      .shower-block::before { font-size: 120px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── NAVIGATION ── -->
+<nav>
+  <a class="nav-brand" href="https://elainederubbo.com">Elaine DeRubbo</a>
+  <ul class="nav-links">
+    <li><a href="#problem">Problem</a></li>
+    <li><a href="#method">Method</a></li>
+    <li><a href="#findings">Findings</a></li>
+    <li><a href="#recommendations">Recommendations</a></li>
+    <li><a href="#outcomes">Outcomes</a></li>
+    <li><a href="#reflection">Reflection</a></li>
+    <li><a href="#phase2">Phase 2</a></li>
+  </ul>
+</nav>
+
+<!-- ── HERO ── -->
+<header class="hero">
+  <div class="hero-inner">
+    <div class="hero-tag">UX Research Case Study</div>
+    <h1>Spoon Tracker:<br/>Building the Tool<br/>I Actually Needed</h1>
+    <p class="hero-sub">I have hereditary motor neuropathy — probably CMT2, exact type still unknown. I built an app to help me manage my energy. Then I spent 90 days living in it, figured out what it was missing, and fixed it — with some help from AI.</p>
+    <div class="hero-meta">
+      <div class="meta-item">
+        <label>Role</label>
+        <span>Researcher · Designer · Sole Participant</span>
+      </div>
+      <div class="meta-item">
+        <label>Methods</label>
+        <span>Autoethnographic Design · Behavioral Audit · Calendar Analysis · AI-Assisted Synthesis</span>
+      </div>
+      <div class="meta-item">
+        <label>Study Period</label>
+        <span>March – June 2026 (Phase 1: 90-day audit · Phase 2: Zone framework)</span>
+      </div>
+      <div class="meta-item">
+        <label>Deliverables</label>
+        <span>Updated activity taxonomy · Zone intelligence layer · Energy audit feature</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- ── BACKGROUND ── -->
+<div class="page">
+<section id="background">
+  <div class="section-label">Background</div>
+  <h2>I Needed a Tool That Didn't Exist</h2>
+  <p>I first heard about spoon theory from a counselor when I lived in DC, about eight years ago. The idea stuck with me — you start each day with a limited number of spoons, every activity costs one, and when they're gone, they're gone. Running out mid-afternoon doesn't mean you're tired. It means you might not be able to cook dinner, take a shower, or hold a conversation. It requires actual planning, not just willpower.</p>
+  <p>I've been working through a diagnosis for over a decade — workups at NIH and Johns Hopkins, an initial marker of CMT2U with the MARS1 variant that didn't hold up when my aunt (who has the same disease) tested negative for it. My neurologist at Johns Hopkins says to call it hereditary motor neuropathy, because that's what we know for certain. The exact type is still open. I identify closely with the CMT2 community because the pattern looks very similar to theirs, and that community has been genuinely useful to me. For most of my 20s and early 30s I could do pretty much everything — the neuropathy was there, but I could outrun it. That's changed. I'm older now, and the smallest things affect me more than they used to. A full day of appointments, a flight, a grocery run — these have real consequences. Pacing myself isn't something I ever thought I'd need to do, and then suddenly it was.</p>
+  <p>I looked for an app that could help me track this the way I actually needed. I didn't find one. So I built one — <strong>cmt-tracker</strong>, on GitHub Pages. I'm a UX researcher, not a developer. I used Claude to write the code. This isn't a case study about building the app. It's about what happened after I'd been living in it for 90 days and realized it still wasn't seeing my whole life.</p>
+</section>
+
+<!-- ── PROBLEM ── -->
+<section id="problem">
+  <div class="section-label">The Problem</div>
+  <h2>The Tracker Couldn't See My Whole Day</h2>
+
+  <p>When I built the app, I started with 17 activity presets — the obvious stuff: PT, CMT class, grocery shopping, cooking, dog walks, sleep. That felt like enough at the time. It wasn't.</p>
+
+  <p>Pretty quickly I noticed I was hitting "custom entry" constantly. OT exercises every single morning — no preset. Phone calls with friends every week — no preset. Job search work eating up real cognitive energy — no category for it at all. And at some point I realized I had started putting "Take Shower" on my calendar, and that it had nowhere to go in the app either. That one stopped me cold.</p>
+
+  <div class="callout">
+    <p><strong>The thing about designing for yourself:</strong> The presets you build at the start reflect what you think you do. Ninety days of actual use shows you what you actually do. The gap between those two things is what this is about.</p>
+  </div>
+
+  <div class="stat-row">
+    <div class="stat-card">
+      <div class="num">17</div>
+      <div class="label">Original presets</div>
+    </div>
+    <div class="stat-card">
+      <div class="num">90</div>
+      <div class="label">Days of use</div>
+    </div>
+    <div class="stat-card">
+      <div class="num">13+</div>
+      <div class="label">Uncovered activity types</div>
+    </div>
+    <div class="stat-card">
+      <div class="num">3</div>
+      <div class="label">Missing categories</div>
+    </div>
+  </div>
+</section>
+
+<!-- ── RESEARCH QUESTIONS ── -->
+<section id="rqs">
+  <div class="section-label">Research Questions</div>
+  <h2>What I Needed to Figure Out</h2>
+  <ul class="rq-list">
+    <li><p>What am I actually doing every week that the app has no preset for — and how often is it happening?</p></li>
+    <li><p>Are there patterns in how I use energy (stacking activities, calendar noise, things that feel similar but cost differently) that the app isn't capturing?</p></li>
+    <li><p>What should I add first, and what should each new activity cost?</p></li>
+  </ul>
+</section>
+
+<!-- ── METHOD ── -->
+<section id="method">
+  <div class="section-label">How I Did It</div>
+  <h2>90 Days of Calendar as Data</h2>
+
+  <p>I didn't run a usability study on myself. What I did was look at my Google Calendar — 90 days of it, March through June 2026 — and compare every recurring event against the app's 17 presets to see what wasn't covered.</p>
+
+  <div class="callout teal">
+    <p><strong>Why the calendar and not the app logs?</strong> Because the app logs only show what the presets let me log easily. If there's no preset for OT exercises, those entries either go in as "custom" or they don't get logged at all — either way, the log misses them. My calendar captured my actual days, not just the days my app was designed to see.</p>
+  </div>
+
+  <ul class="method-steps">
+    <li>
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <h4>Pull everything</h4>
+        <p>Went through 90 days of calendar events and catalogued every recurring activity by name, how often it showed up, and roughly what it costs me.</p>
+      </div>
+    </li>
+    <li>
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <h4>Find the gaps</h4>
+        <p>Compared each calendar event to the 17 existing presets. Anything without a good match got flagged.</p>
+      </div>
+    </li>
+    <li>
+      <div class="step-num">3</div>
+      <div class="step-body">
+        <h4>Assign costs from experience</h4>
+        <p>For each gap, I estimated a spoon cost based on how those activities actually feel — not a formula, just lived knowledge. Then sorted them into zones.</p>
+      </div>
+    </li>
+    <li>
+      <div class="step-num">4</div>
+      <div class="step-body">
+        <h4>Look at the bigger picture</h4>
+        <p>Asked whether the gaps were individual missing presets or whether whole categories of my life were unaccounted for. (They were.)</p>
+      </div>
+    </li>
+    <li>
+      <div class="step-num">5</div>
+      <div class="step-body">
+        <h4>Prioritize and build</h4>
+        <p>Sorted everything into tiers by frequency and impact, then worked with AI to write and ship the code changes.</p>
+      </div>
+    </li>
+  </ul>
+</section>
+
+<!-- ── FINDINGS ── -->
+<section id="findings">
+  <div class="section-label">What I Found</div>
+  <h2>What 90 Days Actually Looks Like</h2>
+
+  <h3>Coverage Gaps by Tier</h3>
+  <p>Thirteen recurring activities had no preset. Some were happening every single day. The gaps sorted into three groups by frequency.</p>
+
+  <div class="findings-table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th></th>
+          <th>Activity</th>
+          <th>Spoon Cost</th>
+          <th>Category</th>
+          <th>Zone</th>
+          <th>Frequency</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="emoji-col">🤲</td>
+          <td><strong>OT Exercises</strong> <span class="tier-1">Tier 1</span></td>
+          <td class="spoon-pos">1</td>
+          <td>medical</td>
+          <td>maintenance</td>
+          <td>Daily for 2 months — 100% custom entries</td>
+        </tr>
+        <tr>
+          <td class="emoji-col">🗣️</td>
+          <td><strong>SLP Work</strong> <span class="tier-1">Tier 1</span></td>
+          <td class="spoon-pos">1</td>
+          <td>medical</td>
+          <td>maintenance</td>
+          <td>Weekday-recurring</td>
+        </tr>
+        <tr>
+          <td class="emoji-col">🏃</td>
+          <td><strong>Daily Workout (15 min)</strong> <span class="tier-1">Tier 1</span></td>
+          <td class="spoon-pos">2</td>
+          <td>exercise</td>
+          <td>maintenance</td>
+          <td>Calendared as a daily recurring event; actual completion is variable — the gap between scheduled and logged is itself a data point</td>
+        </tr>
+        <tr>
+          <td class="emoji-col">📞</td>
+          <td><strong>Phone/Video Catch-up</strong> <span class="tier-1">Tier 1</span></td>
+          <td class="spoon-pos">1</td>
+          <td>social</td>
+          <td>competence</td>
+          <td>Weekly+ (Sarah, Audra, Nadia, Emily, Brad, Joanne)</td>
+        </tr>
+        <tr>
+          <td class="emoji-col">💻</td>
+          <td><strong>Work / Job Search Block</strong> <span class="tier-1">Tier 1</span></td>
+          <td class="spoon-pos">3</td>
+          <td>work <em>(new)</em></td>
+          <td>excellence</td>
+          <td>Multiple times/week — zero coverage previously</td>
+        </tr>
+        <tr>
+          <td class="emoji-col">✈️</td>
+          <td><strong>Travel Day (Flight)</strong> <span class="tier-1">Tier 1</span></td>
+          <td class="spoon-pos">5</td>
+          <td>travel <em>(new)</em></td>
+          <td>competence</td>
+          <td>Dallas + Grand Rapids trips; highest single-day cost</td>
+        </tr>
+        <tr>
+          <td class="emoji-col">💆</td>
+          <td><strong>Massage</strong> <span class="tier-1">Tier 1</span></td>
+          <td class="spoon-neg">−2</td>
+          <td>recovery</td>
+          <td>maintenance</td>
+          <td>Regular with Courtney — recovery credit, not a cost</td>
+        </tr>
+        <tr>
+          <td class="emoji-col">🍽️</td>
+          <td><strong>Restaurant Meal</strong> <span class="tier-2">Tier 2</span></td>
+          <td class="spoon-pos">2</td>
+          <td>social</td>
+          <td>competence</td>
+          <td>Weekly; sensory + social, distinct from "Social Outing"</td>
+        </tr>
+        <tr>
+          <td class="emoji-col">🐾</td>
+          <td><strong>Pet Care (vet/boarding)</strong> <span class="tier-2">Tier 2</span></td>
+          <td class="spoon-pos">2</td>
+          <td>errand</td>
+          <td>competence</td>
+          <td>Charlie boarding + drop-offs</td>
+        </tr>
+        <tr>
+          <td class="emoji-col">📦</td>
+          <td><strong>Decluttering Session</strong> <span class="tier-2">Tier 2</span></td>
+          <td class="spoon-pos">3</td>
+          <td>household</td>
+          <td>competence</td>
+          <td>"Basement — let's go through boxes" appeared 10+ times</td>
+        </tr>
+        <tr>
+          <td class="emoji-col">📋</td>
+          <td><strong>Admin / Paperwork</strong> <span class="tier-2">Tier 2</span></td>
+          <td class="spoon-pos">1</td>
+          <td>work <em>(new)</em></td>
+          <td>competence</td>
+          <td>Spending tracker, medical history, bills</td>
+        </tr>
+        <tr>
+          <td class="emoji-col">🚿</td>
+          <td><strong>Shower</strong> <span class="tier-2">Tier 2</span></td>
+          <td class="spoon-pos">1</td>
+          <td>self-care <em>(new)</em></td>
+          <td>maintenance</td>
+          <td>Calendared deliberately — no preset existed</td>
+        </tr>
+        <tr>
+          <td class="emoji-col">🎬</td>
+          <td><strong>Movie / Live Event</strong> <span class="tier-2">Tier 2</span></td>
+          <td class="spoon-pos">2</td>
+          <td>social</td>
+          <td>competence</td>
+          <td>Devil Wears Prada 2, Colbert finale, Foo Fighters</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="callout teal">
+    <p><strong>A limitation worth naming:</strong> The daily 6:30 AM workout shows up as a recurring calendar event — but I don't always actually do it. Calendar data captures what you planned, not necessarily what happened. The preset is still worth having (if it's on the calendar regularly, it needs a home), but I can't claim it happens every day. App logs would show the real frequency; the calendar can't tell the difference between "did this" and "meant to do this."</p>
+  </div>
+
+  <h3>The Shower Finding</h3>
+
+  <div class="shower-block">
+    <p>I was scheduling "Take Shower" in my calendar. Not as a preference or a reminder. As a necessity — to make sure I didn't forget it, or run out of energy to do it before the day ended.</p>
+    <div class="attribution">— Week 3 of the study period</div>
+  </div>
+
+  <p>This is the one that made me stop and sit with it for a while. A shower isn't just a missing preset. It's a thing that healthy people don't think about that my neuropathy makes you plan for. The app had <code>rest</code> for downtime and <code>recovery</code> for restorative credit, but nothing for the basic cost of maintaining a functional human body — showering, getting dressed, hygiene. Those things cost spoons. They were just invisible.</p>
+
+  <p>Adding a <code>self-care</code> category wasn't a taxonomy cleanup. It was the app finally being honest about what my days actually involve.</p>
+
+  <h3>Other Things I Noticed</h3>
+  <p>Missing presets weren't the only problem. There were patterns in how my days were structured that the app didn't have a way to handle.</p>
+
+  <div class="pattern-grid">
+    <div class="pattern-card">
+      <div class="pattern-icon">⚡</div>
+      <h4>Activity Stacking</h4>
+      <p>Morning blocks frequently combined Mastermind Meeting with Team Platypus/Training. Stacking two higher-cost activities amplifies depletion beyond the sum of parts. The existing stacking penalty logic handles this, but it only works when all activities are logged — which requires presets to exist.</p>
+    </div>
+    <div class="pattern-card">
+      <div class="pattern-icon">📅</div>
+      <h4>Calendar Noise</h4>
+      <p>Some events on the shared calendar ("Dan Soccer," "Dan fertilize") were Dan's, not mine. On a shared calendar, these appear in the log window and create false positive activity data. A Settings filter to exclude specific event patterns would prevent this.</p>
+    </div>
+    <div class="pattern-card">
+      <div class="pattern-icon">🐕</div>
+      <h4>Granularity Matters</h4>
+      <p>Dog walk and Charlie playtime aren't the same activity. One is a physical exertion with navigation demands; the other is a low-effort recovery-adjacent activity. Treating them as equivalent under a single "dog" preset misrepresents the actual spoon spend.</p>
+    </div>
+    <div class="pattern-card">
+      <div class="pattern-icon">💆</div>
+      <h4>Recovery Is Active</h4>
+      <p>Massage isn't neutral. It's a deliberate investment in recovery — and it was logging as a cost rather than a credit. The mental model needs to distinguish passive rest (zero cost, zero credit) from active recovery (real negative spoon value).</p>
+    </div>
+  </div>
+
+  <h3>Missing Categories</h3>
+  <p>It wasn't just individual activities missing — whole parts of my life had no category at all.</p>
+
+  <div class="cat-grid">
+    <div class="cat-tag"><div class="dot" style="background:#888"></div> medical</div>
+    <div class="cat-tag"><div class="dot" style="background:#888"></div> exercise</div>
+    <div class="cat-tag"><div class="dot" style="background:#888"></div> errand</div>
+    <div class="cat-tag"><div class="dot" style="background:#888"></div> household</div>
+    <div class="cat-tag"><div class="dot" style="background:#888"></div> social</div>
+    <div class="cat-tag"><div class="dot" style="background:#888"></div> rest</div>
+    <div class="cat-tag"><div class="dot" style="background:#888"></div> recovery</div>
+    <div class="cat-tag new"><div class="dot" style="background:#69306D"></div> work ✦ new</div>
+    <div class="cat-tag new"><div class="dot" style="background:#69306D"></div> travel ✦ new</div>
+    <div class="cat-tag new"><div class="dot" style="background:#69306D"></div> self-care ✦ new</div>
+  </div>
+
+  <p><strong>Work</strong> was the biggest miss — job search blocks, case study work, JSC prep, mastermind sessions, applications. All of that was happening multiple times a week and costing real energy, with nowhere to go in the app. <strong>Travel</strong> exists because a flight to Dallas is nothing like a grocery run, even though "errand" was technically covering both. And <strong>self-care</strong> is there because of the shower — and everything like it that costs spoons but had been invisible.</p>
+</section>
+
+<!-- ── RECOMMENDATIONS ── -->
+<section id="recommendations">
+  <div class="section-label">What I Added</div>
+  <h2>The Full List, With Reasoning</h2>
+
+  <p>I sorted everything into three tiers. Tier 1 was the non-negotiable stuff — high frequency, missing entirely. Tiers 2 and 3 were worth adding too, just with less urgency.</p>
+
+  <div class="findings-table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Tier</th>
+          <th></th>
+          <th>Activity</th>
+          <th>Cost</th>
+          <th>Rationale</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="tier-1">Tier 1</span></td>
+          <td class="emoji-col">🤲</td>
+          <td>OT Exercises</td>
+          <td class="spoon-pos">+1</td>
+          <td>Daily for 2 months; 100% of entries were custom</td>
+        </tr>
+        <tr>
+          <td><span class="tier-1">Tier 1</span></td>
+          <td class="emoji-col">🗣️</td>
+          <td>SLP Work</td>
+          <td class="spoon-pos">+1</td>
+          <td>Weekday-recurring; low cost, high frequency</td>
+        </tr>
+        <tr>
+          <td><span class="tier-1">Tier 1</span></td>
+          <td class="emoji-col">🏃</td>
+          <td>Daily Workout (15 min)</td>
+          <td class="spoon-pos">+2</td>
+          <td>Every day; distinct from CMT class or gym</td>
+        </tr>
+        <tr>
+          <td><span class="tier-1">Tier 1</span></td>
+          <td class="emoji-col">📞</td>
+          <td>Phone/Video Catch-up</td>
+          <td class="spoon-pos">+1</td>
+          <td>Weekly+ with 6+ people; lower cost than in-person social</td>
+        </tr>
+        <tr>
+          <td><span class="tier-1">Tier 1</span></td>
+          <td class="emoji-col">💻</td>
+          <td>Work / Job Search Block</td>
+          <td class="spoon-pos">+3</td>
+          <td>Highest-frequency untracked category; cognitive load is real</td>
+        </tr>
+        <tr>
+          <td><span class="tier-1">Tier 1</span></td>
+          <td class="emoji-col">✈️</td>
+          <td>Travel Day (Flight)</td>
+          <td class="spoon-pos">+5</td>
+          <td>Highest single-day cost in the study period</td>
+        </tr>
+        <tr>
+          <td><span class="tier-1">Tier 1</span></td>
+          <td class="emoji-col">💆</td>
+          <td>Massage</td>
+          <td class="spoon-neg">−2</td>
+          <td>Active recovery; was logging as a cost rather than a credit</td>
+        </tr>
+        <tr>
+          <td><span class="tier-2">Tier 2</span></td>
+          <td class="emoji-col">🍽️</td>
+          <td>Restaurant Meal</td>
+          <td class="spoon-pos">+2</td>
+          <td>Sensory + social load distinct from a generic social outing</td>
+        </tr>
+        <tr>
+          <td><span class="tier-2">Tier 2</span></td>
+          <td class="emoji-col">🐾</td>
+          <td>Pet Care</td>
+          <td class="spoon-pos">+2</td>
+          <td>Vet + boarding logistics; distinct from a dog walk</td>
+        </tr>
+        <tr>
+          <td><span class="tier-2">Tier 2</span></td>
+          <td class="emoji-col">📦</td>
+          <td>Decluttering Session</td>
+          <td class="spoon-pos">+3</td>
+          <td>10+ calendar occurrences; not captured by "Heavy Chores"</td>
+        </tr>
+        <tr>
+          <td><span class="tier-2">Tier 2</span></td>
+          <td class="emoji-col">📋</td>
+          <td>Admin / Paperwork</td>
+          <td class="spoon-pos">+1</td>
+          <td>Desk work that costs spoons but has no home in the taxonomy</td>
+        </tr>
+        <tr>
+          <td><span class="tier-2">Tier 2</span></td>
+          <td class="emoji-col">🚿</td>
+          <td>Shower</td>
+          <td class="spoon-pos">+1</td>
+          <td>Being calendared deliberately; real cost, previously invisible</td>
+        </tr>
+        <tr>
+          <td><span class="tier-2">Tier 2</span></td>
+          <td class="emoji-col">🎬</td>
+          <td>Movie / Live Event</td>
+          <td class="spoon-pos">+2</td>
+          <td>Sensory load of concerts/screenings differs from casual social</td>
+        </tr>
+        <tr>
+          <td><span class="tier-3">Tier 3</span></td>
+          <td class="emoji-col">🧳</td>
+          <td>Packing for Trip</td>
+          <td class="spoon-pos">+2</td>
+          <td>Pre-trip cognitive load; showed up before Dallas</td>
+        </tr>
+        <tr>
+          <td><span class="tier-3">Tier 3</span></td>
+          <td class="emoji-col">🎤</td>
+          <td>Conference / Event</td>
+          <td class="spoon-pos">+3</td>
+          <td>The Collider, Purpose First AI Second</td>
+        </tr>
+        <tr>
+          <td><span class="tier-3">Tier 3</span></td>
+          <td class="emoji-col">📮</td>
+          <td>Quick Errand</td>
+          <td class="spoon-pos">+1</td>
+          <td>Oil change, mailing, demo drives — less than full grocery run</td>
+        </tr>
+        <tr>
+          <td><span class="tier-3">Tier 3</span></td>
+          <td class="emoji-col">🥧</td>
+          <td>Baking Project</td>
+          <td class="spoon-pos">+2</td>
+          <td>Sweet potato pie, cookies — distinct from quick meal prep</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ── IMPLEMENTATION ── -->
+<section id="implementation">
+  <div class="section-label">Shipping It</div>
+  <h2>From Findings to Live App</h2>
+
+  <p>I worked with Claude to write the code changes — one clean update to <code>DEFAULT_ACTIVITIES</code> and <code>DEFAULT_ZONES</code> in <code>app.js</code>. The only hard constraint was that all 17 original activity IDs had to stay exactly as they were. Everything I'd already logged lived in localStorage keyed to those IDs. Renaming anything would have broken months of real data. So the update was purely additive: 17 new presets, nothing touched that was already there.</p>
+
+  <p>Three new categories got added to the UI — <code>work</code>, <code>travel</code>, <code>self-care</code> — with new color styling. Quick-access defaults on the Today screen got updated from the arbitrary initial set to the five activities I actually log most. One commit, pushed to main, GitHub Pages rebuilt automatically.</p>
+
+  <div class="callout">
+    <p><strong>No regressions.</strong> Commit message: <em>"Expand default activities based on 90-day calendar analysis."</em> All existing log entries still intact. The app still knows about every spoon I spent before the update.</p>
+  </div>
+</section>
+
+<!-- ── OUTCOMES ── -->
+<section id="outcomes">
+  <div class="section-label">Before &amp; After</div>
+  <h2>What Actually Changed</h2>
+
+  <div class="outcome-row">
+    <div class="outcome-cell">
+      <div class="oc-label">Activity Presets</div>
+      <div class="oc-before">17</div>
+      <div class="oc-after">34</div>
+      <div class="oc-note">+17 presets grounded in real behavioral data</div>
+    </div>
+    <div class="outcome-cell">
+      <div class="oc-label">Taxonomy Categories</div>
+      <div class="oc-before">7</div>
+      <div class="oc-after">10</div>
+      <div class="oc-note">work, travel, self-care added</div>
+    </div>
+    <div class="outcome-cell">
+      <div class="oc-label">Custom Entries Required</div>
+      <div class="oc-before">Daily</div>
+      <div class="oc-after">Rare</div>
+      <div class="oc-note">Most recurring activities now have a home</div>
+    </div>
+    <div class="outcome-cell">
+      <div class="oc-label">Data Continuity</div>
+      <div class="oc-before">At risk</div>
+      <div class="oc-after">Intact</div>
+      <div class="oc-note">Zero existing log entries broken</div>
+    </div>
+  </div>
+
+  <p>The quick-log screen defaults to my actual highest-frequency activities instead of whatever I guessed at launch. Recovery activities — massage, meditation — show correctly as credits rather than costs. A normal week now shouldn't need any custom entries. That was the whole point.</p>
+</section>
+
+<!-- ── REFLECTION ── -->
+<section id="reflection">
+  <div class="section-label">Reflection</div>
+  <h2>What Worked, What Didn't, What I'd Do Differently</h2>
+
+  <p>Using calendar data instead of app logs was the right call, and it wasn't obvious at first. App logs feel like the natural source — they're structured, timestamped, already in the system. But they only show what your presets let you see. The calendar saw my whole day regardless of whether the app was ready for it.</p>
+
+  <p>Being the only participant in your own study is a real validity problem and I'm not going to pretend otherwise. Every spoon cost I assigned is a judgment call based on how things feel, not a measured value. My 1-spoon shower might be someone else's 3-spoon shower. There's no external calibration here.</p>
+
+  <p>But I think that's okay for this kind of tool. A spoon tracker calibrated to someone else's body isn't useful to me. The whole point is that I know what these activities cost from the inside — and that knowledge is actually the data. Trying to make this more "objective" would make it less accurate for the person it's built for.</p>
+
+  <div class="callout teal">
+    <p><strong>What I'd do differently:</strong> From day one, I'd log custom entries separately with the raw text — what did I type when nothing matched? That would have surfaced gaps automatically instead of requiring me to manually compare two data sources. It would also make this kind of audit much faster the next time.</p>
+  </div>
+
+  <p>The thing I keep coming back to: behavioral data and what you think you do are almost never the same thing. I built this app because I thought I knew what I was spending my energy on. Ninety days of data showed me I was missing a third of it.</p>
+</section>
+</div>
+
+<!-- ── PHASE 2 ── -->
+<div class="page">
+<section id="phase2">
+  <div class="section-label">Phase 2 — Zone Intelligence</div>
+  <h2>The Framework I'd Already Built Without Knowing It</h2>
+
+  <p>I recently took over as Moderator for my Never Search Alone Job Search Council — a small group of people who've been in each other's corners through a tough job market. After one of our meetings, I ran the transcript through Granola.ai. The AI summary pointed me toward Gay Hendricks' four zones from <em>The Big Leap</em> — and I realized I'd already built something that looked almost exactly like it.</p>
+
+  <p>The app had zones before this: maintenance, competence, excellence, genius. I'd designed them based on what felt true about how activities land differently. Seeing the Hendricks framework was one of those moments where you go "oh, that's what I was doing." It gave me language for what I'd built intuitively — and surfaced one important gap I'd missed.</p>
+
+  <h3>Five Zones (the Four Hendricks + One I Had to Add)</h3>
+
+  <div class="pattern-grid">
+    <div class="pattern-card">
+      <div class="pattern-icon">🔴</div>
+      <h4>Zone of Incompetence</h4>
+      <p>Activities someone else should do entirely. Flagged in the app with a gentle prompt: "Could someone else do this?" Full spoon cost.</p>
+    </div>
+    <div class="pattern-card">
+      <div class="pattern-icon">⚪</div>
+      <h4>Zone of Competence</h4>
+      <p>Functional, unremarkable. You can do it, but it's not special and it doesn't energize you. Daily Slack pulse checks, most errands. Full spoon cost.</p>
+    </div>
+    <div class="pattern-card">
+      <div class="pattern-icon">🟠</div>
+      <h4>Zone of Excellence</h4>
+      <p>You're great at it, which means people keep asking you to do it — but it quietly drains you. JSC organizing, complex admin. Cost + 0.5 to surface the hidden drain.</p>
+    </div>
+    <div class="pattern-card">
+      <div class="pattern-icon">🟢</div>
+      <h4>Zone of Genius</h4>
+      <p>Time disappears. This is the target. 50% of normal spoon cost, because it gives back. The goal: more of the week here.</p>
+    </div>
+    <div class="pattern-card">
+      <div class="pattern-icon">🔵</div>
+      <h4>Zone of Maintenance</h4>
+      <p>The fifth zone. Not in Hendricks — added because my situation required it. Medical appointments, PT, OT, SLP, CMT class. These aren't energy leaks; they're energy infrastructure. Protected, tracked separately, never penalized.</p>
+    </div>
+  </div>
+
+  <h3>The Asterisk That Generic Advice Misses</h3>
+
+  <p>Granola surfaced a rule-of-thumb: if more than 20% of your week is in Incompetence + Competence zones combined, you're leaking energy. I get why that works for most people. But Granola also labeled "medical appointments" as Zone of Incompetence (unavoidable). That framing doesn't work for me.</p>
+
+  <div class="callout">
+    <p><strong>PT, OT, SLP, CMT class — these aren't leaks.</strong> They're the reason I can do anything else. If the app counted them against a 20% threshold, it would flag me every single week for taking care of my own body. Any advice built for an able-bodied baseline needs this asterisk.</p>
+  </div>
+
+  <p>The Maintenance zone is that asterisk. Leak warnings only fire on Incompetence + Competence. Maintenance is shown separately — visible because it matters, not penalized because it's non-negotiable. A week where 30% of spoons go to medical care isn't a problem. It's what responsible pacing actually looks like.</p>
+
+  <p>Granola also suggested batching appointments to save time. I already know what that feels like: one Thursday I had Doctor at 7 AM, PT at 9:30, CMT class at 11. Felt efficient. Required a 2-hour nap. Spreading appointments out feels less tidy but it's actually how I protect the rest of the day.</p>
+
+  <h3>What's Actually in My Zone of Genius</h3>
+
+  <p>The conversation surfaced a question I hadn't asked myself directly: what am I doing when I lose track of time?</p>
+
+  <p>Building playlists for specific people. Reorganizing files and folders for someone else. Researching and reaching back out to people from my past. There's a thread through all of it — I go into flow when I'm creating structure or making a connection in service of another person. That's mine.</p>
+
+  <p>That's also a design input. If the app is supposed to help me direct limited energy toward what matters, the Zone of Genius tracker is where the whole thing points. Seeing it called out weekly — how many spoons went to Genius work, whether it's trending up or down — isn't just motivating. It's the actual measure of whether the pacing is working.</p>
+
+  <h3>What Phase 2 Adds to the App</h3>
+
+  <p>Phase 1 was about taxonomy — what activities to add. Phase 2 changes the mechanics of how the app thinks about energy.</p>
+
+  <div class="findings-table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Feature</th>
+          <th>Description</th>
+          <th>Design Rationale</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Zone tagging</strong></td>
+          <td>5-zone tag on every logged activity (quick row of colored buttons; optional, not required)</td>
+          <td>Transforms zone data from a label into a behavioral dataset. Optional entry prevents friction from blocking logging entirely.</td>
+        </tr>
+        <tr>
+          <td><strong>Zone-adjusted spoon cost</strong></td>
+          <td>Genius = 50% cost · Excellence = cost +0.5 · Maintenance/Competence/Incompetence = full cost</td>
+          <td>Makes the zones mechanically meaningful. The spoon budget rewards Genius time and surfaces Excellence as a hidden drain — Hendricks' core thesis, encoded in the math.</td>
+        </tr>
+        <tr>
+          <td><strong>Incompetence flag</strong></td>
+          <td>Gentle prompt when an Incompetence-zone activity is logged: "🔴 Could someone else do this?"</td>
+          <td>Non-punitive awareness nudge. Doesn't block the log; just names the pattern.</td>
+        </tr>
+        <tr>
+          <td><strong>Weekly Energy Audit view</strong></td>
+          <td>Zone breakdown (% of spoons by zone), Leak Warning (Incompetence + Competence vs. 20%), Maintenance line (protected, shown separately), Genius Tracker (spoons + hours, week-over-week trend)</td>
+          <td>The 20% rule needs the Maintenance split to be honest for someone with a chronic condition. Genius Tracker makes the target visible and measurable week to week.</td>
+        </tr>
+        <tr>
+          <td><strong>Energy direction tagging</strong></td>
+          <td>Optional +/–/0 marker per log entry (gave energy, drained, neutral)</td>
+          <td>Captures the subjective experience alongside the objective cost. Spoon cost and energy direction aren't always correlated — a 1-spoon activity can be deeply draining or quietly restorative.</td>
+        </tr>
+        <tr>
+          <td><strong>Customizable Quick Log</strong></td>
+          <td>Settings screen to choose any 5 activities as Quick Log buttons (replaces fixed defaults)</td>
+          <td>Quick Log defaults were set at build time and don't reflect actual usage. The Phase 1 audit surfaced what the real highest-frequency activities are; this lets those defaults be user-controlled going forward.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="callout teal">
+    <p><strong>On AI as a thinking partner:</strong> Granola didn't do the research — it summarized a meeting and pointed me toward a framework. But that external read on my own conversation surfaced a connection I'd missed. The question it prompted ("what's actually in your Zone of Genius?") was more useful than anything I'd asked myself. That's worth noting — not because it's remarkable, but because I think people underestimate how much AI can do when you give it real, specific material to work with rather than vague prompts.</p>
+  </div>
+</section>
+</div>
+
+<!-- ── CODA ── -->
+<div class="page">
+<section id="coda" style="border-bottom:none; padding-bottom: 40px;">
+  <div class="section-label">Status: Ongoing</div>
+  <h2>This Is a Living Thing</h2>
+
+  <p>The app gets updated when real life shows me something's missing. That's how Phase 1 happened. That's how Phase 2 happened. There's no finished version — there's just the version that's most accurate right now.</p>
+
+  <p>I want to be honest about what this project has been for me beyond the pacing. I'm a UX researcher who was on medical leave with time, a need, and access to AI tools that had gotten genuinely good at writing code. I never thought I would vibe-code anything. I genuinely didn't think that was for me. But I built this app — asked Claude to write the code, iterated on it, pushed it to GitHub, and now I use it every day. And that process has been one of the more useful ways I've stayed on top of where AI development actually is. Not by reading about it. By building something real with it, something that matters to me personally, and seeing what it could and couldn't do.</p>
+
+  <p>It's the tool I needed for myself. That's why I built it. And it keeps getting better because I keep using it — which is, honestly, how any good tool should work.</p>
+</section>
+</div>
+
+<!-- ── FOOTER ── -->
+<footer>
+  <div class="footer-name">Elaine DeRubbo</div>
+  <p>UX Researcher &amp; Strategist · Grand Rapids, MI</p>
+  <p style="margin-top:12px"><a href="https://elainederubbo.com">elainederubbo.com</a></p>
+</footer>
+
+</body>
+</html>

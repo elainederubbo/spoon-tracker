@@ -1,5 +1,9 @@
 # CMT Energy Tracker — How to Use
 
+**Live app:** https://elainederubbo.github.io/cmt-tracker
+**Demo (sample data):** https://elainederubbo.github.io/cmt-tracker/demo.html
+**Case Study:** https://elainederubbo.github.io/cmt-tracker/spoon-tracker-case-study.html
+
 ## Opening the App
 - Open `cmt-tracker/index.html` in Safari on your Mac or iPhone.
 - **To add to iPhone home screen:** Open in Safari → tap Share → "Add to Home Screen" → it behaves like a native app (full-screen, offline support, morning notifications).
