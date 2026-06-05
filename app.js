@@ -53,13 +53,24 @@ const DEFAULT_ACTIVITIES = [
   { id: 'declutter',     name: 'Decluttering Session',    emoji: '📦', spoons: 3,  category: 'household',  recovery: false },
 
   // Self-care / rest / recovery
-  { id: 'shower',        name: 'Shower',                  emoji: '🚿', spoons: 1,  category: 'self-care',  recovery: false },
-  { id: 'tv_rest',       name: 'Watching TV / Resting',   emoji: '📺', spoons: 0,  category: 'rest',       recovery: false },
-  { id: 'journaling',    name: 'Journaling',              emoji: '✍️', spoons: 0,  category: 'rest',       recovery: false },
-  { id: 'meditation',    name: 'Meditation',              emoji: '🧘‍♀️', spoons: -1, category: 'recovery',   recovery: true  },
-  { id: 'massage',       name: 'Massage',                 emoji: '💆', spoons: -2, category: 'recovery',   recovery: true  },
-  { id: 'nap',           name: 'Nap',                     emoji: '😴', spoons: -1, category: 'recovery',   recovery: true  },
-  { id: 'sleep',         name: 'Full Night Sleep',        emoji: '🌙', spoons: -5, category: 'recovery',   recovery: true  },
+  { id: 'shower',              name: 'Shower',                    emoji: '🚿', spoons: 1,    category: 'self-care',  recovery: false },
+  { id: 'tv_rest',             name: 'Watching TV / Resting',     emoji: '📺', spoons: 0,    category: 'rest',       recovery: false },
+  { id: 'journaling',          name: 'Journaling',                emoji: '✍️', spoons: 0,    category: 'rest',       recovery: false },
+  { id: 'meditation',          name: 'Meditation',                emoji: '🧘‍♀️', spoons: -1,   category: 'recovery',   recovery: true  },
+  { id: 'yin_yoga',            name: 'Restorative / Yin Yoga',    emoji: '🛋️', spoons: -1,   category: 'recovery',   recovery: true  },
+  { id: 'morning_pages',       name: 'Morning Pages',             emoji: '📝', spoons: -1,   category: 'recovery',   recovery: true  },
+  { id: 'gratitude_journal',   name: 'Gratitude Journal',         emoji: '🙏', spoons: -0.5, category: 'recovery',   recovery: true  },
+  { id: 'charlie_time',        name: 'Time with Charlie',         emoji: '🐕', spoons: -1,   category: 'recovery',   recovery: true  },
+  { id: 'nature_time',         name: 'Outdoor / Nature Time',     emoji: '🌳', spoons: -1,   category: 'recovery',   recovery: true  },
+  { id: 'reading_fiction',     name: 'Reading — Fiction',         emoji: '📖', spoons: -1,   category: 'recovery',   recovery: true  },
+  { id: 'reading_nonfiction',  name: 'Reading — Nonfiction',      emoji: '📚', spoons: -0.5, category: 'recovery',   recovery: true  },
+  { id: 'music_fav',           name: 'Music — Favorite Artists',  emoji: '🎵', spoons: -1,   category: 'recovery',   recovery: true  },
+  { id: 'music_other',         name: 'Music — Other Playlists',   emoji: '🎧', spoons: -0.5, category: 'recovery',   recovery: true  },
+  { id: 'music_radio',         name: 'Music — Radio',             emoji: '📻', spoons: -0.5, category: 'recovery',   recovery: true  },
+  { id: 'puzzle',              name: 'Puzzle',                    emoji: '🧩', spoons: -0.5, category: 'recovery',   recovery: true  },
+  { id: 'massage',             name: 'Massage',                   emoji: '💆', spoons: -2,   category: 'recovery',   recovery: true  },
+  { id: 'nap',                 name: 'Nap',                       emoji: '😴', spoons: -1,   category: 'recovery',   recovery: true  },
+  { id: 'sleep',               name: 'Full Night Sleep',          emoji: '🌙', spoons: -5,   category: 'recovery',   recovery: true  },
 ];
 
 // Zone definitions
@@ -90,7 +101,11 @@ const DEFAULT_ZONES = {
   chores_hv: 'competence', declutter: 'competence',
   // Self-care / rest / recovery
   shower: 'maintenance', tv_rest: 'competence', journaling: 'genius',
-  meditation: 'genius', massage: 'maintenance', nap: 'maintenance', sleep: 'maintenance',
+  meditation: 'genius', yin_yoga: 'maintenance', morning_pages: 'genius',
+  gratitude_journal: 'genius', charlie_time: 'genius', nature_time: 'genius',
+  reading_fiction: 'genius', reading_nonfiction: 'competence',
+  music_fav: 'genius', music_other: 'competence', music_radio: 'competence',
+  puzzle: 'competence', massage: 'maintenance', nap: 'maintenance', sleep: 'maintenance',
 };
 
 // Energy direction options
@@ -100,7 +115,7 @@ const ENERGY_DIRS = [
   { id: 'drained', label: '−', title: 'Drained',       color: '#dc2626' },
 ];
 
-const QUICK_IDS = ['daily_workout', 'ot_ex', 'pt_ex', 'call', 'meditation'];
+const QUICK_IDS = ['pt', 'cmt_class', 'yoga', 'meditation', 'nap'];
 
 const DEFAULT_SETTINGS = {
   baseBudget: 10,
@@ -213,13 +228,39 @@ function zoneBadge(zoneId) {
 // SPOON ENGINE
 // ═══════════════════════════════════════════════════════
 
-function calcDailyBudget(checkin) {
+function calcBudgetBreakdown(checkin) {
   const base = (getSettings().baseBudget) || 10;
-  if (!checkin) return base;
-  const { energy = 5, brainFog = false, muscleWeak = false, cpapHours = 0 } = checkin;
-  if (energy >= 8 && !brainFog && !muscleWeak && cpapHours >= 6) return base + 2;
-  if (energy <= 5 && (brainFog || muscleWeak)) return Math.max(4, base - 4);
-  return base;
+  if (!checkin) return { base, goodDay: 0, poorDay: 0, sleepBonus: 0, qualityBonus: 0, total: base, description: `Base: ${base} spoons` };
+
+  const { energy = 5, brainFog = false, muscleWeak = false, cpapHours = 0, sleepHours = 0, sleepQuality = 3 } = checkin;
+
+  let goodDay = 0, poorDay = 0;
+  const isGood = energy >= 8 && !brainFog && !muscleWeak && cpapHours >= 6;
+  const isPoor = energy <= 5 && (brainFog || muscleWeak);
+  if (isGood) goodDay = 2;
+  if (isPoor) poorDay = Math.min(base - 4, base); // deduction to reach max(4, base-4)
+
+  // New stacking bonuses
+  const sleepBonus = sleepHours > 7 ? 1 : 0;
+  const qualityBonus = (sleepQuality >= 4 && cpapHours > 7.5) ? 2 : 0;
+
+  let total;
+  if (isPoor) total = Math.max(4, base - 4) + sleepBonus + qualityBonus;
+  else total = base + goodDay + sleepBonus + qualityBonus;
+
+  // Build plain-English description
+  const parts = [`Base ${base}`];
+  if (goodDay)      parts.push(`good check-in +${goodDay}`);
+  if (isPoor)       parts.push(`symptoms −${base - Math.max(4, base - 4)}`);
+  if (sleepBonus)   parts.push(`sleep >7h +${sleepBonus}`);
+  if (qualityBonus) parts.push(`quality/CPAP +${qualityBonus}`);
+  const description = parts.join(' · ') + ` = ${total} spoons`;
+
+  return { base, goodDay, poorDay, sleepBonus, qualityBonus, total, description };
+}
+
+function calcDailyBudget(checkin) {
+  return calcBudgetBreakdown(checkin).total;
 }
 
 function isAfterSix(isoTimestamp) { return new Date(isoTimestamp).getHours() >= 18; }
@@ -423,12 +464,10 @@ function renderToday() {
   } else { el('spoon-recovered').hidden = true; }
 
   const checkin = getCheckin(d);
-  const diff = budget - (getSettings().baseBudget || 10);
+  const breakdown = calcBudgetBreakdown(checkin);
   el('budget-source').textContent = checkin
-    ? diff > 0 ? `Morning check-in: +${diff} spoons (feeling good!)`
-    : diff < 0 ? `Morning check-in: ${diff} spoons (take it easy today)`
-    : `Morning check-in complete · Budget: ${budget} spoons`
-    : `Base budget: ${budget} spoons`;
+    ? breakdown.description
+    : `Base budget: ${budget} spoons — complete morning check-in to adjust`;
 
   el('morning-prompt').hidden = !!checkin;
 
@@ -586,10 +625,6 @@ function openCheckinModal() {
           <label class="form-label">Sleep Hours</label>
           <input type="number" id="ci-hours" min="0" max="12" step="0.5" placeholder="hrs" />
         </div>
-        <div class="form-group">
-          <label class="form-label">Naps <span class="hint">(#)</span></label>
-          <input type="number" id="ci-naps" min="0" max="10" placeholder="0" />
-        </div>
       </div>
       <button class="btn btn-primary" id="ci-save" style="margin-top:8px">Save Check-In</button>
       <button class="btn btn-secondary" id="ci-cancel" style="margin-top:8px">Cancel</button>
@@ -615,8 +650,7 @@ function openCheckinModal() {
     const trazodone = overlay.querySelector('#ci-traz .selected')?.dataset.val === 'true';
     const sleepQuality = parseInt(overlay.querySelector('#ci-sq .selected')?.dataset.val || '3');
     const sleepHours = parseFloat(overlay.querySelector('#ci-hours').value || '0');
-    const napCount = parseInt(overlay.querySelector('#ci-naps').value || '0');
-    saveCheckin(today(), { energy, brainFog, muscleWeak, cpapHours, trazodone, sleepQuality, sleepHours, napCount });
+    saveCheckin(today(), { energy, brainFog, muscleWeak, cpapHours, trazodone, sleepQuality, sleepHours });
     overlay.remove();
     flash('Morning check-in saved!');
     renderPage('today');
