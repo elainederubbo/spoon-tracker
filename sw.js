@@ -19,19 +19,53 @@ self.addEventListener('fetch', e => {
   );
 });
 
-// Morning check-in notification at 7 AM
+// Morning check-in notification at 5:15 AM Eastern Time
 self.addEventListener('message', e => {
   if (e.data?.type === 'SCHEDULE_MORNING') {
     scheduleMorningNotification();
   }
 });
 
-function scheduleMorningNotification() {
+// Returns the UTC Date that corresponds to 5:15 AM Eastern Time on the
+// current or next Eastern calendar day (whichever is still in the future).
+function getNext515amET() {
+  const TZ = 'America/New_York';
   const now = new Date();
-  const next7am = new Date();
-  next7am.setHours(5, 15, 0, 0);
-  if (next7am <= now) next7am.setDate(next7am.getDate() + 1);
-  const delay = next7am - now;
+
+  // Given an ET calendar date string ("YYYY-MM-DD"), find the UTC Date
+  // that represents 5:15 AM on that ET date.
+  function et515ToUTC(etDateStr) {
+    const [year, month, day] = etDateStr.split('-').map(Number);
+    // Try EDT (UTC-4) then EST (UTC-5); pick whichever gives exactly 05:xx ET hour
+    for (const off of [4, 5]) {
+      const candidate = new Date(Date.UTC(year, month - 1, day, 5 + off, 15));
+      const etH = parseInt(
+        new Intl.DateTimeFormat('en-US', { timeZone: TZ, hour: '2-digit', hour12: false })
+          .format(candidate),
+        10
+      ) % 24;
+      if (etH === 5) return candidate;
+    }
+    // DST edge-case fallback: use EST (-5)
+    return new Date(Date.UTC(year, month - 1, day, 10, 15));
+  }
+
+  const todayET = now.toLocaleDateString('en-CA', { timeZone: TZ });
+  let target = et515ToUTC(todayET);
+
+  if (target <= now) {
+    // Get tomorrow's ET date by advancing 24 hours and re-formatting
+    const tomorrow = new Date(now.getTime() + 86400000);
+    const tomorrowET = tomorrow.toLocaleDateString('en-CA', { timeZone: TZ });
+    target = et515ToUTC(tomorrowET);
+  }
+
+  return target;
+}
+
+function scheduleMorningNotification() {
+  const target = getNext515amET();
+  const delay = target - Date.now();
 
   setTimeout(() => {
     self.registration.showNotification('Good morning! 🌅', {
@@ -41,6 +75,6 @@ function scheduleMorningNotification() {
       requireInteraction: true,
       actions: [{ action: 'open', title: 'Open Tracker' }]
     });
-    scheduleMorningNotification(); // reschedule for next day
+    scheduleMorningNotification(); // reschedule for the next day
   }, delay);
 }

@@ -177,17 +177,65 @@ function saveSymptoms(ds, data) {
 }
 
 // ═══════════════════════════════════════════════════════
-// DATE UTILITIES
+// DATE UTILITIES  (all times anchored to US Eastern Time)
 // ═══════════════════════════════════════════════════════
 
-function today() { return new Date().toISOString().slice(0, 10); }
-function dateStr(d) { return d.toISOString().slice(0, 10); }
+const TZ = 'America/New_York';
+
+// Current date in Eastern Time → "YYYY-MM-DD"
+function today() {
+  return new Date().toLocaleDateString('en-CA', { timeZone: TZ });
+}
+
+// Date object → "YYYY-MM-DD" in Eastern Time
+function dateStr(d) {
+  return d.toLocaleDateString('en-CA', { timeZone: TZ });
+}
+
+// Format a date-string for display (input is already an ET date key)
 function fmtDate(str) {
   return new Date(str + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
 }
+
+// Format an ISO timestamp as Eastern Time for display (e.g. "2:30 PM")
 function fmtTime(iso) {
-  return new Date(iso).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+  return new Date(iso).toLocaleTimeString('en-US', {
+    hour: 'numeric', minute: '2-digit', hour12: true, timeZone: TZ,
+  });
 }
+
+// "Now" as "YYYY-MM-DDTHH:MM" in Eastern Time — used to pre-fill datetime-local inputs
+function etNowInput() {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: TZ,
+    year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', hour12: false,
+  }).formatToParts(new Date());
+  const p = {};
+  parts.forEach(x => { p[x.type] = x.value; });
+  const h = p.hour === '24' ? '00' : p.hour;
+  return `${p.year}-${p.month}-${p.day}T${h}:${p.minute}`;
+}
+
+// Parse a datetime-local input value ("YYYY-MM-DDTHH:MM") treating it as Eastern Time
+// Returns an ISO UTC string suitable for storage.
+function parseETInput(str) {
+  if (!str) return new Date().toISOString();
+  const [datePart, timePart] = str.split('T');
+  const [year, month, day] = datePart.split('-').map(Number);
+  const [hours, minutes] = timePart.split(':').map(Number);
+  // Try EDT (UTC-4) then EST (UTC-5); pick whichever yields the correct ET hour
+  for (const off of [4, 5]) {
+    const candidate = new Date(Date.UTC(year, month - 1, day, hours + off, minutes));
+    const etH = parseInt(new Intl.DateTimeFormat('en-US', {
+      timeZone: TZ, hour: '2-digit', hour12: false,
+    }).format(candidate), 10) % 24;
+    if (etH === hours) return candidate.toISOString();
+  }
+  // Fallback: return as-is assuming UTC
+  return new Date(`${str}:00Z`).toISOString();
+}
+
 function last7Days() {
   return Array.from({ length: 7 }, (_, i) => {
     const d = new Date(); d.setDate(d.getDate() - (6 - i)); return dateStr(d);
@@ -263,7 +311,12 @@ function calcDailyBudget(checkin) {
   return calcBudgetBreakdown(checkin).total;
 }
 
-function isAfterSix(isoTimestamp) { return new Date(isoTimestamp).getHours() >= 18; }
+function isAfterSix(isoTimestamp) {
+  const etHour = parseInt(new Intl.DateTimeFormat('en-US', {
+    timeZone: TZ, hour: '2-digit', hour12: false,
+  }).format(new Date(isoTimestamp)), 10) % 24;
+  return etHour >= 18;
+}
 
 function calcEntryEffectiveCost(entry, allEntries, settings) {
   if (entry.isRecovery || entry.baseCost <= 0) return entry.baseCost;
@@ -742,8 +795,7 @@ function renderLog() {
     dirPicker.appendChild(btn);
   });
 
-  const now = new Date(); now.setSeconds(0, 0);
-  el('log-timestamp').value = now.toISOString().slice(0, 16);
+  el('log-timestamp').value = etNowInput();
 }
 
 function selectZoneBtn(zoneId) {
@@ -757,7 +809,7 @@ function submitLog() {
   const d = today();
   const settings = getSettings();
   const timestamp = el('log-timestamp').value
-    ? new Date(el('log-timestamp').value).toISOString()
+    ? parseETInput(el('log-timestamp').value)
     : new Date().toISOString();
   const note = el('log-note').value.trim();
 
