@@ -335,6 +335,33 @@
     .zone-card h4 { font-size: 13px; font-weight: 700; color: var(--purple); margin-bottom: 4px; }
     .zone-card p { font-size: 13px; line-height: 1.55; color: var(--body-text); margin: 0; }
 
+    /* ── APP TOUR REVEAL ── */
+    .reveal-panel {
+      background: var(--navy);
+      border-radius: 4px;
+      padding: 44px 24px 36px;
+      margin: 28px 0 0;
+      text-align: center;
+    }
+    .reveal-panel video {
+      width: 100%;
+      max-width: 300px;
+      aspect-ratio: 560 / 1122;
+      border-radius: 28px;
+      display: block;
+      margin: 0 auto;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.45);
+      background: #14181D;
+    }
+    .reveal-panel .reveal-caption {
+      font-size: 12.5px;
+      color: rgba(255,255,255,0.6);
+      margin-top: 20px;
+      letter-spacing: 0.04em;
+    }
+    .reveal-panel .reveal-caption a { color: var(--teal-light); text-decoration: none; }
+    .reveal-panel .reveal-caption a:hover { text-decoration: underline; }
+
     /* ── FOOTER ── */
     footer {
       background: var(--navy);
@@ -376,7 +403,7 @@
   <header class="case-header">
     <div class="breadcrumb">UX Research<span>·</span>Personal Project<span>·</span>Hereditary Motor Neuropathy<span>·</span>2026</div>
     <h1>Spoon Tracker: Building the Tool I Actually Needed</h1>
-    <p class="intro">I was between jobs and had been sick for a few months. I used that time to build an energy tracker I actually needed, using AI to write the code. Useful for my body. Good for my brain. Ninety days of living in it showed me what to add next. I kept building. Still going.</p>
+    <p class="intro">I was between jobs and had been sick for months. I used that time to build the energy tracker I couldn't find anywhere else, with AI writing the code. Ninety days of living in it showed me what was missing. So I kept building. Still am.</p>
     <div class="meta-row">
       <div class="meta-item">
         <label>Role</label>
@@ -401,17 +428,18 @@
 <!-- CONTENT -->
 <div class="page-wrap">
 
-<section id="tldr">
-  <div class="section-label">TL;DR</div>
-  <h2>Why This Project Matters — To Me, On Two Levels</h2>
+<section id="bluf">
+  <div class="section-label">BLUF — Bottom Line Up Front</div>
+  <h2>What I Did, and Why It Matters Twice</h2>
+  <p>I built an energy-tracking app for my hereditary motor neuropathy, lived in it for 90 days, then audited my real calendar against its presets. The audit showed the app was blind to a third of my life. I shipped 17 new activity presets and 3 new categories, with AI writing the code, without breaking a single existing log entry. Daily "custom entry" workarounds dropped to almost none. The result matters on two levels:</p>
   <div class="outcome-row" style="margin-top:1.2rem;">
     <div class="outcome-cell">
-      <div style="font-size:1.4rem; font-family:'Josefin Slab',serif; font-weight:700; color:var(--purple); margin-bottom:0.6rem;">Medically</div>
-      <p style="font-size:0.95rem; color:var(--black); line-height:1.7; margin:0;">I have a progressive hereditary motor neuropathy and I need to pace myself in a way I never had to before. This app is a real tool I use every single day. It tracks what costs energy, what restores it, and where I'm leaking spoons I didn't realize I was spending. That information changes how I plan my days and protect my body. It's not a side project — it's infrastructure.</p>
+      <div style="font-size:1.4rem; font-family:'Josefin Slab',serif; font-weight:700; color:var(--purple); margin-bottom:0.6rem;">Personal impact</div>
+      <p style="font-size:0.95rem; color:var(--black); line-height:1.7; margin:0;">I use this app every day to decide what my body can afford. It surfaced energy I was spending without noticing: showers, paperwork, phone calls, travel days. Because of what it showed me, I now spread appointments out instead of batching them, count massage as recovery instead of cost, and plan around a flight like the major expense it is. It's not a side project. It's infrastructure.</p>
     </div>
     <div class="outcome-cell">
-      <div style="font-size:1.4rem; font-family:'Josefin Slab',serif; font-weight:700; color:var(--purple); margin-bottom:0.6rem;">Professionally</div>
-      <p style="font-size:0.95rem; color:var(--black); line-height:1.7; margin:0;">I built this app using AI to write every line of code — because I wanted to understand what these tools can actually do, not just read about it. That means scoping the right problems, prompting well, iterating on real output, and knowing when the AI got it wrong. Those are skills I'm developing on purpose, and I want to keep developing them. This project is where I'm doing that work.</p>
+      <div style="font-size:1.4rem; font-family:'Josefin Slab',serif; font-weight:700; color:var(--purple); margin-bottom:0.6rem;">Professional impact</div>
+      <p style="font-size:0.95rem; color:var(--black); line-height:1.7; margin:0;">This is my research practice applied to the hardest participant to study honestly: myself. Behavioral data over self-report, taxonomy design, tiered prioritization, and one hard ship constraint (don't break months of logged data). AI wrote every line of code. I scoped the problems, wrote the prompts, caught the mistakes, and shipped. Those are skills I'm building on purpose, and this project is where I build them.</p>
     </div>
   </div>
 </section>
@@ -420,9 +448,9 @@
   <div class="section-label">Background</div>
   <h2>I Needed a Tool That Didn't Exist</h2>
   <p>I first heard about spoon theory from a counselor when I lived in DC, about eight years ago. The idea stuck with me — you start each day with a limited number of spoons, every activity costs one, and when they're gone, they're gone. Running out mid-afternoon doesn't mean you're tired. It means you might not be able to cook dinner, take a shower, or hold a conversation. It requires actual planning, not just willpower.</p>
-  <p>I've been working through a diagnosis for well over a decade. Through full genomic sequencing at NIH, I thought I finally had an answer: Charcot-Marie-Tooth Type 2U, due to a variant on the MARS1 gene. It felt like the thing I had been searching for my entire life. Then one of my aunts — who has the same disease — tested negative for MARS1, and we were back to square one. My neurologist at Johns Hopkins said to call it hereditary motor neuropathy, because that's what we know for certain. The exact type is still open. I identify closely with the CMT2 community because the pattern looks very similar to theirs. For most of my 20s and early 30s I could do pretty much everything — the neuropathy was there, but I could outrun it. That's changed. I'm older now, and the smallest things affect me more than they used to. A full day of appointments, a flight, a grocery run — these have real consequences. Pacing myself isn't something I ever thought I'd need to do, and then suddenly it was.</p>
-  <p>That stretch was December through April. I was on medical leave and sick in a way I hadn't been for a while — months in bed, not being able to process things the way I normally would. Somewhere around the third month, I knew I needed to do something different. For my body: an actual system, not a mental note. And for how I was working with AI. I had been watching the tools change for years without building anything real with them. Being this far down, with time I hadn't planned on, felt like the moment to change that. The app became both things at once: the pacing tool my body needed, and a hands-on way to actually learn how to build with AI. I'm still learning. I expect I will be for a while.</p>
-  <p>I looked for an app that could help me track this the way I actually needed. I didn't find one. So I built one — <strong>cmt-tracker</strong>, on GitHub Pages. I'm a UX researcher, not a developer. I used Claude to write the code. This isn't a case study about building the app. It's about what happened after I'd been living in it for 90 days and realized it still wasn't seeing my whole life.</p>
+  <p>I've been working through a diagnosis for over a decade. Full genomic sequencing at NIH finally gave me an answer: Charcot-Marie-Tooth Type 2U, from a variant on the MARS1 gene. It felt like the thing I had been searching for my entire life. Then an aunt with the same disease tested negative for MARS1, and we were back to square one. My neurologist at Johns Hopkins calls it hereditary motor neuropathy, because that's what we know for certain. I identify closely with the CMT2 community because the pattern looks like theirs. For most of my 20s and early 30s the neuropathy was there, but I could outrun it. Not anymore. A full day of appointments, a flight, a grocery run: these have real consequences now. Pacing myself isn't something I ever thought I'd need to do, and then suddenly it was.</p>
+  <p>From December through April I was on medical leave, sick in a way I hadn't been for a while. Months in bed. Around the third month I knew I needed two things to change. My body needed an actual system, not a mental note. And I needed to stop watching AI tools improve from the sidelines and build something real with them. The app became both at once: the pacing tool my body needed, and hands-on practice building with AI. I'm still learning. I expect I will be for a while.</p>
+  <p>I looked for an app that tracked energy the way I actually needed. I didn't find one. So I built one: <strong>cmt-tracker</strong>, on GitHub Pages. I'm a UX researcher, not a developer. I used Claude to write the code. This isn't a case study about building the app. It's about what happened after I'd been living in it for 90 days and realized it still wasn't seeing my whole life.</p>
 </section>
 
 <section id="problem">
@@ -504,7 +532,7 @@
     <p>I was scheduling "Take Shower" in my calendar. Not as a preference or a reminder. As a necessity — to make sure I didn't forget it, or run out of energy to do it before the day ended.</p>
     <div class="attribution">— Week 3 of the study period</div>
   </div>
-  <p>This is the one that made me stop and sit with it for a while. A shower isn't just a missing preset. It's a thing that healthy people don't think about that my neuropathy makes you plan for. The app had <code>rest</code> for downtime and <code>recovery</code> for restorative credit, but nothing for the basic cost of maintaining a functional human body — showering, getting dressed, hygiene. Those things cost spoons. They were just invisible.</p>
+  <p>This is the one that made me stop and sit with it for a while. A shower isn't just a missing preset. It's a thing healthy people never think about and my neuropathy makes me plan for. The app had <code>rest</code> for downtime and <code>recovery</code> for restorative credit, but nothing for the basic cost of maintaining a functional human body — showering, getting dressed, hygiene. Those things cost spoons. They were just invisible.</p>
   <p>Adding a <code>self-care</code> category wasn't a taxonomy cleanup. It was the app finally being honest about what my days actually involve.</p>
 
   <h3>Other Things I Noticed</h3>
@@ -599,8 +627,7 @@
 <section id="phase2">
   <div class="section-label">Phase 2 — Zone Intelligence</div>
   <h2>The Framework I'd Already Built Without Knowing It</h2>
-  <p>I recently took over as Moderator for my Never Search Alone Job Search Council — a small group of people who've been in each other's corners through a tough job market. After one of our meetings, I ran the transcript through Granola.ai. The AI summary pointed me toward Gay Hendricks' four zones from <em>The Big Leap</em> — and I realized I'd already built something that looked almost exactly like it.</p>
-  <p>The app had zones before this: maintenance, competence, excellence, genius. I'd designed them based on what felt true about how activities land differently. Seeing the Hendricks framework was one of those moments where you go "oh, that's what I was doing." It gave me language for what I'd built intuitively — and surfaced one important gap I'd missed.</p>
+  <p>I recently took over as Moderator for my Never Search Alone Job Search Council, a small group of people who've been in each other's corners through a tough job market. After one of our meetings, I ran the transcript through Granola.ai. The AI summary pointed me toward Gay Hendricks' four zones from <em>The Big Leap</em>, and I realized I'd already built something that looked almost exactly like it. The app had zones from the start: maintenance, competence, excellence, genius. I'd designed them from what felt true about how activities land differently. The Hendricks framework gave me language for what I'd built intuitively, and surfaced one important gap I'd missed.</p>
 
   <h3>Five Zones (the Four Hendricks + One I Had to Add)</h3>
   <div class="zone-grid">
@@ -642,15 +669,23 @@
   </div>
 </section>
 
-<section id="coda" style="border-bottom:none;">
+<section id="coda">
   <div class="section-label">Status: Ongoing</div>
   <h2>This Is a Living Thing</h2>
-  <p>The app gets updated when real life shows me something's missing. That's how Phase 1 happened. That's how Phase 2 happened. There's no finished version — there's just the version that's most accurate right now.</p>
-  <p>I want to be honest about what this project has been for me beyond the pacing. I'm a UX researcher who was on medical leave with time, a need, and access to AI tools that had gotten genuinely good at writing code. I never thought I would vibe-code anything. But I built this app — asked Claude to write the code, iterated on it, pushed it to GitHub, and now I use it every day. That process has been one of the more useful ways I've stayed current with where AI development actually is. Not by reading about it. By building something real with it that matters to me personally.</p>
-  <p>A concrete example of how iteration actually works: the app was defaulting to UTC for all date handling — meaning my "today" was sometimes rolling over at the wrong time, and the 5:15 AM check-in wasn't firing at 5:15 Eastern. It took living in the app to notice. One conversation with an AI thinking partner to diagnose it, one Claude Code prompt, one commit: <code>America/New_York</code> hard-coded as the default. My pacing is anchored to my home routine — not UTC, not whatever time zone I happen to be traveling through. That's the kind of thing you don't spec up front. You find it by using the thing.</p>
-  <p>I'm not done. There are things in the current version I already know I want to test — some will stick, some won't. That's fine. The point is to keep trying things and see what my actual behavior tells me. The app will keep changing as long as I keep using it.</p>
-  <p>While I'm deep in figuring out the next chapter professionally, I'm also using this project to keep building my understanding of what AI can actually do — not just for managing my energy, but as a tool I want to use well in both my personal and professional life going forward. This app started as a health tool. It's also become the most hands-on way I've had to stay close to where AI development is right now.</p>
-  <p>It's the tool I needed for myself. That's why I built it. And it keeps getting better because I keep using it — which is, honestly, how any good tool should work.</p>
+  <p>The app gets updated when real life shows me something's missing. That's how Phase 1 happened. That's how Phase 2 happened. There's no finished version, just the version that's most accurate right now.</p>
+  <p>I want to be honest about what this project has been for me beyond the pacing. I never thought I would vibe-code anything. But I asked Claude to write the code, iterated on it, pushed it to GitHub, and now I use the result every day. That's been the most useful way I've stayed current with what AI tools can actually do. Not by reading about it. By building something real that matters to me.</p>
+  <p>A concrete example of how that iteration works: the app was defaulting to UTC for all date handling, so my "today" sometimes rolled over at the wrong time and the 5:15 AM check-in wasn't firing at 5:15 Eastern. It took living in the app to notice. One conversation to diagnose it, one Claude Code prompt, one commit: <code>America/New_York</code> hard-coded as the default. My pacing is anchored to my home routine, not UTC. That's the kind of thing you don't spec up front. You find it by using the thing.</p>
+  <p>I'm not done. There are things in the current version I already know I want to test; some will stick, some won't. The app will keep changing as long as I keep using it. It's the tool I needed for myself. That's why I built it. And it keeps getting better because I keep using it, which is how any good tool should work.</p>
+</section>
+
+<section id="reveal" style="border-bottom:none;">
+  <div class="section-label">One More Thing</div>
+  <h2>And Here It Is, Actually Running</h2>
+  <p>Everything above describes the app. This is the app: all six screens, scrolling through a real week of demo data. Today's budget, the activity library, history, the weekly energy audit, the five zones, and settings.</p>
+  <div class="reveal-panel">
+    <video src="spoon-tracker-app-tour.mp4" autoplay muted loop playsinline aria-label="Scrolling tour of the Spoon Tracker app: Today, Log, History, Weekly, Zones, and Settings screens"></video>
+    <p class="reveal-caption">Built with AI. Used every day. <a href="https://elainederubbo.github.io/cmt-tracker/" target="_blank" rel="noopener">Try the live app</a> — your data stays on your device.</p>
+  </div>
 </section>
 
 </div>
