@@ -1,7 +1,7 @@
 'use strict';
 
 // Build version — shown in Settings so it's easy to confirm the running code.
-const APP_VERSION = '9';
+const APP_VERSION = '10';
 
 // ═══════════════════════════════════════════════════════
 // CONSTANTS & DEFAULTS
@@ -17,16 +17,31 @@ const KEYS = {
   NOTES:           'cmt_notes',             // per-day freeform notes string
   REFLECTIONS:     'cmt_reflections',       // per-day end-of-day reflection
   BUDGET_OVERRIDE: 'cmt_budget_override',   // per-day starting-balance override
+  PROFILE:         'sp_profile',            // { id, name, owner, createdAt }
 };
+
+// Data keys that belong to a person's profile — used for backup/restore and reset.
+const DATA_KEYS = [
+  KEYS.ACTIVITIES, KEYS.CHECKINS, KEYS.SYMPTOMS, KEYS.SETTINGS, KEYS.CUSTOM_ACT,
+  KEYS.ENERGY, KEYS.NOTES, KEYS.REFLECTIONS, KEYS.BUDGET_OVERRIDE,
+];
+
+// Specialized presets that belong only to the owner's (Elaine's) profile. New users
+// don't see these in their library; they can add their own via Custom.
+const SPECIALIZED_IDS = ['cmt_class', 'ot_ex', 'slp', 'charlie_time'];
+
+// Suggested starter Quick Log for brand-new users (universal activities, pre-checked
+// during onboarding — they adjust before finishing).
+const STARTER_QUICK = ['shower', 'cooking', 'nap', 'dog_walk', 'daily_workout', 'meditation', 'grocery', 'call', 'tv_rest'];
 
 const DEFAULT_ACTIVITIES = [
   // Medical / therapy
   { id: 'pt',            name: 'PT Session',              emoji: '🏥', spoons: 4,  category: 'medical',    recovery: false },
   { id: 'pt_ex',         name: 'PT Exercises',            emoji: '🦵', spoons: 1,  category: 'medical',    recovery: false },
-  { id: 'ot_ex',         name: 'OT Exercises',            emoji: '🤲', spoons: 1,  category: 'medical',    recovery: false },
-  { id: 'slp',           name: 'SLP Work',                emoji: '🗣️', spoons: 1,  category: 'medical',    recovery: false },
+  { id: 'ot_ex',         name: 'OT Exercises',            emoji: '🤲', spoons: 1,  category: 'medical',    recovery: false, specialized: true },
+  { id: 'slp',           name: 'SLP Work',                emoji: '🗣️', spoons: 1,  category: 'medical',    recovery: false, specialized: true },
   { id: 'doctor',        name: 'Doctor Appointment',      emoji: '👨‍⚕️', spoons: 2,  category: 'medical',    recovery: false },
-  { id: 'cmt_class',     name: 'CMT Exercise Class',      emoji: '💪', spoons: 3,  category: 'exercise',   recovery: false },
+  { id: 'cmt_class',     name: 'CMT Exercise Class',      emoji: '💪', spoons: 3,  category: 'exercise',   recovery: false, specialized: true },
 
   // Exercise
   { id: 'daily_workout', name: 'Daily Workout (15 min)',  emoji: '🏃', spoons: 2,  category: 'exercise',   recovery: false },
@@ -69,7 +84,7 @@ const DEFAULT_ACTIVITIES = [
   { id: 'yin_yoga',            name: 'Restorative / Yin Yoga',    emoji: '🛋️', spoons: -1,   category: 'recovery',   recovery: true  },
   { id: 'morning_pages',       name: 'Morning Pages',             emoji: '📝', spoons: -1,   category: 'recovery',   recovery: true  },
   { id: 'gratitude_journal',   name: 'Gratitude Journal',         emoji: '🙏', spoons: -0.5, category: 'recovery',   recovery: true  },
-  { id: 'charlie_time',        name: 'Time with Charlie',         emoji: '🐕', spoons: -1,   category: 'recovery',   recovery: true  },
+  { id: 'charlie_time',        name: 'Time with Charlie',         emoji: '🐕', spoons: -1,   category: 'recovery',   recovery: true, specialized: true  },
   { id: 'nature_time',         name: 'Outdoor / Nature Time',     emoji: '🌳', spoons: -1,   category: 'recovery',   recovery: true  },
   { id: 'reading_fiction',     name: 'Reading — Fiction',         emoji: '📖', spoons: -1,   category: 'recovery',   recovery: true  },
   { id: 'reading_nonfiction',  name: 'Reading — Nonfiction',      emoji: '📚', spoons: -0.5, category: 'recovery',   recovery: true  },
@@ -141,6 +156,13 @@ function load(key) {
   catch { return null; }
 }
 function save(key, data) { localStorage.setItem(key, JSON.stringify(data)); }
+
+// ── Profile (local, per-device) ──
+function getProfile() { return load(KEYS.PROFILE); }
+function saveProfile(p) { save(KEYS.PROFILE, p); }
+function hasProfile() { return !!getProfile(); }
+function isOwner() { return getProfile()?.owner === true; }
+function profileName() { return getProfile()?.name || ''; }
 function getSettings() { return { ...DEFAULT_SETTINGS, ...(load(KEYS.SETTINGS) || {}) }; }
 function saveSettings(s) { save(KEYS.SETTINGS, s); }
 function getCustomActivities() { return load(KEYS.CUSTOM_ACT) || []; }
@@ -149,7 +171,9 @@ function getAllActivities() {
   const settings = getSettings();
   const overrides = settings.overrides || {};
   const legacyCost = settings.spoonOverrides || {};
-  const presets = DEFAULT_ACTIVITIES.map(a => {
+  // Specialized presets are only part of the owner's library.
+  const owner = isOwner();
+  const presets = DEFAULT_ACTIVITIES.filter(a => owner || !a.specialized).map(a => {
     const ov = overrides[a.id] || {};
     const cost = ov.spoons ?? legacyCost[a.id] ?? a.spoons;
     return {
@@ -557,6 +581,11 @@ let _energySelectedScore = null;
 
 function renderToday() {
   const d = today();
+  const titleEl = el('today-title');
+  if (titleEl) {
+    const n = profileName();
+    titleEl.textContent = `🥄 ${n ? n + '’s' : 'My'} Spoons`;
+  }
   el('today-date').textContent = fmtDate(d);
   const { budget, used, recovered, remaining } = calcSpoonsRemaining(d);
   const cls = spoonColorClass(remaining);
@@ -1516,6 +1545,8 @@ function renderSettings() {
   const settings = getSettings();
   const ver = el('app-version');
   if (ver) ver.textContent = `Version ${APP_VERSION}`;
+  const pn = el('profile-name');
+  if (pn) pn.textContent = profileName() || '—';
   el('set-base-budget').value = settings.baseBudget || 10;
   setToggle('set-auto-adjust', settings.autoAdjust !== false);
   setToggle('set-after-six', settings.enableAfterSixModifier !== false);
@@ -1860,7 +1891,27 @@ function migrateQuickIds() {
 
 let _swReloading = false;
 
+// A device that already has tracking data but no profile is the original owner
+// install (Elaine's). Wrap that data in an owner profile without disturbing it, so
+// her specialized activities and setup carry over untouched.
+function runProfileMigration() {
+  if (hasProfile()) return;
+  const hasLegacyData = DATA_KEYS.some(k => localStorage.getItem(k) !== null);
+  if (hasLegacyData) {
+    saveProfile({ id: 'p_' + Date.now(), name: 'Elaine', owner: true, createdAt: new Date().toISOString() });
+  }
+}
+
 function init() {
+  runProfileMigration();
+  if (!hasProfile()) {
+    renderOnboarding();
+    return;
+  }
+  startApp();
+}
+
+function startApp() {
   migrateQuickIds();
   if ('serviceWorker' in navigator) {
     // When a new service worker takes control (after an update), reload once so the
@@ -1871,7 +1922,6 @@ function init() {
       window.location.reload();
     });
     navigator.serviceWorker.register('sw.js').then(reg => {
-      // Proactively check for an updated worker on every launch.
       reg.update().catch(() => {});
       _sw = reg.active;
       if (reg.active) {
@@ -1900,14 +1950,156 @@ function init() {
   el('export-csv-btn').addEventListener('click', exportCSV);
   el('load-sample-btn').addEventListener('click', loadSampleData);
   el('clear-data-btn').addEventListener('click', () => {
-    if (confirm('Delete ALL tracking data? This cannot be undone.')) {
-      Object.values(KEYS).forEach(k => localStorage.removeItem(k));
+    if (confirm('Delete ALL tracking data? Your profile stays, but every logged day, check-in, and setting is erased. This cannot be undone.')) {
+      DATA_KEYS.forEach(k => localStorage.removeItem(k));
       flash('All data cleared');
       renderPage('today');
     }
   });
 
+  const rn = el('profile-rename-btn'); if (rn) rn.addEventListener('click', renameProfile);
+  const so = el('profile-startover-btn'); if (so) so.addEventListener('click', startOver);
+  const be = el('backup-export-btn'); if (be) be.addEventListener('click', exportBackup);
+  const bi = el('backup-import-btn'); if (bi) bi.addEventListener('click', () => el('backup-import-file').click());
+  const bf = el('backup-import-file'); if (bf) bf.addEventListener('change', importBackup);
+
   showPage('today');
+}
+
+// ═══════════════════════════════════════════════════════
+// ONBOARDING (new users)
+// ═══════════════════════════════════════════════════════
+
+let _onboardSel = new Set();
+
+function renderOnboarding() {
+  _onboardSel = new Set(STARTER_QUICK);
+  const overlay = document.createElement('div');
+  overlay.className = 'onboarding';
+  overlay.id = 'onboarding';
+  overlay.innerHTML = `
+    <div class="onboard-inner">
+      <div class="onboard-hero">
+        <div class="onboard-emoji">🥄</div>
+        <h1>Welcome to Spoon Tracker</h1>
+        <p>Track your daily energy in "spoons," pace yourself, and spot the patterns that wear you down. Everything stays private on this device.</p>
+      </div>
+      <div class="onboard-card">
+        <label class="form-label">What should we call you?</label>
+        <input type="text" id="onboard-name" placeholder="Your name" maxlength="40" autocomplete="off" />
+      </div>
+      <div class="onboard-card">
+        <div class="form-label" style="display:flex;justify-content:space-between;align-items:center">
+          <span>Pick your Quick Log</span>
+          <span id="onboard-count" style="font-weight:400;color:var(--text-muted)"></span>
+        </div>
+        <p style="font-size:13px;color:var(--text-muted);margin:4px 0 10px">The activities you do most — one tap to log them later. Choose up to 9; you can change these anytime.</p>
+        <div class="quick-picker-grid" id="onboard-grid"></div>
+      </div>
+      <button class="btn btn-primary" id="onboard-start">Start tracking →</button>
+    </div>`;
+  document.body.appendChild(overlay);
+
+  drawOnboardGrid();
+  overlay.querySelector('#onboard-start').addEventListener('click', () => {
+    const name = overlay.querySelector('#onboard-name').value.trim();
+    if (!name) { overlay.querySelector('#onboard-name').focus(); flash('Please enter a name first'); return; }
+    completeOnboarding(name, [..._onboardSel]);
+  });
+}
+
+function drawOnboardGrid() {
+  const grid = el('onboard-grid');
+  const countEl = el('onboard-count');
+  if (!grid) return;
+  countEl.textContent = `${_onboardSel.size}/9`;
+  grid.innerHTML = '';
+  // Only universal activities are offered to new users.
+  getAllActivities().filter(a => !a.id.startsWith('custom_')).forEach(act => {
+    const sel = _onboardSel.has(act.id);
+    const btn = document.createElement('button');
+    btn.className = 'quick-pick-btn' + (sel ? ' selected' : '');
+    btn.innerHTML = `<span class="qp-emoji">${act.emoji}</span><span class="qp-name">${act.name}</span><span class="qp-check">${sel ? '✓' : ''}</span>`;
+    btn.addEventListener('click', () => {
+      if (_onboardSel.has(act.id)) _onboardSel.delete(act.id);
+      else {
+        if (_onboardSel.size >= 9) { flash('Max 9 — remove one first'); return; }
+        _onboardSel.add(act.id);
+      }
+      drawOnboardGrid();
+    });
+    grid.appendChild(btn);
+  });
+}
+
+function completeOnboarding(name, quickIds) {
+  saveProfile({ id: 'p_' + Date.now(), name, owner: false, createdAt: new Date().toISOString() });
+  const s = getSettings();
+  s.quickIds = quickIds.slice(0, 9);
+  s.quickMigratedTo9 = true; // they chose their own; don't auto-top-up
+  saveSettings(s);
+  const ob = el('onboarding'); if (ob) ob.remove();
+  flash(`Welcome, ${name}! 🥄`);
+  startApp();
+}
+
+// ═══════════════════════════════════════════════════════
+// PROFILE + BACKUP
+// ═══════════════════════════════════════════════════════
+
+function renameProfile() {
+  const p = getProfile();
+  const name = prompt('Your name:', p?.name || '');
+  if (name === null) return;
+  const trimmed = name.trim();
+  if (!trimmed) return;
+  saveProfile({ ...p, name: trimmed });
+  flash('Name updated');
+  renderSettings();
+  if (window._currentPage === 'today') renderToday();
+}
+
+function startOver() {
+  if (!confirm('Start over? This permanently erases your profile and ALL data on this device, then returns to the welcome screen. This cannot be undone.')) return;
+  if (!confirm('Are you sure? Everything on this device will be gone.')) return;
+  localStorage.removeItem(KEYS.PROFILE);
+  DATA_KEYS.forEach(k => localStorage.removeItem(k));
+  window.location.reload();
+}
+
+function exportBackup() {
+  const dump = { app: 'spoon-tracker', version: APP_VERSION, exportedAt: new Date().toISOString(), keys: {} };
+  [KEYS.PROFILE, ...DATA_KEYS].forEach(k => {
+    const v = localStorage.getItem(k);
+    if (v !== null) dump.keys[k] = v;
+  });
+  const blob = new Blob([JSON.stringify(dump, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  const safeName = (profileName() || 'me').replace(/[^a-z0-9]+/gi, '-').toLowerCase();
+  a.download = `spoon-tracker-backup-${safeName}-${today()}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  flash('Backup downloaded');
+}
+
+function importBackup(e) {
+  const file = e.target.files?.[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    let dump;
+    try { dump = JSON.parse(reader.result); } catch { alert('That file is not a valid backup.'); return; }
+    if (!dump || dump.app !== 'spoon-tracker' || !dump.keys) { alert('That does not look like a Spoon Tracker backup.'); return; }
+    if (!confirm('Restore this backup? It will REPLACE all data currently on this device.')) { e.target.value = ''; return; }
+    [KEYS.PROFILE, ...DATA_KEYS].forEach(k => localStorage.removeItem(k));
+    Object.entries(dump.keys).forEach(([k, v]) => localStorage.setItem(k, v));
+    flash('Backup restored');
+    window.location.reload();
+  };
+  reader.readAsText(file);
+  e.target.value = '';
 }
 
 document.addEventListener('DOMContentLoaded', init);

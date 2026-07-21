@@ -18,7 +18,7 @@
   <!-- ══════════════ TODAY PAGE ══════════════ -->
   <main id="page-today" class="page">
     <div class="page-header">
-      <h1>🥄 My Spoons</h1>
+      <h1 id="today-title">🥄 My Spoons</h1>
       <span class="date-badge" id="today-date"></span>
     </div>
 
@@ -249,6 +249,24 @@
     </div>
 
     <div class="card">
+      <div class="card-title">Profile</div>
+      <div class="settings-item">
+        <div>
+          <div class="s-label">Name</div>
+          <div class="s-sub" id="profile-name">—</div>
+        </div>
+        <button class="btn btn-secondary btn-sm" id="profile-rename-btn" style="margin:0">Rename</button>
+      </div>
+      <div class="settings-item">
+        <div>
+          <div class="s-label">Start Over</div>
+          <div class="s-sub">Erase this profile and all data, and return to the welcome screen</div>
+        </div>
+        <button class="btn btn-danger btn-sm" id="profile-startover-btn" style="margin:0;width:auto">Start Over</button>
+      </div>
+    </div>
+
+    <div class="card">
       <div class="card-title">Energy Budget</div>
       <div class="settings-item">
         <div>
@@ -360,6 +378,14 @@
     </div>
 
     <button class="btn btn-primary" id="settings-save">Save Settings</button>
+
+    <div class="card" style="margin-top:12px">
+      <div class="card-title">Back Up & Restore</div>
+      <p style="font-size:13px;color:var(--text-muted);margin-bottom:10px">Your data lives only in this browser. Download a backup to keep it safe or move it to another device.</p>
+      <button class="btn btn-secondary" id="backup-export-btn" style="margin-bottom:8px">⬇️ Download Backup</button>
+      <button class="btn btn-secondary" id="backup-import-btn">⬆️ Restore from Backup</button>
+      <input type="file" id="backup-import-file" accept="application/json,.json" hidden />
+    </div>
 
     <div class="card" style="margin-top:12px">
       <div class="card-title">Data</div>

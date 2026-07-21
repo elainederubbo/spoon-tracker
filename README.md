@@ -10,6 +10,15 @@
 
 ---
 
+## Your Profile & Data
+- **First time you open it**, you'll set up a quick profile: your name and the activities you want in your Quick Log. That's it — no password, no sign-up.
+- **Each person uses it on their own phone.** Your data is stored privately in that device's browser; it isn't shared or synced anywhere. (Real cross-device accounts will come with a future mobile app.)
+- **Back it up:** Settings → **Back Up & Restore** → *Download Backup* saves a file with everything in it. *Restore from Backup* loads it back (handy if you clear Safari, or switch phones).
+- **Rename** yourself or **Start Over** (wipe this device and re-onboard) anytime in Settings → Profile.
+- The full activity library (PT, yoga, cooking, recovery activities, etc.) is offered to everyone as suggestions; a few of Elaine's specialized items stay on her profile only.
+
+---
+
 ## Daily Routine
 
 ### Every Morning

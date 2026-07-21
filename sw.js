@@ -1,4 +1,4 @@
-const CACHE = 'spoon-tracker-v9';
+const CACHE = 'spoon-tracker-v10';
 const ASSETS = ['/', '/index.html', '/styles.css', '/app.js'];
 
 self.addEventListener('install', e => {

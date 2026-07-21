@@ -1062,6 +1062,34 @@ nav button .nav-icon { font-size: 21px; }
 .reflection-block .rf-line { margin-bottom: 2px; }
 .reflection-block .rf-line strong { color: var(--text-muted); font-weight: 600; }
 
+/* Onboarding (new users) */
+.onboarding {
+  position: fixed;
+  inset: 0;
+  z-index: 500;
+  background: var(--bg);
+  overflow-y: auto;
+  display: flex;
+  justify-content: center;
+}
+.onboard-inner {
+  width: 100%;
+  max-width: 500px;
+  padding: 32px 16px 60px;
+}
+.onboard-hero { text-align: center; margin-bottom: 24px; }
+.onboard-emoji { font-size: 56px; line-height: 1; margin-bottom: 8px; }
+.onboard-hero h1 { font-size: 26px; font-weight: 800; color: var(--text); margin-bottom: 8px; }
+.onboard-hero p { font-size: 14px; color: var(--text-muted); line-height: 1.5; }
+.onboard-card {
+  background: var(--surface);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-bottom: 12px;
+  box-shadow: var(--shadow);
+}
+.onboarding .quick-picker-grid { max-height: 340px; }
+
 /* Settings — inline custom activity edit rows */
 .custom-edit-row {
   display: flex;
