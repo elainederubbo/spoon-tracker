@@ -1,5 +1,8 @@
 'use strict';
 
+// Build version — shown in Settings so it's easy to confirm the running code.
+const APP_VERSION = '7';
+
 // ═══════════════════════════════════════════════════════
 // CONSTANTS & DEFAULTS
 // ═══════════════════════════════════════════════════════
@@ -1511,6 +1514,8 @@ function renderChart(canvasId, type, labels, datasets, scales = {}) {
 
 function renderSettings() {
   const settings = getSettings();
+  const ver = el('app-version');
+  if (ver) ver.textContent = `Version ${APP_VERSION}`;
   el('set-base-budget').value = settings.baseBudget || 10;
   setToggle('set-auto-adjust', settings.autoAdjust !== false);
   setToggle('set-after-six', settings.enableAfterSixModifier !== false);
@@ -1837,18 +1842,20 @@ function scheduleEvening() {
 // INIT
 // ═══════════════════════════════════════════════════════
 
-// One-time migration: users whose saved Quick Log is the old 5-item default get the
-// expanded 9-item default. Custom selections are left untouched.
+// One-time migration to the 9-slot Quick Log. Keeps whatever the user already had
+// and tops the list up to 9 with the defaults, so nobody is left on 5. Runs once
+// (guarded by a flag), after which the user's own edits are always respected.
 function migrateQuickIds() {
-  const s = load(KEYS.SETTINGS);
-  if (!s || !Array.isArray(s.quickIds)) return;
-  const OLD_DEFAULT = ['pt', 'cmt_class', 'yoga', 'meditation', 'nap'];
-  const isOldDefault = s.quickIds.length === OLD_DEFAULT.length
-    && OLD_DEFAULT.every((id, i) => s.quickIds[i] === id);
-  if (isOldDefault) {
-    s.quickIds = QUICK_IDS.slice();
-    saveSettings(s);
+  const s = load(KEYS.SETTINGS) || {};
+  if (s.quickMigratedTo9) return;
+  const cur = (Array.isArray(s.quickIds) ? s.quickIds : []).slice(0, 9);
+  for (const id of QUICK_IDS) {
+    if (cur.length >= 9) break;
+    if (!cur.includes(id)) cur.push(id);
   }
+  s.quickIds = cur;
+  s.quickMigratedTo9 = true;
+  saveSettings(s);
 }
 
 let _swReloading = false;
