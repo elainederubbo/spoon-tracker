@@ -1,7 +1,7 @@
 'use strict';
 
 // Build version — shown in Settings so it's easy to confirm the running code.
-const APP_VERSION = '8';
+const APP_VERSION = '9';
 
 // ═══════════════════════════════════════════════════════
 // CONSTANTS & DEFAULTS
@@ -1727,7 +1727,7 @@ function shareToHusband() {
   const d = today();
   const { remaining, budget, used } = calcSpoonsRemaining(d);
   const energy = morningEnergy(d);
-  const text = `🥄 Elaine's Energy Update — ${fmtDate(d)}\n\nSpoons remaining: ${remaining}/${budget}\nSpoons used: ${used}\nMorning energy: ${energy ? energy + '/10' : '?'}\n\nSent via CMT Energy Tracker`;
+  const text = `🥄 Elaine's Energy Update — ${fmtDate(d)}\n\nSpoons remaining: ${remaining}/${budget}\nSpoons used: ${used}\nMorning energy: ${energy ? energy + '/10' : '?'}\n\nSent via Spoon Tracker`;
   if (navigator.share) navigator.share({ title: 'Energy Update', text }).catch(() => copyToClipboard(text));
   else copyToClipboard(text);
 }
@@ -1772,7 +1772,7 @@ function exportCSV() {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `cmt-tracker-${today()}.csv`;
+  a.download = `spoon-tracker-${today()}.csv`;
   a.click();
   URL.revokeObjectURL(url);
   flash('CSV exported!');
