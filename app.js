@@ -1851,10 +1851,21 @@ function migrateQuickIds() {
   }
 }
 
+let _swReloading = false;
+
 function init() {
   migrateQuickIds();
   if ('serviceWorker' in navigator) {
+    // When a new service worker takes control (after an update), reload once so the
+    // page immediately runs the new code instead of waiting for a manual refresh.
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (_swReloading) return;
+      _swReloading = true;
+      window.location.reload();
+    });
     navigator.serviceWorker.register('sw.js').then(reg => {
+      // Proactively check for an updated worker on every launch.
+      reg.update().catch(() => {});
       _sw = reg.active;
       if (reg.active) {
         reg.active.postMessage({ type: 'SCHEDULE_MORNING' });
