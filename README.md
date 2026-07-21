@@ -14,19 +14,19 @@
 
 ### Every Morning
 1. Tap the purple **"Complete Morning Check-In"** banner at the top.
-2. Rate your energy (1–10), confirm brain fog / muscle weakness, enter CPAP hours and trazodone.
+2. Rate your energy (1–10) and optionally note why, confirm brain fog / muscle weakness (with a 1–5 severity when present), rate next-day fatigue (how yesterday left you), and enter CPAP hours, trazodone, sleep quality, and sleep hours.
 3. Your spoon budget adjusts automatically:
    - **Energy 8+, no symptoms, CPAP 6+ hrs** → 12 spoons
    - **Energy 5 or below, symptoms present** → 6 spoons
    - **Anything else** → 10 spoons (your base)
 
 ### Throughout the Day
-- **Energy check** (Today tab): tap your morning energy (1–10). After 6 PM Eastern an evening scale appears and shows the change vs. morning.
-- **Notes for today**: a persistent scratchpad that auto-saves.
-- **Quick Log buttons**: one-tap entry for your 5 most common activities.
+- **Energy check** (Today tab): "How's your energy right now?" — tap 1–10 and optionally note *why did you rate it that way?* Log as many checks as you like through the day; each is timestamped and listed underneath. This is completely separate from the morning check-in.
+- **Quick Log buttons**: one-tap entry for up to **9** of your most common activities.
 - **Log tab**: tap any activity to log it instantly. **+ Custom** adds a new one, **Advanced** lets you back-date or add a note, and **Select multiple** logs several at once.
-- **"📊 Log Symptoms"**: record brain fog, falls, weakness, and next-day fatigue rating.
-- **"🌙 Reflect"** (or the 9 PM reminder): what went well, how overwhelming the day was, and a note that surfaces on tomorrow's Today tab.
+- **"🌙 Reflect on Today"** (full-width button below your activity list, or the 9 PM reminder): your end-of-day energy level, spoons left, one thing that went well, and a reminder for tomorrow (up to 500 characters) that surfaces on tomorrow's Today tab.
+
+*(Symptom tracking — muscle-weakness severity and next-day fatigue — now lives inside the morning check-in rather than a separate button.)*
 
 ### Editing on the fly
 - **Starting balance**: tap the ✏️ next to today's budget to override it for the day (e.g. set 15 on a big day).
@@ -51,7 +51,7 @@
 
 | Tab | What it does |
 |-----|-------------|
-| 🥄 Today | Spoon meter (with editable starting balance), morning/evening energy check, today's notes, quick log, symptoms, reflection, activity list |
+| 🥄 Today | Spoon meter (with editable starting balance), energy checks (as many as you like, each timestamped), quick log (up to 9), activity list, and a full-width Reflect button |
 | ➕ Log | One-tap logging from the full activity list · **+ Custom** for new activities · **Advanced** for back-dating & notes · **Select multiple** to log several at once |
 | 📋 History | Scroll back through every day · **jump to any date** · tap a day to expand activities, symptoms, check-in, and reflection |
 | 📈 Patterns | This-week closing-balance strip + net surplus/deficit · morning-energy trend · spoons-by-category · usage vs. budget · sleep · crash-pattern detection · share & export |

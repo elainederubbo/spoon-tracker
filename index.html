@@ -52,22 +52,17 @@
 
     <div id="today-alerts"></div>
 
-    <!-- Energy scales -->
+    <!-- Energy check (independent of the morning check-in; many per day) -->
     <div class="card">
       <div class="card-title">Energy Check</div>
-      <div id="energy-am"></div>
-      <div id="energy-pm"></div>
-    </div>
-
-    <!-- Today's notes -->
-    <div class="card">
-      <div class="card-title">Notes for Today</div>
-      <textarea id="today-notes" placeholder="Anything you want to remember about today…"></textarea>
-    </div>
-
-    <div style="display:flex;gap:10px;margin-bottom:12px">
-      <button class="btn btn-secondary" id="log-symptom-btn" style="flex:1">📊 Log Symptoms</button>
-      <button class="btn btn-secondary" id="reflect-btn" style="flex:1">🌙 Reflect</button>
+      <div class="energy-prompt">How's your energy right now?</div>
+      <div class="scale-row" id="energy-scale"></div>
+      <div class="form-group" style="margin:14px 0 0">
+        <label class="form-label">Why did you rate it that way? <span class="hint">(optional)</span></label>
+        <input type="text" id="energy-why" placeholder="What's driving it right now…" />
+      </div>
+      <button class="btn btn-primary" id="energy-save" style="margin-top:12px">Save Energy Check</button>
+      <div class="energy-log" id="energy-log"></div>
     </div>
 
     <div class="card">
@@ -82,6 +77,8 @@
       <div class="card-title">Today's Activities</div>
       <div id="today-activities"></div>
     </div>
+
+    <button class="btn btn-secondary" id="reflect-btn" style="width:100%">🌙 Reflect on Today</button>
   </main>
 
   <!-- ══════════════ LOG PAGE ══════════════ -->
@@ -307,9 +304,9 @@
     <div class="card">
       <div class="card-title" style="display:flex;justify-content:space-between;align-items:center">
         Quick Log Buttons
-        <span id="quick-picker-count" style="font-size:12px;color:var(--text-muted);font-weight:400;text-transform:none;letter-spacing:0">0/5 selected</span>
+        <span id="quick-picker-count" style="font-size:12px;color:var(--text-muted);font-weight:400;text-transform:none;letter-spacing:0">0/9 selected</span>
       </div>
-      <p style="font-size:13px;color:var(--text-muted);margin-bottom:10px">Choose up to 5 activities for the Quick Log row on Today</p>
+      <p style="font-size:13px;color:var(--text-muted);margin-bottom:10px">Choose up to 9 activities for the Quick Log grid on Today</p>
       <div class="quick-picker-grid" id="quick-picker-grid"></div>
     </div>
 

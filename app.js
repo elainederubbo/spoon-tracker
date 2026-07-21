@@ -117,7 +117,8 @@ const DEFAULT_ZONES = {
   puzzle: 'competence', bowel: 'maintenance', massage: 'maintenance', nap: 'maintenance', sleep: 'maintenance',
 };
 
-const QUICK_IDS = ['pt', 'cmt_class', 'yoga', 'meditation', 'nap'];
+const QUICK_IDS = ['pt', 'cmt_class', 'yoga', 'meditation', 'nap', 'dog_walk', 'cooking', 'shower', 'charlie_time'];
+const MAX_QUICK = 9;
 
 const DEFAULT_SETTINGS = {
   baseBudget: 10,
@@ -198,21 +199,43 @@ function saveSymptoms(ds, data) {
   save(KEYS.SYMPTOMS, all);
 }
 
-// Energy scales (start/end of day)
-function getEnergy(ds) { return (load(KEYS.ENERGY) || {})[ds] || null; }
-function saveEnergy(ds, slot, score) {
+// Energy checks — a timestamped list per day (independent of the morning check-in).
+// Migrates the old { am:{score,ts}, pm:{score,ts} } shape to an array on read.
+function getEnergyChecks(ds) {
+  const raw = (load(KEYS.ENERGY) || {})[ds];
+  if (!raw) return [];
+  if (Array.isArray(raw)) return raw;
+  const arr = [];
+  if (raw.am) arr.push({ score: raw.am.score, note: '', ts: raw.am.ts });
+  if (raw.pm) arr.push({ score: raw.pm.score, note: '', ts: raw.pm.ts });
+  return arr;
+}
+function addEnergyCheck(ds, score, note) {
   const all = load(KEYS.ENERGY) || {};
-  if (!all[ds]) all[ds] = {};
-  all[ds][slot] = { score, ts: new Date().toISOString() };
+  const cur = getEnergyChecks(ds);
+  cur.push({ score, note: note || '', ts: new Date().toISOString() });
+  all[ds] = cur;
   save(KEYS.ENERGY, all);
 }
+function deleteEnergyCheck(ds, ts) {
+  const all = load(KEYS.ENERGY) || {};
+  all[ds] = getEnergyChecks(ds).filter(c => c.ts !== ts);
+  save(KEYS.ENERGY, all);
+}
+// Representative "morning" energy for trends: the morning check-in score if present,
+// else the first energy check logged that day.
+function morningEnergy(ds) {
+  const ci = getCheckin(ds);
+  if (ci && ci.energy != null) return ci.energy;
+  const checks = getEnergyChecks(ds);
+  return checks.length ? checks[0].score : null;
+}
 
-// Freeform per-day notes
-function getNotes(ds) { return (load(KEYS.NOTES) || {})[ds] || ''; }
-function saveNotes(ds, text) {
-  const all = load(KEYS.NOTES) || {};
-  if (text) all[ds] = text; else delete all[ds];
-  save(KEYS.NOTES, all);
+// Next-day fatigue now lives on the morning check-in; fall back to legacy symptom data.
+function getNextDayFatigue(ds) {
+  const ci = getCheckin(ds);
+  if (ci && ci.nextDayFatigue != null) return ci.nextDayFatigue;
+  return getSymptoms(ds)?.nextDayFatigue ?? null;
 }
 
 // End-of-day reflections
@@ -447,8 +470,7 @@ function detectPatterns() {
   const warnings = [];
   days.forEach((d, i) => {
     if (i === 0) return;
-    const sym = getSymptoms(d);
-    if (sym?.nextDayFatigue >= 4) {
+    if (getNextDayFatigue(d) >= 4) {
       const ids = getActivitiesForDate(days[i - 1]).map(e => e.activityId);
       if (ids.includes('pt') && ids.includes('cmt_class')) warnings.push('pt+cmt_class');
     }
@@ -528,7 +550,7 @@ function scaleButtonsHTML(max, selected) {
 // TODAY PAGE
 // ═══════════════════════════════════════════════════════
 
-let _energyEdit = { am: false, pm: false };
+let _energySelectedScore = null;
 
 function renderToday() {
   const d = today();
@@ -583,11 +605,7 @@ function renderToday() {
     alertsDiv.appendChild(div);
   });
 
-  renderEnergyScales(d);
-
-  // Notes
-  const notesEl = el('today-notes');
-  if (notesEl && document.activeElement !== notesEl) notesEl.value = getNotes(d);
+  renderEnergyCard(d);
 
   // Quick buttons
   const settings = getSettings();
@@ -619,58 +637,46 @@ function escapeHTML(s) {
   return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
 
-function renderEnergyScales(ds) {
-  const energy = getEnergy(ds) || {};
-  const amWrap = el('energy-am');
-  const pmWrap = el('energy-pm');
-  if (!amWrap || !pmWrap) return;
-
-  // Start of day
-  if (energy.am && !_energyEdit.am) {
-    amWrap.innerHTML = `<div class="energy-readout">
-      <span>🌅 Morning energy: <strong>${energy.am.score}/10</strong></span>
-      <button class="link-btn" data-edit="am">Change</button></div>`;
-  } else {
-    amWrap.innerHTML = `<div class="energy-prompt">How's your energy this morning?</div>
-      <div class="scale-row" data-slot="am">${scaleButtonsHTML(10, energy.am?.score)}</div>`;
-  }
-
-  // End of day — only after 6 PM ET
-  if (etHourNow() >= 18) {
-    pmWrap.hidden = false;
-    if (energy.pm && !_energyEdit.pm) {
-      const delta = energy.am ? energy.pm.score - energy.am.score : null;
-      const deltaHTML = delta !== null
-        ? ` <span class="energy-delta ${delta >= 0 ? 'up' : 'down'}">${delta >= 0 ? '+' : ''}${delta} vs AM</span>` : '';
-      pmWrap.innerHTML = `<div class="energy-readout" style="margin-top:10px">
-        <span>🌙 Evening energy: <strong>${energy.pm.score}/10</strong>${deltaHTML}</span>
-        <button class="link-btn" data-edit="pm">Change</button></div>`;
-    } else {
-      pmWrap.innerHTML = `<div class="energy-prompt" style="margin-top:12px">How's your energy now (end of day)?</div>
-        <div class="scale-row" data-slot="pm">${scaleButtonsHTML(10, energy.pm?.score)}</div>`;
-    }
-  } else {
-    pmWrap.hidden = true;
-    pmWrap.innerHTML = '';
-  }
-
-  // Wire scale buttons
-  [amWrap, pmWrap].forEach(wrap => {
-    wrap.querySelectorAll('.scale-row').forEach(row => {
-      const slot = row.dataset.slot;
-      row.querySelectorAll('.scale-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-          saveEnergy(ds, slot, parseInt(btn.dataset.val, 10));
-          _energyEdit[slot] = false;
-          renderEnergyScales(ds);
-          flash(slot === 'am' ? 'Morning energy saved' : 'Evening energy saved');
-        });
-      });
-    });
-    wrap.querySelectorAll('.link-btn[data-edit]').forEach(btn => {
-      btn.addEventListener('click', () => { _energyEdit[btn.dataset.edit] = true; renderEnergyScales(ds); });
+function renderEnergyCard(ds) {
+  const scaleRow = el('energy-scale');
+  if (!scaleRow) return;
+  scaleRow.innerHTML = scaleButtonsHTML(10, _energySelectedScore);
+  scaleRow.querySelectorAll('.scale-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      _energySelectedScore = parseInt(btn.dataset.val, 10);
+      scaleRow.querySelectorAll('.scale-btn').forEach(b => b.classList.remove('selected'));
+      btn.classList.add('selected');
     });
   });
+
+  const logDiv = el('energy-log');
+  if (!logDiv) return;
+  const checks = getEnergyChecks(ds);
+  if (checks.length === 0) {
+    logDiv.innerHTML = '';
+    return;
+  }
+  logDiv.innerHTML = `<div class="energy-log-title">Today's checks</div>` +
+    checks.slice().reverse().map(c => `
+      <div class="energy-log-item">
+        <span class="eli-score">🔋 ${c.score}/10</span>
+        <span class="eli-time">${fmtTime(c.ts)}</span>
+        ${c.note ? `<span class="eli-note">${escapeHTML(c.note)}</span>` : '<span class="eli-note"></span>'}
+        <button class="eli-del" data-ts="${c.ts}" title="Delete">✕</button>
+      </div>`).join('');
+  logDiv.querySelectorAll('.eli-del').forEach(btn => {
+    btn.addEventListener('click', () => { deleteEnergyCheck(ds, btn.dataset.ts); renderEnergyCard(ds); });
+  });
+}
+
+function saveEnergyCheck() {
+  if (_energySelectedScore == null) { flash('Pick a number first'); return; }
+  const why = el('energy-why').value.trim();
+  addEnergyCheck(today(), _energySelectedScore, why);
+  _energySelectedScore = null;
+  el('energy-why').value = '';
+  flash('Energy check saved 🔋');
+  renderEnergyCard(today());
 }
 
 function makeActivityItem(entry, ds) {
@@ -803,6 +809,14 @@ function openCheckinModal() {
           <button class="toggle-btn no" data-val="false">No</button>
         </div>
       </div>
+      <div class="form-group" id="ci-weak-sev-wrap" style="display:none">
+        <label class="form-label">Muscle Weakness Severity <span class="hint">(1-5)</span></label>
+        <div class="scale-row" id="ci-weak-sev">${scaleButtonsHTML(5)}</div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Next-Day Fatigue <span class="hint">(how did yesterday leave you? 1-5)</span></label>
+        <div class="scale-row" id="ci-fatigue">${scaleButtonsHTML(5)}</div>
+      </div>
       <div class="row">
         <div class="form-group">
           <label class="form-label">CPAP Hours</label>
@@ -839,13 +853,13 @@ function openCheckinModal() {
     const whyText = overlay.querySelector('#ci-why').value.trim() || null;
     const brainFog = overlay.querySelector('#ci-fog .selected')?.dataset.val === 'true';
     const muscleWeak = overlay.querySelector('#ci-weak .selected')?.dataset.val === 'true';
+    const muscleWeakSev = muscleWeak ? parseInt(overlay.querySelector('#ci-weak-sev .selected')?.dataset.val || '0') : 0;
+    const nextDayFatigue = parseInt(overlay.querySelector('#ci-fatigue .selected')?.dataset.val || '0');
     const cpapHours = parseFloat(overlay.querySelector('#ci-cpap').value || '0');
     const trazodone = overlay.querySelector('#ci-traz .selected')?.dataset.val === 'true';
     const sleepQuality = parseInt(overlay.querySelector('#ci-sq .selected')?.dataset.val || '3');
     const sleepHours = parseFloat(overlay.querySelector('#ci-hours').value || '0');
-    saveCheckin(today(), { energy, whyText, brainFog, muscleWeak, cpapHours, trazodone, sleepQuality, sleepHours });
-    // Mirror the morning energy into the Today energy scale for a single source of truth
-    saveEnergy(today(), 'am', energy);
+    saveCheckin(today(), { energy, whyText, brainFog, muscleWeak, muscleWeakSev, nextDayFatigue, cpapHours, trazodone, sleepQuality, sleepHours });
     overlay.remove();
     flash('Morning check-in saved!');
     renderPage('today');
@@ -872,6 +886,10 @@ function wireTogglePickers(root) {
         const wrap = root.querySelector('#sym-fog-sev-wrap');
         if (wrap) wrap.style.display = btn.dataset.val === 'true' ? '' : 'none';
       }
+      if (row.id === 'ci-weak') {
+        const wrap = root.querySelector('#ci-weak-sev-wrap');
+        if (wrap) wrap.style.display = btn.dataset.val === 'true' ? '' : 'none';
+      }
     }));
   });
 }
@@ -880,9 +898,12 @@ function wireTogglePickers(root) {
 // END-OF-DAY REFLECTION
 // ═══════════════════════════════════════════════════════
 
+const TOMORROW_MAX = 500;
+
 function openReflectionModal(ds) {
   ds = ds || today();
   const existing = getReflection(ds) || {};
+  const { remaining, budget } = calcSpoonsRemaining(ds);
   const overlay = document.createElement('div');
   overlay.className = 'modal-overlay';
   overlay.innerHTML = `
@@ -890,27 +911,39 @@ function openReflectionModal(ds) {
       <div class="modal-handle"></div>
       <div class="modal-title">🌙 End-of-Day Reflection</div>
       <p style="font-size:13px;color:var(--text-muted);margin-bottom:16px">For: ${fmtDate(ds)}</p>
+      <div class="reflect-spoons">
+        <span class="rs-num">${remaining}</span>
+        <span class="rs-label">of ${budget} spoons left at day's end</span>
+      </div>
       <div class="form-group">
-        <label class="form-label">What went well today?</label>
+        <label class="form-label">Energy level right now <span class="hint">(1-10)</span></label>
+        <div class="scale-row" id="rf-energy">${scaleButtonsHTML(10, existing.endEnergy)}</div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">What went well today? <span class="hint">(optional)</span></label>
         <textarea id="rf-well" placeholder="One good thing…">${existing.wentWell ? escapeHTML(existing.wentWell) : ''}</textarea>
       </div>
       <div class="form-group">
-        <label class="form-label">How overwhelming was today? <span class="hint">(1 = calm, 5 = too much)</span></label>
-        <div class="scale-row" id="rf-overwhelm">${scaleButtonsHTML(5, existing.overwhelm)}</div>
-      </div>
-      <div class="form-group">
-        <label class="form-label">Reminder for tomorrow?</label>
-        <input type="text" id="rf-tomorrow" placeholder="Shows on tomorrow's Today tab" value="${existing.tomorrow ? escapeHTML(existing.tomorrow) : ''}" />
+        <label class="form-label">Reminder for tomorrow? <span class="hint">(optional)</span></label>
+        <textarea id="rf-tomorrow" maxlength="${TOMORROW_MAX}" placeholder="Shows on tomorrow's Today tab">${existing.tomorrow ? escapeHTML(existing.tomorrow) : ''}</textarea>
+        <div class="char-count" id="rf-tomorrow-count"></div>
       </div>
       <button class="btn btn-primary" id="rf-save" style="margin-top:8px">Save Reflection</button>
       <button class="btn btn-secondary" id="rf-cancel" style="margin-top:8px">Cancel</button>
     </div>`;
   wireScalePickers(overlay);
+
+  const tmr = overlay.querySelector('#rf-tomorrow');
+  const cnt = overlay.querySelector('#rf-tomorrow-count');
+  const updateCount = () => { cnt.textContent = `${tmr.value.length}/${TOMORROW_MAX}`; };
+  tmr.addEventListener('input', updateCount);
+  updateCount();
+
   overlay.querySelector('#rf-save').addEventListener('click', () => {
+    const endEnergy = parseInt(overlay.querySelector('#rf-energy .selected')?.dataset.val || '0') || null;
     const wentWell = overlay.querySelector('#rf-well').value.trim();
-    const overwhelm = parseInt(overlay.querySelector('#rf-overwhelm .selected')?.dataset.val || '0') || null;
-    const tomorrow = overlay.querySelector('#rf-tomorrow').value.trim();
-    saveReflection(ds, { wentWell, overwhelm, tomorrow });
+    const tomorrow = tmr.value.trim().slice(0, TOMORROW_MAX);
+    saveReflection(ds, { endEnergy, spoonsLeft: remaining, wentWell, tomorrow });
     overlay.remove();
     flash('Reflection saved 🌙');
     if (['today', 'history'].includes(window._currentPage)) renderPage(window._currentPage);
@@ -1159,67 +1192,6 @@ function openActivityEditor(act) {
 }
 
 // ═══════════════════════════════════════════════════════
-// SYMPTOM MODAL
-// ═══════════════════════════════════════════════════════
-
-function openSymptomModal(ds) {
-  const existing = getSymptoms(ds || today()) || {};
-  const overlay = document.createElement('div');
-  overlay.className = 'modal-overlay';
-  overlay.innerHTML = `
-    <div class="modal">
-      <div class="modal-handle"></div>
-      <div class="modal-title">📊 Log Symptoms</div>
-      <p style="font-size:13px;color:var(--text-muted);margin-bottom:16px">For: ${fmtDate(ds || today())}</p>
-      <div class="form-group">
-        <label class="form-label">Brain Fog?</label>
-        <div class="toggle-row" id="sym-fog">
-          <button class="toggle-btn yes${existing.brainFog ? ' selected' : ''}" data-val="true">Yes</button>
-          <button class="toggle-btn no${existing.brainFog === false ? ' selected' : ''}" data-val="false">No</button>
-        </div>
-      </div>
-      <div class="form-group" id="sym-fog-sev-wrap" style="${existing.brainFog ? '' : 'display:none'}">
-        <label class="form-label">Brain Fog Severity <span class="hint">(1-5)</span></label>
-        <div class="scale-row" id="sym-fog-sev">${scaleButtonsHTML(5, existing.brainFogSev)}</div>
-      </div>
-      <div class="form-group">
-        <label class="form-label">Falls / Balance Issues?</label>
-        <div class="toggle-row" id="sym-falls">
-          <button class="toggle-btn yes${existing.falls ? ' selected' : ''}" data-val="true">Yes</button>
-          <button class="toggle-btn no${existing.falls === false ? ' selected' : ''}" data-val="false">No</button>
-        </div>
-      </div>
-      <div class="form-group">
-        <label class="form-label">Muscle Weakness Severity <span class="hint">(1-5)</span></label>
-        <div class="scale-row" id="sym-weak">${scaleButtonsHTML(5, existing.muscleWeakSev)}</div>
-      </div>
-      <div class="form-group">
-        <label class="form-label">Next-Day Fatigue <span class="hint">(how did yesterday leave you?)</span></label>
-        <div class="scale-row" id="sym-fatigue">${scaleButtonsHTML(5, existing.nextDayFatigue)}</div>
-      </div>
-      <button class="btn btn-primary" id="sym-save" style="margin-top:8px">Save Symptoms</button>
-      <button class="btn btn-secondary" id="sym-cancel" style="margin-top:8px">Cancel</button>
-    </div>`;
-
-  wireScalePickers(overlay);
-  wireTogglePickers(overlay);
-  overlay.querySelector('#sym-save').addEventListener('click', () => {
-    const brainFog = overlay.querySelector('#sym-fog .selected')?.dataset.val === 'true';
-    const brainFogSev = parseInt(overlay.querySelector('#sym-fog-sev .selected')?.dataset.val || '0');
-    const falls = overlay.querySelector('#sym-falls .selected')?.dataset.val === 'true';
-    const muscleWeakSev = parseInt(overlay.querySelector('#sym-weak .selected')?.dataset.val || '0');
-    const nextDayFatigue = parseInt(overlay.querySelector('#sym-fatigue .selected')?.dataset.val || '0');
-    saveSymptoms(ds || today(), { brainFog, brainFogSev, falls, muscleWeakSev, nextDayFatigue });
-    overlay.remove();
-    flash('Symptoms saved');
-    if (['history', 'today'].includes(window._currentPage)) renderPage(window._currentPage);
-  });
-  overlay.querySelector('#sym-cancel').addEventListener('click', () => overlay.remove());
-  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
-  document.body.appendChild(overlay);
-}
-
-// ═══════════════════════════════════════════════════════
 // HISTORY PAGE
 // ═══════════════════════════════════════════════════════
 
@@ -1274,7 +1246,7 @@ function makeHistoryDay(d) {
   const checkin = getCheckin(d);
   const symptoms = getSymptoms(d);
   const reflection = getReflection(d);
-  const notes = getNotes(d);
+  const checks = getEnergyChecks(d);
   const { budget, used, remaining } = calcSpoonsRemaining(d);
   const isToday = d === today();
   const cls = spoonColorClass(remaining);
@@ -1319,34 +1291,47 @@ function makeHistoryDay(d) {
     html += `<p style="font-size:13px;color:var(--text-muted);padding:8px 0">No activities logged</p>`;
   }
 
-  // Symptoms
-  html += `<div class="hist-section">
-    <div class="hist-section-head">
-      <span>Symptoms</span>
-      <button class="btn btn-secondary btn-sm" onclick="openSymptomModal('${d}')">Log</button>
-    </div>`;
-  if (symptoms) {
-    html += `<div class="symptom-chips">`;
-    if (symptoms.brainFog) html += `<span class="chip yellow">🌫 Brain fog${symptoms.brainFogSev ? ' ' + symptoms.brainFogSev + '/5' : ''}</span>`;
-    if (symptoms.falls) html += `<span class="chip red">⚠️ Falls</span>`;
-    if (symptoms.muscleWeakSev > 0) html += `<span class="chip yellow">💪 Weakness ${symptoms.muscleWeakSev}/5</span>`;
-    if (symptoms.nextDayFatigue > 0) html += `<span class="chip ${symptoms.nextDayFatigue >= 4 ? 'red' : 'yellow'}">😴 Fatigue ${symptoms.nextDayFatigue}/5</span>`;
+  // Energy checks
+  if (checks.length) {
+    html += `<div class="hist-section">
+      <div class="hist-section-head"><span>Energy Checks</span></div>`;
+    checks.forEach(c => {
+      html += `<div class="hist-energy-line">🔋 <strong>${c.score}/10</strong> · ${fmtTime(c.ts)}${c.note ? ` — ${escapeHTML(c.note)}` : ''}</div>`;
+    });
     html += `</div>`;
-  } else { html += `<p style="font-size:13px;color:var(--text-muted)">None logged</p>`; }
-  html += `</div>`;
+  }
 
-  // Morning check-in
+  // Morning check-in (now includes weakness severity + next-day fatigue)
   if (checkin) {
+    const weakChip = checkin.muscleWeak
+      ? `<span class="chip yellow">💪 Weakness${checkin.muscleWeakSev ? ' ' + checkin.muscleWeakSev + '/5' : ''}</span>` : '';
+    const fatigue = checkin.nextDayFatigue;
+    const fatigueChip = fatigue > 0 ? `<span class="chip ${fatigue >= 4 ? 'red' : 'yellow'}">😴 Fatigue ${fatigue}/5</span>` : '';
     html += `<div class="hist-section">
       <div class="hist-section-head"><span>Morning Check-In</span></div>
       <div class="tag-row">
         ${checkin.energy ? `<span class="tag">⚡ Energy ${checkin.energy}/10</span>` : ''}
+        ${checkin.brainFog ? `<span class="chip yellow">🌫 Brain fog</span>` : ''}
+        ${weakChip}
+        ${fatigueChip}
         ${checkin.sleepHours ? `<span class="tag">💤 ${checkin.sleepHours}h sleep</span>` : ''}
         ${checkin.cpapHours ? `<span class="tag">😷 CPAP ${checkin.cpapHours}h</span>` : ''}
         ${checkin.trazodone ? `<span class="tag">💊 Trazodone</span>` : ''}
       </div>
       ${checkin.whyText ? `<div class="note" style="margin-top:6px">"${escapeHTML(checkin.whyText)}"</div>` : ''}
     </div>`;
+  }
+
+  // Legacy symptom data (older logs only) — read-only
+  if (symptoms && !checkin?.nextDayFatigue && (symptoms.brainFog || symptoms.falls || symptoms.muscleWeakSev > 0 || symptoms.nextDayFatigue > 0)) {
+    html += `<div class="hist-section">
+      <div class="hist-section-head"><span>Symptoms (logged)</span></div>
+      <div class="symptom-chips">`;
+    if (symptoms.brainFog) html += `<span class="chip yellow">🌫 Brain fog${symptoms.brainFogSev ? ' ' + symptoms.brainFogSev + '/5' : ''}</span>`;
+    if (symptoms.falls) html += `<span class="chip red">⚠️ Falls</span>`;
+    if (symptoms.muscleWeakSev > 0) html += `<span class="chip yellow">💪 Weakness ${symptoms.muscleWeakSev}/5</span>`;
+    if (symptoms.nextDayFatigue > 0) html += `<span class="chip ${symptoms.nextDayFatigue >= 4 ? 'red' : 'yellow'}">😴 Fatigue ${symptoms.nextDayFatigue}/5</span>`;
+    html += `</div></div>`;
   }
 
   // End-of-day reflection
@@ -1357,20 +1342,13 @@ function makeHistoryDay(d) {
     </div>`;
   if (reflection) {
     html += `<div class="reflection-block">`;
+    if (reflection.endEnergy) html += `<div class="rf-line"><strong>Energy:</strong> ${reflection.endEnergy}/10</div>`;
+    if (reflection.spoonsLeft != null) html += `<div class="rf-line"><strong>Spoons left:</strong> ${reflection.spoonsLeft}</div>`;
     if (reflection.wentWell) html += `<div class="rf-line"><strong>Went well:</strong> ${escapeHTML(reflection.wentWell)}</div>`;
-    if (reflection.overwhelm) html += `<div class="rf-line"><strong>Overwhelm:</strong> ${reflection.overwhelm}/5</div>`;
     if (reflection.tomorrow) html += `<div class="rf-line"><strong>For tomorrow:</strong> ${escapeHTML(reflection.tomorrow)}</div>`;
     html += `</div>`;
   } else { html += `<p style="font-size:13px;color:var(--text-muted)">None logged</p>`; }
   html += `</div>`;
-
-  // Notes
-  if (notes) {
-    html += `<div class="hist-section">
-      <div class="hist-section-head"><span>Notes</span></div>
-      <div class="note">"${escapeHTML(notes)}"</div>
-    </div>`;
-  }
 
   body.innerHTML = html;
   header.addEventListener('click', () => {
@@ -1424,9 +1402,9 @@ function renderWeekly() {
   const totalUsed = usedData.reduce((a, b) => a + b, 0);
   el('weekly-total-used').textContent = totalUsed.toFixed(1);
   el('weekly-avg-used').textContent = (totalUsed / 7).toFixed(1);
-  const fatigueData = days.map(d => getSymptoms(d)?.nextDayFatigue ?? null);
+  const fatigueData = days.map(d => getNextDayFatigue(d));
   el('weekly-days-fatigue').textContent = fatigueData.filter(f => f >= 4).length;
-  const energyData = days.map(d => getEnergy(d)?.am?.score ?? getCheckin(d)?.energy ?? null);
+  const energyData = days.map(d => morningEnergy(d));
   const validEnergy = energyData.filter(e => e !== null);
   el('weekly-avg-energy').textContent = validEnergy.length
     ? (validEnergy.reduce((a, b) => a + b, 0) / validEnergy.length).toFixed(1) : '—';
@@ -1439,7 +1417,7 @@ function renderWeekly() {
   // Section B — 30-day morning energy vs. closing balance
   const days30 = last30Days();
   const labels30 = days30.map(d => fmtDate(d).split(',')[0].split(' ')[1] || fmtDate(d).split(' ')[2]);
-  const energy30 = days30.map(d => getEnergy(d)?.am?.score ?? getCheckin(d)?.energy ?? null);
+  const energy30 = days30.map(d => morningEnergy(d));
   const balance30 = days30.map(d => calcSpoonsRemaining(d).remaining);
   renderChart('chart-energy-trend', 'line', labels30, [
     { label: 'Morning Energy', data: energy30, borderColor: '#f59e0b', backgroundColor: '#f59e0b22', tension: 0.4, spanGaps: true, yAxisID: 'y' },
@@ -1613,7 +1591,7 @@ function renderQuickPicker() {
   const grid = el('quick-picker-grid');
   if (!grid) return;
   grid.innerHTML = '';
-  el('quick-picker-count').textContent = `${currentIds.length}/5 selected`;
+  el('quick-picker-count').textContent = `${currentIds.length}/${MAX_QUICK} selected`;
 
   allActs.forEach(act => {
     const isSelected = currentIds.includes(act.id);
@@ -1632,7 +1610,7 @@ function toggleQuickPick(actId) {
   if (ids.includes(actId)) {
     ids = ids.filter(id => id !== actId);
   } else {
-    if (ids.length >= 5) { flash('Max 5 quick buttons. Remove one first.'); return; }
+    if (ids.length >= MAX_QUICK) { flash(`Max ${MAX_QUICK} quick buttons. Remove one first.`); return; }
     ids.push(actId);
   }
   settings.quickIds = ids;
@@ -1692,7 +1670,7 @@ function addCustomActivity() {
 function shareToHusband() {
   const d = today();
   const { remaining, budget, used } = calcSpoonsRemaining(d);
-  const energy = getEnergy(d)?.am?.score ?? getCheckin(d)?.energy;
+  const energy = morningEnergy(d);
   const text = `🥄 Elaine's Energy Update — ${fmtDate(d)}\n\nSpoons remaining: ${remaining}/${budget}\nSpoons used: ${used}\nMorning energy: ${energy ? energy + '/10' : '?'}\n\nSent via CMT Energy Tracker`;
   if (navigator.share) navigator.share({ title: 'Energy Update', text }).catch(() => copyToClipboard(text));
   else copyToClipboard(text);
@@ -1713,24 +1691,24 @@ function copyToClipboard(text) {
 function exportCSV() {
   const days = last30Days();
   const rows = [['Date', 'Budget', 'Spoons Used', 'Spoons Remaining', 'Activities',
-    'Morning Energy', 'Morning Why', 'Sleep Hours', 'CPAP Hours', 'Trazodone',
-    'Brain Fog', 'Falls', 'Muscle Weakness', 'Next-Day Fatigue',
-    'Overwhelm', 'What Went Well', 'Tomorrow Reminder', 'Notes']];
+    'Energy Checks', 'Morning Energy', 'Morning Why', 'Sleep Hours', 'CPAP Hours', 'Trazodone',
+    'Brain Fog', 'Muscle Weakness', 'Next-Day Fatigue',
+    'End-of-Day Energy', 'What Went Well', 'Tomorrow Reminder']];
 
   days.forEach(d => {
     const entries = getActivitiesForDate(d);
     const { budget, used, remaining } = calcSpoonsRemaining(d);
-    const sym = getSymptoms(d) || {};
     const ci = getCheckin(d) || {};
     const rf = getReflection(d) || {};
-    const en = getEnergy(d) || {};
+    const sym = getSymptoms(d) || {};
     const acts = entries.map(e => e.name).join('; ');
+    const checksStr = getEnergyChecks(d).map(c => `${c.score}/10 ${fmtTime(c.ts)}${c.note ? ' (' + c.note + ')' : ''}`).join('; ');
+    const weakness = ci.muscleWeak ? (ci.muscleWeakSev || 'Yes') : (sym.muscleWeakSev || '');
     rows.push([d, budget, used, remaining, acts,
-      en.am?.score ?? ci.energy ?? '', ci.whyText || '',
+      checksStr, morningEnergy(d) ?? '', ci.whyText || '',
       ci.sleepHours || '', ci.cpapHours || '', ci.trazodone ? 'Yes' : 'No',
-      sym.brainFog ? 'Yes' : 'No', sym.falls ? 'Yes' : 'No',
-      sym.muscleWeakSev || '', sym.nextDayFatigue || '',
-      rf.overwhelm || '', rf.wentWell || '', rf.tomorrow || '', getNotes(d) || '']);
+      ci.brainFog ? 'Yes' : (sym.brainFog ? 'Yes' : 'No'), weakness, getNextDayFatigue(d) ?? '',
+      rf.endEnergy || '', rf.wentWell || '', rf.tomorrow || '']);
   });
 
   const csv = rows.map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
@@ -1772,25 +1750,19 @@ function loadSampleData() {
   save(KEYS.ACTIVITIES, all);
 
   const checkins = load(KEYS.CHECKINS) || {};
-  checkins[two] = { date: two, energy: 7, whyText: 'Slept okay', brainFog: false, muscleWeak: false, cpapHours: 6, trazodone: true, sleepQuality: 3, sleepHours: 7 };
-  checkins[yesterday] = { date: yesterday, energy: 4, whyText: 'Rough night', brainFog: true, muscleWeak: true, cpapHours: 5, trazodone: true, sleepQuality: 2, sleepHours: 6 };
-  checkins[d] = { date: d, energy: 6, brainFog: false, muscleWeak: false, cpapHours: 6, trazodone: true, sleepQuality: 3, sleepHours: 7.5 };
+  checkins[two] = { date: two, energy: 7, whyText: 'Slept okay', brainFog: false, muscleWeak: false, muscleWeakSev: 0, nextDayFatigue: 0, cpapHours: 6, trazodone: true, sleepQuality: 3, sleepHours: 7 };
+  checkins[yesterday] = { date: yesterday, energy: 4, whyText: 'Rough night', brainFog: true, muscleWeak: true, muscleWeakSev: 3, nextDayFatigue: 5, cpapHours: 5, trazodone: true, sleepQuality: 2, sleepHours: 6 };
+  checkins[d] = { date: d, energy: 6, brainFog: false, muscleWeak: false, muscleWeakSev: 0, nextDayFatigue: 2, cpapHours: 6, trazodone: true, sleepQuality: 3, sleepHours: 7.5 };
   save(KEYS.CHECKINS, checkins);
 
   const energy = load(KEYS.ENERGY) || {};
-  energy[two] = { am: { score: 7, ts: two + 'T10:00:00Z' } };
-  energy[yesterday] = { am: { score: 4, ts: yesterday + 'T10:00:00Z' }, pm: { score: 3, ts: yesterday + 'T23:00:00Z' } };
-  energy[d] = { am: { score: 6, ts: d + 'T10:00:00Z' } };
+  energy[two] = [{ score: 7, note: 'morning', ts: two + 'T14:00:00Z' }, { score: 5, note: 'after PT', ts: two + 'T20:00:00Z' }];
+  energy[yesterday] = [{ score: 4, note: '', ts: yesterday + 'T14:00:00Z' }, { score: 3, note: 'wiped out', ts: yesterday + 'T23:00:00Z' }];
+  energy[d] = [{ score: 6, note: '', ts: d + 'T14:00:00Z' }];
   save(KEYS.ENERGY, energy);
 
-  const symptoms = load(KEYS.SYMPTOMS) || {};
-  symptoms[two] = { date: two, brainFog: false, falls: false, muscleWeakSev: 1, nextDayFatigue: 0 };
-  symptoms[yesterday] = { date: yesterday, brainFog: true, brainFogSev: 4, falls: false, muscleWeakSev: 3, nextDayFatigue: 5 };
-  symptoms[d] = { date: d, brainFog: false, falls: false, muscleWeakSev: 1, nextDayFatigue: 2 };
-  save(KEYS.SYMPTOMS, symptoms);
-
   const reflections = load(KEYS.REFLECTIONS) || {};
-  reflections[yesterday] = { wentWell: 'Got a good walk in with Charlie', overwhelm: 4, tomorrow: 'Take it easy — no stacking PT and class', timestamp: yesterday + 'T23:30:00Z' };
+  reflections[yesterday] = { endEnergy: 3, spoonsLeft: 2, wentWell: 'Got a good walk in with Charlie', tomorrow: 'Take it easy — no stacking PT and class', timestamp: yesterday + 'T23:30:00Z' };
   save(KEYS.REFLECTIONS, reflections);
 
   flash('Sample data loaded!');
@@ -1833,12 +1805,9 @@ function init() {
   });
 
   el('morning-prompt').addEventListener('click', openCheckinModal);
-  el('log-symptom-btn').addEventListener('click', () => openSymptomModal(today()));
   el('reflect-btn').addEventListener('click', () => openReflectionModal(today()));
   el('budget-edit-btn').addEventListener('click', editBudget);
-
-  const notesEl = el('today-notes');
-  if (notesEl) notesEl.addEventListener('blur', () => { saveNotes(today(), notesEl.value.trim()); });
+  el('energy-save').addEventListener('click', saveEnergyCheck);
 
   el('settings-save').addEventListener('click', saveSettingsForm);
   el('add-custom-btn').addEventListener('click', addCustomActivity);

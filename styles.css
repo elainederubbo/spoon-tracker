@@ -20,6 +20,9 @@
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
+/* The [hidden] attribute must always win, even over display-setting classes. */
+[hidden] { display: none !important; }
+
 html, body {
   height: 100%;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
@@ -902,37 +905,55 @@ nav button .nav-icon { font-size: 21px; }
 }
 .budget-edit-btn:active { opacity: 1; }
 
-/* Energy scales on Today */
-.energy-prompt { font-size: 14px; font-weight: 500; color: var(--text); margin-bottom: 8px; }
-.energy-readout {
+/* Energy check card on Today */
+.energy-prompt { font-size: 15px; font-weight: 600; color: var(--text); margin-bottom: 10px; }
+#energy-scale { flex-wrap: wrap; gap: 5px; }
+#energy-scale .scale-btn { min-width: 30px; padding: 9px 2px; font-size: 14px; }
+
+.energy-log { margin-top: 14px; }
+.energy-log-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 6px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+.energy-log-item {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  font-size: 15px;
+  gap: 8px;
+  padding: 6px 0;
+  font-size: 13px;
   color: var(--text);
 }
-.energy-readout strong { font-weight: 800; }
-.energy-delta {
-  font-size: 12px;
-  font-weight: 700;
-  padding: 2px 8px;
-  border-radius: 20px;
+.eli-score { font-weight: 700; flex-shrink: 0; }
+.eli-time  { color: var(--text-muted); flex-shrink: 0; }
+.eli-note  { flex: 1; color: var(--text-muted); font-style: italic; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.eli-del {
+  background: none; border: none; cursor: pointer;
+  font-size: 15px; color: var(--text-muted); opacity: 0.6; padding: 2px 4px; flex-shrink: 0;
 }
-.energy-delta.up   { background: var(--green-light); color: var(--green); }
-.energy-delta.down { background: var(--red-light); color: var(--red); }
-.link-btn {
-  background: none;
-  border: none;
-  color: var(--primary);
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  padding: 4px 6px;
-  flex-shrink: 0;
+.eli-del:active { opacity: 1; color: var(--red); }
+
+/* History energy check lines */
+.hist-energy-line { font-size: 13px; color: var(--text); padding: 3px 0; }
+
+/* Reflection modal — spoons callout + char counter */
+.reflect-spoons {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  background: var(--surface2);
+  border-radius: 12px;
+  padding: 12px 14px;
+  margin-bottom: 16px;
 }
-.energy-am .scale-row, .energy-pm .scale-row { flex-wrap: wrap; }
-.energy-am .scale-btn, .energy-pm .scale-btn { min-width: 28px; padding: 8px 2px; font-size: 14px; }
+.reflect-spoons .rs-num { font-size: 28px; font-weight: 900; color: var(--primary); line-height: 1; }
+.reflect-spoons .rs-label { font-size: 13px; color: var(--text-muted); }
+.char-count { font-size: 11px; color: var(--text-muted); text-align: right; margin-top: 4px; }
 
 /* Inline cost edit on activity items */
 .inline-cost-input {

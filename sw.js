@@ -1,4 +1,4 @@
-const CACHE = 'cmt-tracker-v2';
+const CACHE = 'cmt-tracker-v3';
 const ASSETS = ['/', '/index.html', '/styles.css', '/app.js'];
 
 self.addEventListener('install', e => {
