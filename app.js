@@ -1584,6 +1584,57 @@ function makeCustomEditRow(act) {
   return row;
 }
 
+// Quick Log editor reachable directly from the Today tab
+function openQuickLogEditor() {
+  const allActs = getAllActivities();
+  let ids = [...(getSettings().quickIds || QUICK_IDS)];
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.innerHTML = `
+    <div class="modal">
+      <div class="modal-handle"></div>
+      <div class="modal-title">Edit Quick Log</div>
+      <p style="font-size:13px;color:var(--text-muted);margin-bottom:4px">Tap to add or remove. Choose up to ${MAX_QUICK}.</p>
+      <div style="font-size:12px;color:var(--text-muted);margin-bottom:10px" id="qle-count"></div>
+      <div class="quick-picker-grid" id="qle-grid"></div>
+      <button class="btn btn-primary" id="qle-done" style="margin-top:14px">Done</button>
+      <button class="btn btn-secondary" id="qle-cancel" style="margin-top:8px">Cancel</button>
+    </div>`;
+  const grid = overlay.querySelector('#qle-grid');
+  const countEl = overlay.querySelector('#qle-count');
+  function draw() {
+    countEl.textContent = `${ids.length}/${MAX_QUICK} selected`;
+    grid.innerHTML = '';
+    allActs.forEach(act => {
+      const sel = ids.includes(act.id);
+      const btn = document.createElement('button');
+      btn.className = 'quick-pick-btn' + (sel ? ' selected' : '');
+      btn.innerHTML = `<span class="qp-emoji">${act.emoji}</span><span class="qp-name">${act.name}</span><span class="qp-check">${sel ? '✓' : ''}</span>`;
+      btn.addEventListener('click', () => {
+        if (ids.includes(act.id)) ids = ids.filter(i => i !== act.id);
+        else {
+          if (ids.length >= MAX_QUICK) { flash(`Max ${MAX_QUICK}. Remove one first.`); return; }
+          ids.push(act.id);
+        }
+        draw();
+      });
+      grid.appendChild(btn);
+    });
+  }
+  draw();
+  overlay.querySelector('#qle-done').addEventListener('click', () => {
+    const s = getSettings();
+    s.quickIds = ids;
+    saveSettings(s);
+    overlay.remove();
+    flash('Quick Log updated');
+    renderToday();
+  });
+  overlay.querySelector('#qle-cancel').addEventListener('click', () => overlay.remove());
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+  document.body.appendChild(overlay);
+}
+
 function renderQuickPicker() {
   const settings = getSettings();
   const allActs = getAllActivities();
@@ -1786,7 +1837,22 @@ function scheduleEvening() {
 // INIT
 // ═══════════════════════════════════════════════════════
 
+// One-time migration: users whose saved Quick Log is the old 5-item default get the
+// expanded 9-item default. Custom selections are left untouched.
+function migrateQuickIds() {
+  const s = load(KEYS.SETTINGS);
+  if (!s || !Array.isArray(s.quickIds)) return;
+  const OLD_DEFAULT = ['pt', 'cmt_class', 'yoga', 'meditation', 'nap'];
+  const isOldDefault = s.quickIds.length === OLD_DEFAULT.length
+    && OLD_DEFAULT.every((id, i) => s.quickIds[i] === id);
+  if (isOldDefault) {
+    s.quickIds = QUICK_IDS.slice();
+    saveSettings(s);
+  }
+}
+
 function init() {
+  migrateQuickIds();
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('sw.js').then(reg => {
       _sw = reg.active;
@@ -1808,6 +1874,7 @@ function init() {
   el('reflect-btn').addEventListener('click', () => openReflectionModal(today()));
   el('budget-edit-btn').addEventListener('click', editBudget);
   el('energy-save').addEventListener('click', saveEnergyCheck);
+  el('quick-edit-btn').addEventListener('click', openQuickLogEditor);
 
   el('settings-save').addEventListener('click', saveSettingsForm);
   el('add-custom-btn').addEventListener('click', addCustomActivity);

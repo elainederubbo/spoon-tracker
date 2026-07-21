@@ -1,4 +1,4 @@
-const CACHE = 'cmt-tracker-v4';
+const CACHE = 'cmt-tracker-v5';
 const ASSETS = ['/', '/index.html', '/styles.css', '/app.js'];
 
 self.addEventListener('install', e => {
@@ -22,8 +22,10 @@ self.addEventListener('fetch', e => {
   const sameOrigin = new URL(req.url).origin === self.location.origin;
 
   if (sameOrigin) {
+    // `cache: 'reload'` bypasses the browser HTTP cache so we always get the freshest
+    // file from the network; the response is then stored for offline use.
     e.respondWith(
-      fetch(req).then(res => {
+      fetch(req, { cache: 'reload' }).then(res => {
         const copy = res.clone();
         caches.open(CACHE).then(c => c.put(req, copy)).catch(() => {});
         return res;

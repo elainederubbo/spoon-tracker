@@ -22,7 +22,7 @@
 
 ### Throughout the Day
 - **Energy check** (Today tab): "How's your energy right now?" — tap 1–10 and optionally note *why did you rate it that way?* Log as many checks as you like through the day; each is timestamped and listed underneath. This is completely separate from the morning check-in.
-- **Quick Log buttons**: one-tap entry for up to **9** of your most common activities.
+- **Quick Log buttons**: one-tap entry for up to **9** of your most common activities. Tap **✏️ Edit** on the Quick Log card to add or swap which activities appear (or use the picker in Settings).
 - **Log tab**: tap any activity to log it instantly. **+ Custom** adds a new one, **Advanced** lets you back-date or add a note, and **Select multiple** logs several at once.
 - **"🌙 Reflect on Today"** (full-width button below your activity list, or the 9 PM reminder): your end-of-day energy level, spoons left, one thing that went well, and a reminder for tomorrow (up to 500 characters) that surfaces on tomorrow's Today tab.
 

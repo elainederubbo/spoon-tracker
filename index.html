@@ -68,7 +68,10 @@
     <div class="card">
       <div class="card-title" style="display:flex;justify-content:space-between;align-items:center">
         Quick Log
-        <button class="btn btn-sm btn-primary" onclick="showPage('log')" style="margin:0">+ More</button>
+        <span style="display:flex;gap:6px">
+          <button class="btn btn-sm btn-secondary" id="quick-edit-btn" style="margin:0">✏️ Edit</button>
+          <button class="btn btn-sm btn-primary" onclick="showPage('log')" style="margin:0">Full list</button>
+        </span>
       </div>
       <div class="quick-grid" id="quick-grid"></div>
     </div>
