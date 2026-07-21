@@ -2,7 +2,7 @@
 
 **Live app:** https://elainederubbo.github.io/spoon-tracker
 **Demo (sample data):** https://elainederubbo.github.io/spoon-tracker/demo.html
-**Case Study:** https://elainederubbo.github.io/spoon-tracker/spoon-tracker-case-study.html
+**Case Study:** https://elainederubbo.github.io/spoon-tracker/case-study.html
 
 ## Opening the App
 - Open `index.html` in Safari on your Mac or iPhone.
