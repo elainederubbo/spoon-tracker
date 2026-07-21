@@ -1,4 +1,4 @@
-const CACHE = 'cmt-tracker-v1';
+const CACHE = 'cmt-tracker-v2';
 const ASSETS = ['/', '/index.html', '/styles.css', '/app.js'];
 
 self.addEventListener('install', e => {
@@ -19,62 +19,72 @@ self.addEventListener('fetch', e => {
   );
 });
 
-// Morning check-in notification at 5:15 AM Eastern Time
+const TZ = 'America/New_York';
+
+// Notification scheduling
 self.addEventListener('message', e => {
-  if (e.data?.type === 'SCHEDULE_MORNING') {
-    scheduleMorningNotification();
-  }
+  if (e.data?.type === 'SCHEDULE_MORNING') scheduleMorningNotification();
+  if (e.data?.type === 'SCHEDULE_EVENING') scheduleEveningNotification();
 });
 
-// Returns the UTC Date that corresponds to 5:15 AM Eastern Time on the
+// Returns the UTC Date corresponding to a given hour:minute in Eastern Time on the
 // current or next Eastern calendar day (whichever is still in the future).
-function getNext515amET() {
-  const TZ = 'America/New_York';
+function getNextETTime(hour, minute) {
   const now = new Date();
 
-  // Given an ET calendar date string ("YYYY-MM-DD"), find the UTC Date
-  // that represents 5:15 AM on that ET date.
-  function et515ToUTC(etDateStr) {
+  function etToUTC(etDateStr) {
     const [year, month, day] = etDateStr.split('-').map(Number);
-    // Try EDT (UTC-4) then EST (UTC-5); pick whichever gives exactly 05:xx ET hour
+    // Try EDT (UTC-4) then EST (UTC-5); pick whichever gives the intended ET hour
     for (const off of [4, 5]) {
-      const candidate = new Date(Date.UTC(year, month - 1, day, 5 + off, 15));
+      const candidate = new Date(Date.UTC(year, month - 1, day, hour + off, minute));
       const etH = parseInt(
         new Intl.DateTimeFormat('en-US', { timeZone: TZ, hour: '2-digit', hour12: false })
           .format(candidate),
         10
       ) % 24;
-      if (etH === 5) return candidate;
+      if (etH === hour) return candidate;
     }
-    // DST edge-case fallback: use EST (-5)
-    return new Date(Date.UTC(year, month - 1, day, 10, 15));
+    // DST edge-case fallback: assume EST (-5)
+    return new Date(Date.UTC(year, month - 1, day, hour + 5, minute));
   }
 
   const todayET = now.toLocaleDateString('en-CA', { timeZone: TZ });
-  let target = et515ToUTC(todayET);
-
+  let target = etToUTC(todayET);
   if (target <= now) {
-    // Get tomorrow's ET date by advancing 24 hours and re-formatting
-    const tomorrow = new Date(now.getTime() + 86400000);
-    const tomorrowET = tomorrow.toLocaleDateString('en-CA', { timeZone: TZ });
-    target = et515ToUTC(tomorrowET);
+    const tomorrowET = new Date(now.getTime() + 86400000).toLocaleDateString('en-CA', { timeZone: TZ });
+    target = etToUTC(tomorrowET);
   }
-
   return target;
 }
 
-function scheduleMorningNotification() {
-  const target = getNext515amET();
-  const delay = target - Date.now();
+const ICON = "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🥄</text></svg>";
 
+// Morning check-in — 5:15 AM Eastern
+function scheduleMorningNotification() {
+  const delay = getNextETTime(5, 15) - Date.now();
   setTimeout(() => {
     self.registration.showNotification('Good morning! 🌅', {
       body: 'Time for your morning check-in. How are you feeling today?',
-      icon: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🥄</text></svg>",
+      icon: ICON,
       tag: 'morning-checkin',
       requireInteraction: true,
       actions: [{ action: 'open', title: 'Open Tracker' }]
     });
-    scheduleMorningNotification(); // reschedule for the next day
+    scheduleMorningNotification();
+  }, delay);
+}
+
+// End-of-day reflection — 9:00 PM Eastern (opt-in)
+function scheduleEveningNotification() {
+  const delay = getNextETTime(21, 0) - Date.now();
+  setTimeout(() => {
+    self.registration.showNotification('How was today? 🌙', {
+      body: 'Take a moment for your end-of-day reflection.',
+      icon: ICON,
+      tag: 'evening-reflection',
+      requireInteraction: true,
+      actions: [{ action: 'open', title: 'Open Tracker' }]
+    });
+    scheduleEveningNotification();
   }, delay);
 }

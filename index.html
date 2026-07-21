@@ -22,6 +22,9 @@
       <span class="date-badge" id="today-date"></span>
     </div>
 
+    <!-- Reminder-for-today banner (set from yesterday's reflection) -->
+    <div class="reminder-banner" id="today-reminder" hidden></div>
+
     <div class="morning-prompt-banner" id="morning-prompt" hidden>
       <span class="emoji">🌅</span>
       <div class="text">
@@ -39,7 +42,9 @@
       </div>
       <div class="spoon-stats">
         <span><strong id="spoon-used">0</strong> used</span>
-        <span>of <strong id="spoon-budget">10</strong> today</span>
+        <span>of <strong id="spoon-budget">10</strong> today
+          <button class="budget-edit-btn" id="budget-edit-btn" title="Edit today's starting balance">✏️</button>
+        </span>
         <span id="spoon-recovered" hidden style="color:var(--green)"></span>
       </div>
       <div class="budget-source" id="budget-source"></div>
@@ -47,14 +52,30 @@
 
     <div id="today-alerts"></div>
 
+    <!-- Energy scales -->
     <div class="card">
-      <div class="card-title">Quick Log</div>
-      <div class="quick-grid" id="quick-grid"></div>
+      <div class="card-title">Energy Check</div>
+      <div id="energy-am"></div>
+      <div id="energy-pm"></div>
+    </div>
+
+    <!-- Today's notes -->
+    <div class="card">
+      <div class="card-title">Notes for Today</div>
+      <textarea id="today-notes" placeholder="Anything you want to remember about today…"></textarea>
     </div>
 
     <div style="display:flex;gap:10px;margin-bottom:12px">
       <button class="btn btn-secondary" id="log-symptom-btn" style="flex:1">📊 Log Symptoms</button>
-      <button class="btn btn-primary" onclick="showPage('log')" style="flex:1">+ Log Activity</button>
+      <button class="btn btn-secondary" id="reflect-btn" style="flex:1">🌙 Reflect</button>
+    </div>
+
+    <div class="card">
+      <div class="card-title" style="display:flex;justify-content:space-between;align-items:center">
+        Quick Log
+        <button class="btn btn-sm btn-primary" onclick="showPage('log')" style="margin:0">+ More</button>
+      </div>
+      <div class="quick-grid" id="quick-grid"></div>
     </div>
 
     <div class="card">
@@ -67,12 +88,22 @@
   <main id="page-log" class="page" hidden>
     <div class="page-header">
       <h1>Log Activity</h1>
+      <button class="btn btn-sm btn-secondary" onclick="showPage('today')" style="margin:0">Done</button>
     </div>
 
+    <div class="log-hint" id="log-hint">Tap any activity to log it instantly.</div>
+
     <div class="card">
-      <div class="card-title">Select Activity</div>
+      <div class="card-title" style="display:flex;justify-content:space-between;align-items:center">
+        <span id="log-grid-title">Tap to Log</span>
+        <button class="multi-toggle" id="log-multi-toggle" hidden>Select multiple</button>
+      </div>
       <div class="activity-grid" id="log-activity-grid"></div>
-      <button class="btn btn-secondary btn-sm" id="log-custom-toggle" style="margin-top:4px">+ Custom Activity</button>
+      <div style="display:flex;gap:8px;margin-top:8px">
+        <button class="btn btn-secondary btn-sm" id="log-custom-toggle" style="flex:1">+ Custom</button>
+        <button class="btn btn-secondary btn-sm" id="log-advanced-toggle" style="flex:1">⚙︎ Advanced</button>
+      </div>
+      <button class="btn btn-primary" id="log-multi-submit" hidden style="margin-top:10px">Log Selected</button>
     </div>
 
     <div class="card" id="log-custom-section" hidden>
@@ -91,55 +122,70 @@
         <label class="form-label">Spoon Cost <span class="hint">(negative = recovery)</span></label>
         <input type="number" id="custom-spoons" placeholder="e.g. 2" min="-5" max="10" step="0.5" />
       </div>
-    </div>
-
-    <!-- Zone picker -->
-    <div class="card">
-      <div class="card-title">Zone <span class="hint">(optional — tap one)</span></div>
-      <div class="zone-picker-row" id="log-zone-picker"></div>
-      <div class="zone-legend">
-        <span>🟢 Genius = ½ cost · 🟠 Excellence = +0.5 · 🔵 Maint. = protected · ⚪ Competence · 🔴 Incompat. = flag</span>
+      <div class="form-group" style="margin-bottom:12px">
+        <label class="form-label">Category <span class="hint">(for reporting)</span></label>
+        <select id="custom-category">
+          <option value="medical">Medical</option>
+          <option value="exercise">Exercise</option>
+          <option value="work">Work</option>
+          <option value="social">Social</option>
+          <option value="errand">Errand</option>
+          <option value="household" selected>Household</option>
+          <option value="travel">Travel</option>
+          <option value="self-care">Self-care</option>
+          <option value="rest">Rest</option>
+          <option value="recovery">Recovery</option>
+        </select>
       </div>
+      <label class="save-lib-row">
+        <input type="checkbox" id="custom-save-lib" checked />
+        <span>Save to my activity library</span>
+      </label>
+      <button class="btn btn-primary" id="log-custom-submit" style="margin-top:12px">Log Custom Activity</button>
     </div>
 
-    <!-- Energy direction -->
-    <div class="card">
-      <div class="card-title">Energy Direction <span class="hint">(optional)</span></div>
-      <div class="dir-picker-row" id="log-dir-picker"></div>
-    </div>
-
-    <div class="card">
+    <div class="card" id="log-advanced-section" hidden>
+      <div class="card-title">Advanced <span class="hint" style="text-transform:none;letter-spacing:0;font-weight:400">— applies to your next tap</span></div>
       <div class="form-group">
-        <label class="form-label">When <span class="hint">(defaults to now)</span></label>
+        <label class="form-label">When</label>
         <input type="datetime-local" id="log-timestamp" />
       </div>
       <div class="form-group" style="margin-bottom:0">
         <label class="form-label">Notes <span class="hint">(optional)</span></label>
-        <textarea id="log-note" placeholder="How did it go? Any context..."></textarea>
+        <textarea id="log-note" placeholder="How did it go? Any context…"></textarea>
       </div>
     </div>
-
-    <button class="btn btn-primary" id="log-submit">Save Activity</button>
-    <button class="btn btn-secondary" onclick="showPage('today')" style="margin-top:8px">Cancel</button>
   </main>
 
   <!-- ══════════════ HISTORY PAGE ══════════════ -->
   <main id="page-history" class="page" hidden>
     <div class="page-header">
       <h1>History</h1>
-      <span class="date-badge">Last 7 days</span>
+    </div>
+    <div class="card" style="padding:12px 16px">
+      <div class="form-group" style="margin-bottom:0;display:flex;align-items:center;gap:10px">
+        <label class="form-label" style="margin-bottom:0;white-space:nowrap">Jump to date</label>
+        <input type="date" id="history-jump" style="flex:1" />
+      </div>
     </div>
     <div id="history-list"></div>
+    <button class="btn btn-secondary" id="history-more" style="margin-top:4px" hidden>Show earlier days</button>
   </main>
 
-  <!-- ══════════════ WEEKLY PAGE ══════════════ -->
+  <!-- ══════════════ PATTERNS PAGE ══════════════ -->
   <main id="page-weekly" class="page" hidden>
     <div class="page-header">
-      <h1>Weekly View</h1>
+      <h1>📈 Patterns</h1>
+    </div>
+
+    <!-- Section A — This week at a glance -->
+    <div class="card">
+      <div class="card-title">This Week at a Glance</div>
+      <div class="week-strip" id="week-strip"></div>
+      <div class="week-net" id="week-net"></div>
     </div>
 
     <div class="card">
-      <div class="card-title">This Week</div>
       <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px">
         <div style="text-align:center;padding:8px;background:var(--surface2);border-radius:10px">
           <div style="font-size:28px;font-weight:800;color:var(--primary)" id="weekly-total-used">—</div>
@@ -160,14 +206,21 @@
       </div>
     </div>
 
+    <!-- Section B — Morning energy trend -->
     <div class="card">
-      <div class="card-title">Daily Spoon Usage vs. Budget</div>
-      <div class="chart-container"><canvas id="chart-spoons"></canvas></div>
+      <div class="card-title">Morning Energy vs. Closing Balance (30-day)</div>
+      <div class="chart-container"><canvas id="chart-energy-trend"></canvas></div>
+    </div>
+
+    <!-- Section C — Category breakdown -->
+    <div class="card">
+      <div class="card-title">Spoons by Category (last 7 days)</div>
+      <div id="category-breakdown"></div>
     </div>
 
     <div class="card">
-      <div class="card-title">Morning Energy vs. Next-Day Fatigue</div>
-      <div class="chart-container"><canvas id="chart-energy"></canvas></div>
+      <div class="card-title">Daily Spoon Usage vs. Budget</div>
+      <div class="chart-container"><canvas id="chart-spoons"></canvas></div>
     </div>
 
     <div class="card">
@@ -175,65 +228,17 @@
       <div class="chart-container"><canvas id="chart-sleep"></canvas></div>
     </div>
 
+    <!-- Section D — Crash patterns -->
     <div class="card">
       <div class="card-title">Crash Patterns (30-day)</div>
       <div id="weekly-patterns"></div>
     </div>
 
+    <!-- Section E — Share + export -->
     <div class="card">
       <div class="card-title">Share & Export</div>
       <button class="btn btn-secondary" id="share-btn" style="margin-bottom:8px">📤 Share Spoon Count with Dan</button>
       <button class="btn btn-secondary" id="export-csv-btn">📊 Export Last 30 Days (CSV)</button>
-    </div>
-  </main>
-
-  <!-- ══════════════ ZONES PAGE ══════════════ -->
-  <main id="page-zones" class="page" hidden>
-    <div class="page-header">
-      <h1>🎯 Zone Audit</h1>
-      <span class="date-badge">This week</span>
-    </div>
-
-    <!-- Genius callout -->
-    <div class="card genius-callout-card">
-      <div class="genius-callout" id="genius-callout">
-        <div class="genius-num">—</div>
-        <div class="genius-label">spoons in Zone of Genius this week</div>
-        <div class="genius-sub">Log activities with zone tags to see your breakdown.</div>
-      </div>
-    </div>
-
-    <!-- Leak warnings -->
-    <div id="zone-leak-alert"></div>
-
-    <!-- Zone breakdown -->
-    <div class="card">
-      <div class="card-title">Spoon Allocation by Zone</div>
-      <div id="zone-breakdown"></div>
-    </div>
-
-    <!-- Zone chart -->
-    <div class="card" id="chart-zones-wrap" hidden>
-      <div class="card-title">Zone Distribution</div>
-      <div class="chart-container" style="height:200px"><canvas id="chart-zones"></canvas></div>
-    </div>
-
-    <!-- Energy direction -->
-    <div class="card">
-      <div class="card-title">Energy Direction This Week</div>
-      <div id="zone-energy-dir"></div>
-    </div>
-
-    <!-- Zone reference -->
-    <div class="card">
-      <div class="card-title">Zone Reference</div>
-      <div class="zone-ref-list">
-        <div class="zone-ref-item"><span class="zone-ref-dot" style="background:#16a34a"></span><div><strong>Zone of Genius 🟢</strong> — lose track of time; this is your target. Costs ½ spoons.</div></div>
-        <div class="zone-ref-item"><span class="zone-ref-dot" style="background:#ea580c"></span><div><strong>Zone of Excellence 🟠</strong> — you're great at it but it drains you. Costs +0.5 extra spoons.</div></div>
-        <div class="zone-ref-item"><span class="zone-ref-dot" style="background:#2563eb"></span><div><strong>Maintenance 🔵</strong> — PT, OT, SLP, CMT class, medical. Protected infrastructure.</div></div>
-        <div class="zone-ref-item"><span class="zone-ref-dot" style="background:#64748b"></span><div><strong>Zone of Competence ⚪</strong> — you can do it but it's not special. Full cost.</div></div>
-        <div class="zone-ref-item"><span class="zone-ref-dot" style="background:#dc2626"></span><div><strong>Zone of Incompetence 🔴</strong> — someone else should do this. Flagged in your log.</div></div>
-      </div>
     </div>
   </main>
 
@@ -247,10 +252,21 @@
       <div class="card-title">Energy Budget</div>
       <div class="settings-item">
         <div>
-          <div class="s-label">Base Daily Budget</div>
-          <div class="s-sub">Good check-in: +2 · Poor check-in: −4</div>
+          <div class="s-label">Default Base Budget</div>
+          <div class="s-sub">Starting spoons before check-in adjustments</div>
         </div>
         <input type="number" id="set-base-budget" min="4" max="20" step="1" />
+      </div>
+      <div class="settings-item">
+        <div>
+          <div class="s-label">Auto-adjust from Check-In</div>
+          <div class="s-sub">Good check-in: +2 · Poor check-in: −4</div>
+        </div>
+        <label style="position:relative;display:inline-block;width:44px;height:24px">
+          <input type="checkbox" id="set-auto-adjust" style="opacity:0;width:0;height:0;position:absolute" />
+          <span onclick="this.previousElementSibling.click();this.style.background=this.previousElementSibling.checked?'var(--primary)':'#ccc'"
+            style="position:absolute;inset:0;border-radius:12px;background:#ccc;transition:.3s;cursor:pointer"></span>
+        </label>
       </div>
       <div class="settings-item">
         <div>
@@ -270,6 +286,17 @@
         </div>
         <label style="position:relative;display:inline-block;width:44px;height:24px">
           <input type="checkbox" id="set-stacking" style="opacity:0;width:0;height:0;position:absolute" />
+          <span onclick="this.previousElementSibling.click();this.style.background=this.previousElementSibling.checked?'var(--primary)':'#ccc'"
+            style="position:absolute;inset:0;border-radius:12px;background:#ccc;transition:.3s;cursor:pointer"></span>
+        </label>
+      </div>
+      <div class="settings-item">
+        <div>
+          <div class="s-label">Evening Reflection Reminder</div>
+          <div class="s-sub">Notification at 9 PM Eastern for your end-of-day reflection</div>
+        </div>
+        <label style="position:relative;display:inline-block;width:44px;height:24px">
+          <input type="checkbox" id="set-evening-reminder" style="opacity:0;width:0;height:0;position:absolute" />
           <span onclick="this.previousElementSibling.click();this.style.background=this.previousElementSibling.checked?'var(--primary)':'#ccc'"
             style="position:absolute;inset:0;border-radius:12px;background:#ccc;transition:.3s;cursor:pointer"></span>
         </label>
@@ -313,6 +340,21 @@
             <input type="number" id="new-custom-spoons" placeholder="1" min="-5" max="10" step="0.5" />
           </div>
         </div>
+        <div class="form-group" style="margin-bottom:10px">
+          <label class="form-label">Category</label>
+          <select id="new-custom-category">
+            <option value="medical">Medical</option>
+            <option value="exercise">Exercise</option>
+            <option value="work">Work</option>
+            <option value="social">Social</option>
+            <option value="errand">Errand</option>
+            <option value="household" selected>Household</option>
+            <option value="travel">Travel</option>
+            <option value="self-care">Self-care</option>
+            <option value="rest">Rest</option>
+            <option value="recovery">Recovery</option>
+          </select>
+        </div>
         <button class="btn btn-secondary" id="add-custom-btn">+ Add Activity</button>
       </div>
     </div>
@@ -338,10 +380,7 @@
       <span class="nav-icon">📋</span>History
     </button>
     <button id="nav-weekly" data-page="weekly">
-      <span class="nav-icon">📈</span>Weekly
-    </button>
-    <button id="nav-zones" data-page="zones">
-      <span class="nav-icon">🎯</span>Zones
+      <span class="nav-icon">📈</span>Patterns
     </button>
     <button id="nav-settings" data-page="settings">
       <span class="nav-icon">⚙️</span>Settings

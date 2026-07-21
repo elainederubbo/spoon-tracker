@@ -21,13 +21,21 @@
    - **Anything else** → 10 spoons (your base)
 
 ### Throughout the Day
-- **Quick Log buttons** (top row): one-tap entry for your 5 most common activities.
-- **"+ Log Activity"** button: full list of all activities + custom entry + back-dating.
+- **Energy check** (Today tab): tap your morning energy (1–10). After 6 PM Eastern an evening scale appears and shows the change vs. morning.
+- **Notes for today**: a persistent scratchpad that auto-saves.
+- **Quick Log buttons**: one-tap entry for your 5 most common activities.
+- **Log tab**: tap any activity to log it instantly. **+ Custom** adds a new one, **Advanced** lets you back-date or add a note, and **Select multiple** logs several at once.
 - **"📊 Log Symptoms"**: record brain fog, falls, weakness, and next-day fatigue rating.
+- **"🌙 Reflect"** (or the 9 PM reminder): what went well, how overwhelming the day was, and a note that surfaces on tomorrow's Today tab.
+
+### Editing on the fly
+- **Starting balance**: tap the ✏️ next to today's budget to override it for the day (e.g. set 15 on a big day).
+- **A logged activity's cost**: tap its number in the Today list to adjust it inline.
+- **An activity's defaults**: long-press it on the Log screen to edit emoji, name, cost, and category.
 
 ### Each Entry Shows
 - Spoon cost deducted immediately from your meter
-- After-6pm modifier (+0.5 spoons) applied automatically if you log after 6 PM
+- After-6pm modifier (+0.5 spoons) applied automatically if you log after 6 PM Eastern
 - Stacking penalty (+1 spoon) added if you do 2+ high-cost activities (3+ spoons each) in a day
 
 ---
@@ -43,11 +51,11 @@
 
 | Tab | What it does |
 |-----|-------------|
-| 🥄 Today | Spoon meter, alerts, quick log, today's activity list |
-| ➕ Log | Full activity selector, custom entries, back-dating, notes |
-| 📋 History | Last 7 days — tap any day to expand; log symptoms per day |
-| 📈 Weekly | Charts: spoon usage, energy vs. fatigue, sleep hours; crash pattern detection |
-| ⚙️ Settings | Customize spoon costs, budget, modifiers, custom activities, export |
+| 🥄 Today | Spoon meter (with editable starting balance), morning/evening energy check, today's notes, quick log, symptoms, reflection, activity list |
+| ➕ Log | One-tap logging from the full activity list · **+ Custom** for new activities · **Advanced** for back-dating & notes · **Select multiple** to log several at once |
+| 📋 History | Scroll back through every day · **jump to any date** · tap a day to expand activities, symptoms, check-in, and reflection |
+| 📈 Patterns | This-week closing-balance strip + net surplus/deficit · morning-energy trend · spoons-by-category · usage vs. budget · sleep · crash-pattern detection · share & export |
+| ⚙️ Settings | Default budget, auto-adjust toggle, modifiers, evening-reminder toggle, quick-log picker, spoon-cost overrides, custom activities, export |
 
 ---
 
@@ -78,91 +86,111 @@ If you do PT (4 spoons) AND CMT class (3 spoons) on the same day, an automatic +
 Logging a **Nap** immediately adds +1 spoon back to your remaining count. Full night sleep adds +5 (used at next morning's check-in).
 
 ### Crash Pattern Detection
-After you've been logging for a week or more, the Weekly view automatically flags patterns like "PT + CMT class same day → high fatigue next morning" based on YOUR actual data.
+After you've been logging for a week or more, the Patterns view automatically flags patterns like "PT + CMT class same day → high fatigue next morning" based on YOUR actual data.
 
 ---
 
 ## Sharing with Dan
-- **Weekly tab → "📤 Share Spoon Count with Dan"**
+- **Patterns tab → "📤 Share Spoon Count with Dan"**
 - On iPhone: opens the share sheet so you can text/iMessage directly
 - On Mac: copies a text summary to clipboard
 
 ## Exporting Data
-- Weekly tab → **"📊 Export Last 30 Days (CSV)"**
+- Patterns tab → **"📊 Export Last 30 Days (CSV)"**
 - Downloads a spreadsheet you can open in Excel or share with your doctor
 
 ---
 
-## Morning Notifications (iPhone)
-When you first open the app, it will ask for notification permission. If you allow it, you'll get a reminder at 7 AM each day to complete your morning check-in.
+## Notifications (iPhone)
+When you first open the app, it will ask for notification permission. If you allow it:
+- **5:15 AM Eastern** — morning check-in reminder (always on).
+- **9:00 PM Eastern** — end-of-day reflection reminder (opt-in: Settings → "Evening Reflection Reminder").
+
+All dates, day rollovers, and timestamps run on **US Eastern Time** regardless of your device's timezone, so your daily spoon budget always matches your actual day.
 
 ---
 
 ## Activity Presets & Default Costs
 
-All costs can be overridden in ⚙️ Settings → Customize Spoon Costs.
+All costs can be overridden in ⚙️ Settings → Customize Spoon Costs (or **long-press any activity** on the Log screen to edit its emoji, name, cost, and category).
 
 **Medical / Therapy**
-| Activity | Cost | Default Zone |
-|----------|------|-------------|
-| 🏥 PT Session | 4 spoons | 🔵 Maintenance |
-| 🦵 PT Exercises | 1 spoon | 🔵 Maintenance |
-| 🤲 OT Exercises | 1 spoon | 🔵 Maintenance |
-| 🗣️ SLP Work | 1 spoon | 🔵 Maintenance |
-| 👨‍⚕️ Doctor Appointment | 2 spoons | 🔵 Maintenance |
-| 💪 CMT Exercise Class | 3 spoons | 🔵 Maintenance |
+| Activity | Cost |
+|----------|------|
+| 🏥 PT Session | 4 spoons |
+| 🦵 PT Exercises | 1 spoon |
+| 🤲 OT Exercises | 1 spoon |
+| 🗣️ SLP Work | 1 spoon |
+| 👨‍⚕️ Doctor Appointment | 2 spoons |
+| 💪 CMT Exercise Class | 3 spoons |
 
 **Exercise**
-| Activity | Cost | Default Zone |
-|----------|------|-------------|
-| 🏃 Daily Workout (15 min) | 2 spoons | 🔵 Maintenance |
-| 🧘 Yoga | 2 spoons | 🔵 Maintenance |
-| 🏋️ Gym | 3 spoons | ⚪ Competence |
-| 🐕 Walking Dog | 1 spoon | ⚪ Competence |
+| Activity | Cost |
+|----------|------|
+| 🏃 Daily Workout (15 min) | 2 spoons |
+| 🧘 Yoga | 2 spoons |
+| 🏋️ Gym | 3 spoons |
+| 🐕 Walking Dog | 1 spoon |
 
 **Work / Job Search**
-| Activity | Cost | Default Zone |
-|----------|------|-------------|
-| 💻 Work / Job Search Block | 3 spoons | 🟠 Excellence |
-| 📋 Admin / Paperwork | 1 spoon | ⚪ Competence |
+| Activity | Cost |
+|----------|------|
+| 💻 Work / Job Search Block | 3 spoons |
+| 📋 Admin / Paperwork | 1 spoon |
 
 **Social**
-| Activity | Cost | Default Zone |
-|----------|------|-------------|
-| 👥 Social Outing | 2 spoons | ⚪ Competence |
-| 📞 Phone/Video Catch-up | 1 spoon | ⚪ Competence |
-| 🍽️ Restaurant Meal | 2 spoons | ⚪ Competence |
-| 🎬 Movie / Live Event | 2 spoons | ⚪ Competence |
+| Activity | Cost |
+|----------|------|
+| 👥 Social Outing | 2 spoons |
+| 📞 Phone/Video Catch-up | 1 spoon |
+| 🍽️ Restaurant Meal | 2 spoons |
+| 🎬 Movie / Live Event | 2 spoons |
+| 🎤 Live Music | 2 spoons |
 
 **Errands / Travel**
-| Activity | Cost | Default Zone |
-|----------|------|-------------|
-| 🛒 Grocery Shopping | 2 spoons | ⚪ Competence |
-| 📮 Quick Errand | 1 spoon | ⚪ Competence |
-| 🚗 Driving | 1 spoon | ⚪ Competence |
-| 🐾 Pet Care (vet/boarding) | 2 spoons | ⚪ Competence |
-| ✈️ Travel Day (Flight) | 5 spoons | ⚪ Competence |
-| 🧳 Packing for Trip | 2 spoons | ⚪ Competence |
+| Activity | Cost |
+|----------|------|
+| 🛒 Grocery Shopping | 2 spoons |
+| 📮 Quick Errand | 1 spoon |
+| 🚗 Driving | 1 spoon |
+| 🐾 Pet Care (vet/boarding) | 2 spoons |
+| ✈️ Travel Day (Flight) | 5 spoons |
+| 🧳 Packing for Trip | 2 spoons |
+| 🚉 Getting to Live Music | 2 spoons |
 
 **Household**
-| Activity | Cost | Default Zone |
-|----------|------|-------------|
-| 🍳 Cooking Meal | 1 spoon | ⚪ Competence |
-| 🥧 Baking Project | 2 spoons | ⚪ Competence |
-| 🧹 Light Chores | 1 spoon | ⚪ Competence |
-| 🏠 Heavy Chores | 2 spoons | ⚪ Competence |
-| 📦 Decluttering Session | 3 spoons | ⚪ Competence |
+| Activity | Cost |
+|----------|------|
+| 🍳 Cooking Meal | 1 spoon |
+| 🥧 Baking Project | 2 spoons |
+| 🧹 Light Chores | 1 spoon |
+| 🏠 Heavy Chores | 2 spoons |
+| 📦 Decluttering Session | 3 spoons |
+| 🧺 Folding Laundry | 1 spoon |
 
 **Self-Care / Rest / Recovery**
-| Activity | Cost | Default Zone |
-|----------|------|-------------|
-| 🚿 Shower | 1 spoon | 🔵 Maintenance |
-| 📺 Watching TV / Resting | 0 spoons | ⚪ Competence |
-| ✍️ Journaling | 0 spoons | 🟢 Genius |
-| 🧘‍♀️ Meditation | +1 recovery | 🟢 Genius |
-| 💆 Massage | +2 recovery | 🔵 Maintenance |
-| 😴 Nap | +1 recovery | 🔵 Maintenance |
-| 🌙 Full Night Sleep | +5 recovery | 🔵 Maintenance |
+| Activity | Cost |
+|----------|------|
+| 🚿 Shower | 1 spoon |
+| 🧴 Shower — Hair Wash | 1.5 spoons |
+| 🚽 Bowel Movement | 0.5 spoons |
+| 📺 Watching TV / Resting | 0 spoons |
+| ✍️ Journaling | 0 spoons |
+| 📝 Morning Pages | +1 recovery |
+| 🙏 Gratitude Journal | +0.5 recovery |
+| 🧘‍♀️ Meditation | +1 recovery |
+| 🛋️ Restorative / Yin Yoga | +1 recovery |
+| 🐕 Time with Charlie | +1 recovery |
+| 🌳 Outdoor / Nature Time | +1 recovery |
+| 📖 Reading — Fiction | +1 recovery |
+| 📚 Reading — Nonfiction | +0.5 recovery |
+| 🎵 Music — Favorite Artists | +1 recovery |
+| 🎧 Music — Other Playlists | +0.5 recovery |
+| 📻 Music — Radio | +0.5 recovery |
+| 🧩 Puzzle | +0.5 recovery |
+| 💆 Massage | +2 recovery |
+| 😴 Nap | +1 recovery |
+| 🌙 Full Night Sleep | +5 recovery |
 
 ---
 

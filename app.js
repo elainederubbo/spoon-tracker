@@ -5,11 +5,15 @@
 // ═══════════════════════════════════════════════════════
 
 const KEYS = {
-  ACTIVITIES: 'cmt_activities',
-  CHECKINS:   'cmt_checkins',
-  SYMPTOMS:   'cmt_symptoms',
-  SETTINGS:   'cmt_settings',
-  CUSTOM_ACT: 'cmt_custom',
+  ACTIVITIES:      'cmt_activities',
+  CHECKINS:        'cmt_checkins',
+  SYMPTOMS:        'cmt_symptoms',
+  SETTINGS:        'cmt_settings',
+  CUSTOM_ACT:      'cmt_custom',
+  ENERGY:          'cmt_energy',            // per-day { am:{score,ts}, pm:{score,ts} }
+  NOTES:           'cmt_notes',             // per-day freeform notes string
+  REFLECTIONS:     'cmt_reflections',       // per-day end-of-day reflection
+  BUDGET_OVERRIDE: 'cmt_budget_override',   // per-day starting-balance override
 };
 
 const DEFAULT_ACTIVITIES = [
@@ -51,9 +55,11 @@ const DEFAULT_ACTIVITIES = [
   { id: 'chores_lt',     name: 'Light Chores',            emoji: '🧹', spoons: 1,  category: 'household',  recovery: false },
   { id: 'chores_hv',     name: 'Heavy Chores',            emoji: '🏠', spoons: 2,  category: 'household',  recovery: false },
   { id: 'declutter',     name: 'Decluttering Session',    emoji: '📦', spoons: 3,  category: 'household',  recovery: false },
+  { id: 'laundry',       name: 'Folding Laundry',         emoji: '🧺', spoons: 1,  category: 'household',  recovery: false },
 
   // Self-care / rest / recovery
   { id: 'shower',              name: 'Shower',                    emoji: '🚿', spoons: 1,    category: 'self-care',  recovery: false },
+  { id: 'shower_hair',         name: 'Shower — Hair Wash',        emoji: '🧴', spoons: 1.5,  category: 'self-care',  recovery: false },
   { id: 'tv_rest',             name: 'Watching TV / Resting',     emoji: '📺', spoons: 0,    category: 'rest',       recovery: false },
   { id: 'journaling',          name: 'Journaling',                emoji: '✍️', spoons: 0,    category: 'rest',       recovery: false },
   { id: 'meditation',          name: 'Meditation',                emoji: '🧘‍♀️', spoons: -1,   category: 'recovery',   recovery: true  },
@@ -67,61 +73,59 @@ const DEFAULT_ACTIVITIES = [
   { id: 'music_fav',           name: 'Music — Favorite Artists',  emoji: '🎵', spoons: -1,   category: 'recovery',   recovery: true  },
   { id: 'music_other',         name: 'Music — Other Playlists',   emoji: '🎧', spoons: -0.5, category: 'recovery',   recovery: true  },
   { id: 'music_radio',         name: 'Music — Radio',             emoji: '📻', spoons: -0.5, category: 'recovery',   recovery: true  },
+  { id: 'live_music',          name: 'Live Music',                emoji: '🎤', spoons: 2,    category: 'social',     recovery: false },
+  { id: 'live_music_travel',   name: 'Getting to Live Music',     emoji: '🚉', spoons: 2,    category: 'travel',     recovery: false },
   { id: 'puzzle',              name: 'Puzzle',                    emoji: '🧩', spoons: -0.5, category: 'recovery',   recovery: true  },
+  { id: 'bowel',               name: 'Bowel Movement',            emoji: '🚽', spoons: 0.5,  category: 'self-care',  recovery: false },
   { id: 'massage',             name: 'Massage',                   emoji: '💆', spoons: -2,   category: 'recovery',   recovery: true  },
   { id: 'nap',                 name: 'Nap',                       emoji: '😴', spoons: -1,   category: 'recovery',   recovery: true  },
   { id: 'sleep',               name: 'Full Night Sleep',          emoji: '🌙', spoons: -5,   category: 'recovery',   recovery: true  },
 ];
 
-// Zone definitions
-const ZONES = [
-  { id: 'genius',       label: 'Genius',       fullLabel: 'Zone of Genius',       emoji: '🟢', color: '#16a34a', bg: '#dcfce7', costNote: '½ cost'    },
-  { id: 'excellence',   label: 'Excellence',   fullLabel: 'Zone of Excellence',   emoji: '🟠', color: '#ea580c', bg: '#ffedd5', costNote: '+0.5'      },
-  { id: 'maintenance',  label: 'Maintenance',  fullLabel: 'Maintenance',          emoji: '🔵', color: '#2563eb', bg: '#dbeafe', costNote: 'protected' },
-  { id: 'competence',   label: 'Competence',   fullLabel: 'Zone of Competence',   emoji: '⚪', color: '#64748b', bg: '#f1f5f9', costNote: 'full cost' },
-  { id: 'incompetence', label: 'Incompetence', fullLabel: 'Zone of Incompetence', emoji: '🔴', color: '#dc2626', bg: '#fee2e2', costNote: 'flag it'   },
+// Category display order + labels (for reporting only — never in daily log)
+const CATEGORIES = [
+  { id: 'medical',   label: 'Medical',    color: '#2563eb' },
+  { id: 'exercise',  label: 'Exercise',   color: '#0891b2' },
+  { id: 'work',      label: 'Work',       color: '#7c3aed' },
+  { id: 'social',    label: 'Social',     color: '#db2777' },
+  { id: 'errand',    label: 'Errand',     color: '#ca8a04' },
+  { id: 'household', label: 'Household',  color: '#ea580c' },
+  { id: 'travel',    label: 'Travel',     color: '#0d9488' },
+  { id: 'self-care', label: 'Self-care',  color: '#16a34a' },
+  { id: 'rest',      label: 'Rest',       color: '#64748b' },
+  { id: 'recovery',  label: 'Recovery',   color: '#22c55e' },
 ];
 
-// Default zone per preset activity
+// Default zone per preset activity — kept in the data layer for read-compat with
+// older logs. Zones are no longer surfaced anywhere in the UI.
 const DEFAULT_ZONES = {
-  // Medical
   pt: 'maintenance', pt_ex: 'maintenance', ot_ex: 'maintenance', slp: 'maintenance',
   doctor: 'maintenance', cmt_class: 'maintenance',
-  // Exercise
   daily_workout: 'maintenance', yoga: 'maintenance', gym: 'competence', dog_walk: 'competence',
-  // Work
   work_block: 'excellence', admin: 'competence',
-  // Social
   social: 'competence', call: 'competence', restaurant: 'competence', event: 'competence',
-  // Errand / travel
   grocery: 'competence', errand: 'competence', driving: 'competence',
   pet_care: 'competence', travel_day: 'competence', packing: 'competence',
-  // Household
   cooking: 'competence', baking: 'competence', chores_lt: 'competence',
-  chores_hv: 'competence', declutter: 'competence',
-  // Self-care / rest / recovery
-  shower: 'maintenance', tv_rest: 'competence', journaling: 'genius',
+  chores_hv: 'competence', declutter: 'competence', laundry: 'competence',
+  shower: 'maintenance', shower_hair: 'maintenance', tv_rest: 'competence', journaling: 'genius',
   meditation: 'genius', yin_yoga: 'maintenance', morning_pages: 'genius',
   gratitude_journal: 'genius', charlie_time: 'genius', nature_time: 'genius',
   reading_fiction: 'genius', reading_nonfiction: 'competence',
   music_fav: 'genius', music_other: 'competence', music_radio: 'competence',
-  puzzle: 'competence', massage: 'maintenance', nap: 'maintenance', sleep: 'maintenance',
+  live_music: 'genius', live_music_travel: 'competence',
+  puzzle: 'competence', bowel: 'maintenance', massage: 'maintenance', nap: 'maintenance', sleep: 'maintenance',
 };
-
-// Energy direction options
-const ENERGY_DIRS = [
-  { id: 'gave',    label: '+', title: 'Gave energy',  color: '#16a34a' },
-  { id: 'neutral', label: '0', title: 'Neutral',       color: '#64748b' },
-  { id: 'drained', label: '−', title: 'Drained',       color: '#dc2626' },
-];
 
 const QUICK_IDS = ['pt', 'cmt_class', 'yoga', 'meditation', 'nap'];
 
 const DEFAULT_SETTINGS = {
   baseBudget: 10,
   quickIds: QUICK_IDS,
+  autoAdjust: true,
   enableAfterSixModifier: true,
   enableStackingPenalty: true,
+  enableEveningReminder: false,
 };
 
 // ═══════════════════════════════════════════════════════
@@ -138,12 +142,23 @@ function saveSettings(s) { save(KEYS.SETTINGS, s); }
 function getCustomActivities() { return load(KEYS.CUSTOM_ACT) || []; }
 
 function getAllActivities() {
-  const custom = getCustomActivities();
   const settings = getSettings();
+  const overrides = settings.overrides || {};
+  const legacyCost = settings.spoonOverrides || {};
   const presets = DEFAULT_ACTIVITIES.map(a => {
-    const override = settings.spoonOverrides?.[a.id];
-    return override !== undefined ? { ...a, spoons: override } : a;
+    const ov = overrides[a.id] || {};
+    const cost = ov.spoons ?? legacyCost[a.id] ?? a.spoons;
+    return {
+      ...a,
+      name: ov.name ?? a.name,
+      emoji: ov.emoji ?? a.emoji,
+      category: ov.category ?? a.category,
+      spoons: cost,
+      recovery: cost < 0 ? true : a.recovery,
+    };
   });
+  // Custom activities: default missing category to 'household'
+  const custom = getCustomActivities().map(a => ({ ...a, category: a.category || 'household' }));
   return [...presets, ...custom];
 }
 
@@ -153,6 +168,13 @@ function saveActivityForDate(ds, entry) {
   const all = load(KEYS.ACTIVITIES) || {};
   if (!all[ds]) all[ds] = [];
   all[ds].push(entry);
+  save(KEYS.ACTIVITIES, all);
+}
+
+function updateActivityForDate(ds, entryId, patch) {
+  const all = load(KEYS.ACTIVITIES) || {};
+  if (!all[ds]) return;
+  all[ds] = all[ds].map(e => e.id === entryId ? { ...e, ...patch } : e);
   save(KEYS.ACTIVITIES, all);
 }
 
@@ -166,7 +188,7 @@ function deleteActivityForDate(ds, entryId) {
 function getCheckin(ds) { return (load(KEYS.CHECKINS) || {})[ds] || null; }
 function saveCheckin(ds, data) {
   const all = load(KEYS.CHECKINS) || {};
-  all[ds] = { ...data, date: ds };
+  all[ds] = { ...(all[ds] || {}), ...data, date: ds };
   save(KEYS.CHECKINS, all);
 }
 function getSymptoms(ds) { return (load(KEYS.SYMPTOMS) || {})[ds] || null; }
@@ -174,6 +196,42 @@ function saveSymptoms(ds, data) {
   const all = load(KEYS.SYMPTOMS) || {};
   all[ds] = { ...data, date: ds };
   save(KEYS.SYMPTOMS, all);
+}
+
+// Energy scales (start/end of day)
+function getEnergy(ds) { return (load(KEYS.ENERGY) || {})[ds] || null; }
+function saveEnergy(ds, slot, score) {
+  const all = load(KEYS.ENERGY) || {};
+  if (!all[ds]) all[ds] = {};
+  all[ds][slot] = { score, ts: new Date().toISOString() };
+  save(KEYS.ENERGY, all);
+}
+
+// Freeform per-day notes
+function getNotes(ds) { return (load(KEYS.NOTES) || {})[ds] || ''; }
+function saveNotes(ds, text) {
+  const all = load(KEYS.NOTES) || {};
+  if (text) all[ds] = text; else delete all[ds];
+  save(KEYS.NOTES, all);
+}
+
+// End-of-day reflections
+function getReflection(ds) { return (load(KEYS.REFLECTIONS) || {})[ds] || null; }
+function saveReflection(ds, data) {
+  const all = load(KEYS.REFLECTIONS) || {};
+  all[ds] = { ...data, timestamp: new Date().toISOString() };
+  save(KEYS.REFLECTIONS, all);
+}
+
+// Per-day starting-balance override
+function getBudgetOverride(ds) {
+  const v = (load(KEYS.BUDGET_OVERRIDE) || {})[ds];
+  return (v === undefined || v === null) ? null : v;
+}
+function setBudgetOverride(ds, n) {
+  const all = load(KEYS.BUDGET_OVERRIDE) || {};
+  if (n === null) delete all[ds]; else all[ds] = n;
+  save(KEYS.BUDGET_OVERRIDE, all);
 }
 
 // ═══════════════════════════════════════════════════════
@@ -190,6 +248,17 @@ function today() {
 // Date object → "YYYY-MM-DD" in Eastern Time
 function dateStr(d) {
   return d.toLocaleDateString('en-CA', { timeZone: TZ });
+}
+
+function yesterdayStr() {
+  return dateStr(new Date(Date.now() - 86400000));
+}
+
+// Current hour (0-23) in Eastern Time
+function etHourNow() {
+  return parseInt(new Intl.DateTimeFormat('en-US', {
+    timeZone: TZ, hour: '2-digit', hour12: false,
+  }).format(new Date()), 10) % 24;
 }
 
 // Format a date-string for display (input is already an ET date key)
@@ -217,14 +286,13 @@ function etNowInput() {
   return `${p.year}-${p.month}-${p.day}T${h}:${p.minute}`;
 }
 
-// Parse a datetime-local input value ("YYYY-MM-DDTHH:MM") treating it as Eastern Time
+// Parse a datetime-local input value ("YYYY-MM-DDTHH:MM") treating it as Eastern Time.
 // Returns an ISO UTC string suitable for storage.
 function parseETInput(str) {
   if (!str) return new Date().toISOString();
   const [datePart, timePart] = str.split('T');
   const [year, month, day] = datePart.split('-').map(Number);
   const [hours, minutes] = timePart.split(':').map(Number);
-  // Try EDT (UTC-4) then EST (UTC-5); pick whichever yields the correct ET hour
   for (const off of [4, 5]) {
     const candidate = new Date(Date.UTC(year, month - 1, day, hours + off, minutes));
     const etH = parseInt(new Intl.DateTimeFormat('en-US', {
@@ -232,7 +300,6 @@ function parseETInput(str) {
     }).format(candidate), 10) % 24;
     if (etH === hours) return candidate.toISOString();
   }
-  // Fallback: return as-is assuming UTC
   return new Date(`${str}:00Z`).toISOString();
 }
 
@@ -241,39 +308,33 @@ function last7Days() {
     const d = new Date(); d.setDate(d.getDate() - (6 - i)); return dateStr(d);
   });
 }
-function last30Days() {
-  return Array.from({ length: 30 }, (_, i) => {
-    const d = new Date(); d.setDate(d.getDate() - (29 - i)); return dateStr(d);
+function lastNDays(n) {
+  return Array.from({ length: n }, (_, i) => {
+    const d = new Date(); d.setDate(d.getDate() - (n - 1 - i)); return dateStr(d);
   });
 }
+function last30Days() { return lastNDays(30); }
 
 // ═══════════════════════════════════════════════════════
-// ZONE HELPERS
+// ACTIVITY / CATEGORY HELPERS
 // ═══════════════════════════════════════════════════════
-
-function getZone(zoneId) { return ZONES.find(z => z.id === zoneId) || null; }
 
 function getActivityDefaultZone(actId) {
-  // Check custom activity zone overrides in settings
   const settings = getSettings();
   if (settings.zoneDefaults?.[actId]) return settings.zoneDefaults[actId];
   return DEFAULT_ZONES[actId] || null;
 }
 
-function zoneDot(zoneId) {
-  const z = getZone(zoneId);
-  if (!z) return '';
-  return `<span class="zone-dot" style="background:${z.color}" title="${z.fullLabel}"></span>`;
-}
-
-function zoneBadge(zoneId) {
-  const z = getZone(zoneId);
-  if (!z) return '';
-  return `<span class="zone-badge" style="background:${z.bg};color:${z.color}">${z.emoji} ${z.label}</span>`;
+function entryCategory(e) {
+  if (e.category) return e.category;
+  const preset = DEFAULT_ACTIVITIES.find(a => a.id === e.activityId);
+  if (preset) return preset.category;
+  const custom = getCustomActivities().find(a => a.id === e.activityId);
+  return custom?.category || 'household';
 }
 
 // ═══════════════════════════════════════════════════════
-// SPOON ENGINE
+// SPOON ENGINE  (formula unchanged — override/toggle layers added around it)
 // ═══════════════════════════════════════════════════════
 
 function calcBudgetBreakdown(checkin) {
@@ -286,9 +347,8 @@ function calcBudgetBreakdown(checkin) {
   const isGood = energy >= 8 && !brainFog && !muscleWeak && cpapHours >= 6;
   const isPoor = energy <= 5 && (brainFog || muscleWeak);
   if (isGood) goodDay = 2;
-  if (isPoor) poorDay = Math.min(base - 4, base); // deduction to reach max(4, base-4)
+  if (isPoor) poorDay = Math.min(base - 4, base);
 
-  // New stacking bonuses
   const sleepBonus = sleepHours > 7 ? 1 : 0;
   const qualityBonus = (sleepQuality >= 4 && cpapHours > 7.5) ? 2 : 0;
 
@@ -296,7 +356,6 @@ function calcBudgetBreakdown(checkin) {
   if (isPoor) total = Math.max(4, base - 4) + sleepBonus + qualityBonus;
   else total = base + goodDay + sleepBonus + qualityBonus;
 
-  // Build plain-English description
   const parts = [`Base ${base}`];
   if (goodDay)      parts.push(`good check-in +${goodDay}`);
   if (isPoor)       parts.push(`symptoms −${base - Math.max(4, base - 4)}`);
@@ -311,6 +370,16 @@ function calcDailyBudget(checkin) {
   return calcBudgetBreakdown(checkin).total;
 }
 
+// Resolves the actual budget for a day: manual override > auto-adjust > base.
+function getDailyBudget(ds) {
+  const override = getBudgetOverride(ds);
+  if (override !== null) return override;
+  const settings = getSettings();
+  const checkin = getCheckin(ds);
+  if (settings.autoAdjust === false) return settings.baseBudget || 10;
+  return calcDailyBudget(checkin);
+}
+
 function isAfterSix(isoTimestamp) {
   const etHour = parseInt(new Intl.DateTimeFormat('en-US', {
     timeZone: TZ, hour: '2-digit', hour12: false,
@@ -319,22 +388,17 @@ function isAfterSix(isoTimestamp) {
 }
 
 function calcEntryEffectiveCost(entry, allEntries, settings) {
+  // Manual per-entry cost edit wins over everything.
+  if (entry.costOverride !== undefined && entry.costOverride !== null) return entry.costOverride;
   if (entry.isRecovery || entry.baseCost <= 0) return entry.baseCost;
   let cost = entry.baseCost;
 
-  // Zone modifier
+  // Zone modifier retained for read-compat with older zoned entries.
   const zone = entry.zone;
-  if (zone === 'genius') {
-    cost = Math.round((cost * 0.5) * 2) / 2; // round to nearest 0.5
-  } else if (zone === 'excellence') {
-    cost += 0.5;
-  }
-  // maintenance / competence / incompetence = full cost
+  if (zone === 'genius') cost = Math.round((cost * 0.5) * 2) / 2;
+  else if (zone === 'excellence') cost += 0.5;
 
-  // After-6pm modifier
-  if (settings.enableAfterSixModifier && isAfterSix(entry.timestamp)) {
-    cost += 0.5;
-  }
+  if (settings.enableAfterSixModifier && isAfterSix(entry.timestamp)) cost += 0.5;
 
   return parseFloat(cost.toFixed(1));
 }
@@ -360,8 +424,7 @@ function calcSpoonsRecovered(entries) {
 }
 
 function calcSpoonsRemaining(ds) {
-  const checkin = getCheckin(ds);
-  const budget = calcDailyBudget(checkin);
+  const budget = getDailyBudget(ds);
   const entries = getActivitiesForDate(ds);
   const settings = getSettings();
   const used = calcSpoonsUsed(entries, settings);
@@ -373,39 +436,6 @@ function spoonColorClass(remaining) {
   if (remaining <= 2) return 'red';
   if (remaining <= 5) return 'yellow';
   return 'green';
-}
-
-// ═══════════════════════════════════════════════════════
-// ZONE AUDIT CALCULATIONS
-// ═══════════════════════════════════════════════════════
-
-function calcZoneAudit(days) {
-  const totals = {};
-  ZONES.forEach(z => { totals[z.id] = 0; });
-  let grandTotal = 0;
-  const dirCounts = { gave: 0, neutral: 0, drained: 0, unset: 0 };
-
-  days.forEach(d => {
-    getActivitiesForDate(d).forEach(e => {
-      if (!e.isRecovery && e.baseCost > 0) {
-        const cost = e.effectiveCost != null ? e.effectiveCost : e.baseCost;
-        const zone = e.zone || 'competence';
-        totals[zone] = (totals[zone] || 0) + cost;
-        grandTotal += cost;
-      }
-      if (e.energyDir) dirCounts[e.energyDir] = (dirCounts[e.energyDir] || 0) + 1;
-      else dirCounts.unset++;
-    });
-  });
-
-  return { totals, grandTotal, dirCounts };
-}
-
-function calcZoneAuditPrevWeek() {
-  const days = Array.from({ length: 7 }, (_, i) => {
-    const d = new Date(); d.setDate(d.getDate() - (14 - i)); return dateStr(d);
-  });
-  return calcZoneAudit(days);
 }
 
 // ═══════════════════════════════════════════════════════
@@ -450,11 +480,6 @@ function getTodayAlerts() {
   if (settings.enableStackingPenalty && entries.filter(e => !e.isRecovery && e.baseCost >= 3).length >= 2) {
     alerts.push({ type: 'yellow', icon: '📈', text: "Stacking penalty applied: 2+ high-cost activities today cost an extra spoon." });
   }
-  // Incompetence flag
-  const hasIncomp = entries.some(e => e.zone === 'incompetence');
-  if (hasIncomp) {
-    alerts.push({ type: 'yellow', icon: '🔴', text: "Could someone else do this? You logged an Incompetence-zone activity today." });
-  }
   return alerts;
 }
 
@@ -489,14 +514,21 @@ function renderPage(name) {
     case 'log':      renderLog();      break;
     case 'history':  renderHistory();  break;
     case 'weekly':   renderWeekly();   break;
-    case 'zones':    renderZones();    break;
     case 'settings': renderSettings(); break;
   }
+}
+
+function scaleButtonsHTML(max, selected) {
+  return Array.from({ length: max }, (_, i) => i + 1)
+    .map(n => `<button class="scale-btn${selected === n ? ' selected' : ''}" data-val="${n}">${n}</button>`)
+    .join('');
 }
 
 // ═══════════════════════════════════════════════════════
 // TODAY PAGE
 // ═══════════════════════════════════════════════════════
+
+let _energyEdit = { am: false, pm: false };
 
 function renderToday() {
   const d = today();
@@ -506,7 +538,7 @@ function renderToday() {
 
   el('spoon-count').textContent = remaining;
   el('spoon-count').className = 'spoon-count ' + cls;
-  const pct = Math.max(0, Math.min(100, (remaining / budget) * 100));
+  const pct = Math.max(0, Math.min(100, budget > 0 ? (remaining / budget) * 100 : 0));
   el('spoon-bar').style.width = pct + '%';
   el('spoon-bar').className = 'progress-bar-fill ' + cls;
   el('spoon-used').textContent = used;
@@ -517,12 +549,29 @@ function renderToday() {
   } else { el('spoon-recovered').hidden = true; }
 
   const checkin = getCheckin(d);
+  const override = getBudgetOverride(d);
   const breakdown = calcBudgetBreakdown(checkin);
-  el('budget-source').textContent = checkin
-    ? breakdown.description
-    : `Base budget: ${budget} spoons — complete morning check-in to adjust`;
+  if (override !== null) {
+    el('budget-source').textContent = `Custom starting balance: ${override} spoons (today only)`;
+  } else if (checkin && getSettings().autoAdjust !== false) {
+    el('budget-source').textContent = breakdown.description;
+  } else {
+    el('budget-source').textContent = `Base budget: ${budget} spoons — complete morning check-in to adjust`;
+  }
 
   el('morning-prompt').hidden = !!checkin;
+
+  // Reminder-for-today banner (from yesterday's reflection)
+  const reminderBanner = el('today-reminder');
+  const yRef = getReflection(yesterdayStr());
+  if (reminderBanner) {
+    if (yRef && yRef.tomorrow) {
+      reminderBanner.hidden = false;
+      reminderBanner.innerHTML = `<span class="rb-icon">📌</span><span>Note from yesterday: ${escapeHTML(yRef.tomorrow)}</span>`;
+    } else {
+      reminderBanner.hidden = true;
+    }
+  }
 
   // Alerts
   const alertsDiv = el('today-alerts');
@@ -534,6 +583,12 @@ function renderToday() {
     alertsDiv.appendChild(div);
   });
 
+  renderEnergyScales(d);
+
+  // Notes
+  const notesEl = el('today-notes');
+  if (notesEl && document.activeElement !== notesEl) notesEl.value = getNotes(d);
+
   // Quick buttons
   const settings = getSettings();
   const allActs = getAllActivities();
@@ -544,9 +599,7 @@ function renderToday() {
     const btn = document.createElement('button');
     btn.className = 'quick-btn';
     const costLabel = act.spoons < 0 ? `+${Math.abs(act.spoons)} 💚` : act.spoons === 0 ? 'free' : `${act.spoons} 🥄`;
-    const zId = getActivityDefaultZone(act.id);
-    const z = getZone(zId);
-    btn.innerHTML = `<span class="act-emoji">${act.emoji}</span><span class="act-name">${act.name}</span><span class="act-spoons">${costLabel}</span>${z ? `<span class="quick-zone-dot" style="background:${z.color}"></span>` : ''}`;
+    btn.innerHTML = `<span class="act-emoji">${act.emoji}</span><span class="act-name">${act.name}</span><span class="act-spoons">${costLabel}</span>`;
     btn.addEventListener('click', () => quickLog(act));
     quickGrid.appendChild(btn);
   });
@@ -562,34 +615,93 @@ function renderToday() {
   }
 }
 
+function escapeHTML(s) {
+  return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+function renderEnergyScales(ds) {
+  const energy = getEnergy(ds) || {};
+  const amWrap = el('energy-am');
+  const pmWrap = el('energy-pm');
+  if (!amWrap || !pmWrap) return;
+
+  // Start of day
+  if (energy.am && !_energyEdit.am) {
+    amWrap.innerHTML = `<div class="energy-readout">
+      <span>🌅 Morning energy: <strong>${energy.am.score}/10</strong></span>
+      <button class="link-btn" data-edit="am">Change</button></div>`;
+  } else {
+    amWrap.innerHTML = `<div class="energy-prompt">How's your energy this morning?</div>
+      <div class="scale-row" data-slot="am">${scaleButtonsHTML(10, energy.am?.score)}</div>`;
+  }
+
+  // End of day — only after 6 PM ET
+  if (etHourNow() >= 18) {
+    pmWrap.hidden = false;
+    if (energy.pm && !_energyEdit.pm) {
+      const delta = energy.am ? energy.pm.score - energy.am.score : null;
+      const deltaHTML = delta !== null
+        ? ` <span class="energy-delta ${delta >= 0 ? 'up' : 'down'}">${delta >= 0 ? '+' : ''}${delta} vs AM</span>` : '';
+      pmWrap.innerHTML = `<div class="energy-readout" style="margin-top:10px">
+        <span>🌙 Evening energy: <strong>${energy.pm.score}/10</strong>${deltaHTML}</span>
+        <button class="link-btn" data-edit="pm">Change</button></div>`;
+    } else {
+      pmWrap.innerHTML = `<div class="energy-prompt" style="margin-top:12px">How's your energy now (end of day)?</div>
+        <div class="scale-row" data-slot="pm">${scaleButtonsHTML(10, energy.pm?.score)}</div>`;
+    }
+  } else {
+    pmWrap.hidden = true;
+    pmWrap.innerHTML = '';
+  }
+
+  // Wire scale buttons
+  [amWrap, pmWrap].forEach(wrap => {
+    wrap.querySelectorAll('.scale-row').forEach(row => {
+      const slot = row.dataset.slot;
+      row.querySelectorAll('.scale-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          saveEnergy(ds, slot, parseInt(btn.dataset.val, 10));
+          _energyEdit[slot] = false;
+          renderEnergyScales(ds);
+          flash(slot === 'am' ? 'Morning energy saved' : 'Evening energy saved');
+        });
+      });
+    });
+    wrap.querySelectorAll('.link-btn[data-edit]').forEach(btn => {
+      btn.addEventListener('click', () => { _energyEdit[btn.dataset.edit] = true; renderEnergyScales(ds); });
+    });
+  });
+}
+
 function makeActivityItem(entry, ds) {
   const div = document.createElement('div');
   div.className = 'activity-item';
+  const settings = getSettings();
   const isRecov = entry.isRecovery || entry.baseCost < 0;
-  const costDisplay = isRecov
-    ? `+${Math.abs(entry.baseCost)}`
-    : entry.baseCost === 0 ? '—'
-    : `-${entry.effectiveCost != null ? entry.effectiveCost : entry.baseCost}`;
+  const effective = calcEntryEffectiveCost(entry, getActivitiesForDate(ds), settings);
+  const costDisplay = isRecov ? `+${Math.abs(entry.baseCost)}` : effective === 0 ? '—' : `-${effective}`;
   const costClass = isRecov ? 'positive' : entry.baseCost === 0 ? 'zero' : 'negative';
-  const z = entry.zone ? getZone(entry.zone) : null;
-  const dirEl = entry.energyDir
-    ? `<span class="energy-dir-badge ${entry.energyDir}" title="${ENERGY_DIRS.find(d=>d.id===entry.energyDir)?.title}">${ENERGY_DIRS.find(d=>d.id===entry.energyDir)?.label}</span>`
-    : '';
 
   div.innerHTML = `
     <span class="act-icon">${entry.emoji}</span>
     <div class="act-info">
-      <div class="name">${entry.name}${z ? `<span class="zone-dot" style="background:${z.color}" title="${z.fullLabel}"></span>` : ''}</div>
+      <div class="name">${entry.name}</div>
       <div class="time">${fmtTime(entry.timestamp)}</div>
-      ${entry.note ? `<div class="note">"${entry.note}"</div>` : ''}
-      ${entry.zone === 'incompetence' ? `<div class="incomp-flag">🔴 Could someone else do this?</div>` : ''}
+      ${entry.note ? `<div class="note">"${escapeHTML(entry.note)}"</div>` : ''}
     </div>
     <div class="act-right">
-      ${dirEl}
-      <span class="act-cost ${costClass}">${costDisplay}</span>
+      <span class="act-cost ${costClass}" title="Tap to adjust">${costDisplay}</span>
     </div>
     <button class="act-delete" title="Delete" data-id="${entry.id}">✕</button>
   `;
+
+  // Inline cost edit (only for cost activities)
+  if (!isRecov && entry.baseCost > 0) {
+    const costEl = div.querySelector('.act-cost');
+    costEl.style.cursor = 'pointer';
+    costEl.addEventListener('click', () => startInlineCostEdit(costEl, entry, ds));
+  }
+
   div.querySelector('.act-delete').addEventListener('click', () => {
     deleteActivityForDate(ds, entry.id);
     renderPage(window._currentPage);
@@ -597,28 +709,65 @@ function makeActivityItem(entry, ds) {
   return div;
 }
 
-function quickLog(act) {
+function startInlineCostEdit(costEl, entry, ds) {
+  const current = entry.costOverride ?? calcEntryEffectiveCost(entry, getActivitiesForDate(ds), getSettings());
+  const input = document.createElement('input');
+  input.type = 'number';
+  input.step = '0.5';
+  input.min = '0';
+  input.value = current;
+  input.className = 'inline-cost-input';
+  costEl.replaceWith(input);
+  input.focus();
+  input.select();
+  const commit = () => {
+    const val = parseFloat(input.value);
+    if (!isNaN(val)) updateActivityForDate(ds, entry.id, { costOverride: val, effectiveCost: val });
+    renderPage(window._currentPage);
+  };
+  input.addEventListener('blur', commit);
+  input.addEventListener('keydown', e => { if (e.key === 'Enter') input.blur(); });
+}
+
+function editBudget() {
   const d = today();
-  const entries = getActivitiesForDate(d);
+  const current = getDailyBudget(d);
+  const val = prompt("Today's starting spoon balance:", current);
+  if (val === null) return;
+  const n = parseFloat(val);
+  if (isNaN(n)) return;
+  setBudgetOverride(d, n);
+  flash(`Starting balance set to ${n}`);
+  renderToday();
+}
+
+function quickLog(act) {
+  logActivity(act, {});
+  const costMsg = (act.spoons < 0) ? `+${Math.abs(act.spoons)} recovery` : `${act.spoons} spoon${act.spoons === 1 ? '' : 's'}`;
+  flash(`${act.emoji} ${act.name} (${costMsg})`);
+  renderPage('today');
+}
+
+// Shared logger — stamps zone default silently (data layer), no confirm step.
+function logActivity(act, opts) {
+  const d = today();
   const settings = getSettings();
-  const defaultZone = getActivityDefaultZone(act.id);
+  const entries = getActivitiesForDate(d);
   const entry = {
-    id: Date.now().toString(),
+    id: Date.now().toString() + Math.floor(Math.random() * 1000),
     activityId: act.id,
     name: act.name,
     emoji: act.emoji,
     baseCost: act.spoons,
+    category: act.category || 'household',
     isRecovery: act.recovery || act.spoons < 0,
-    timestamp: new Date().toISOString(),
-    note: '',
-    zone: defaultZone,
-    energyDir: null,
+    timestamp: opts?.timestamp || new Date().toISOString(),
+    note: opts?.note || '',
+    zone: getActivityDefaultZone(act.id) || null,
   };
   entry.effectiveCost = calcEntryEffectiveCost(entry, entries, settings);
   saveActivityForDate(d, entry);
-  const costMsg = entry.isRecovery ? `+${Math.abs(act.spoons)} recovery` : `${entry.effectiveCost} spoon${entry.effectiveCost === 1 ? '' : 's'}`;
-  flash(`${act.emoji} ${act.name} (${costMsg})`);
-  renderPage('today');
+  return entry;
 }
 
 // ═══════════════════════════════════════════════════════
@@ -634,9 +783,11 @@ function openCheckinModal() {
       <div class="modal-title">🌅 Morning Check-In</div>
       <div class="form-group">
         <label class="form-label">Energy Level</label>
-        <div class="scale-row" id="ci-energy">
-          ${[1,2,3,4,5,6,7,8,9,10].map(n=>`<button class="scale-btn" data-val="${n}">${n}</button>`).join('')}
-        </div>
+        <div class="scale-row" id="ci-energy">${scaleButtonsHTML(10)}</div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Why? <span class="hint">(optional)</span></label>
+        <input type="text" id="ci-why" placeholder="e.g. slept poorly, big day ahead" />
       </div>
       <div class="form-group">
         <label class="form-label">Brain Fog?</label>
@@ -668,9 +819,7 @@ function openCheckinModal() {
       <div class="row">
         <div class="form-group">
           <label class="form-label">Sleep Quality <span class="hint">(1-5)</span></label>
-          <div class="scale-row" id="ci-sq">
-            ${[1,2,3,4,5].map(n=>`<button class="scale-btn" data-val="${n}">${n}</button>`).join('')}
-          </div>
+          <div class="scale-row" id="ci-sq">${scaleButtonsHTML(5)}</div>
         </div>
       </div>
       <div class="row">
@@ -683,27 +832,20 @@ function openCheckinModal() {
       <button class="btn btn-secondary" id="ci-cancel" style="margin-top:8px">Cancel</button>
     </div>`;
 
-  overlay.querySelectorAll('.scale-row').forEach(row => {
-    row.querySelectorAll('.scale-btn').forEach(btn => btn.addEventListener('click', () => {
-      row.querySelectorAll('.scale-btn').forEach(b => b.classList.remove('selected'));
-      btn.classList.add('selected');
-    }));
-  });
-  overlay.querySelectorAll('.toggle-row').forEach(row => {
-    row.querySelectorAll('.toggle-btn').forEach(btn => btn.addEventListener('click', () => {
-      row.querySelectorAll('.toggle-btn').forEach(b => b.classList.remove('selected'));
-      btn.classList.add('selected');
-    }));
-  });
+  wireScalePickers(overlay);
+  wireTogglePickers(overlay);
   overlay.querySelector('#ci-save').addEventListener('click', () => {
     const energy = parseInt(overlay.querySelector('#ci-energy .selected')?.dataset.val || '5');
+    const whyText = overlay.querySelector('#ci-why').value.trim() || null;
     const brainFog = overlay.querySelector('#ci-fog .selected')?.dataset.val === 'true';
     const muscleWeak = overlay.querySelector('#ci-weak .selected')?.dataset.val === 'true';
     const cpapHours = parseFloat(overlay.querySelector('#ci-cpap').value || '0');
     const trazodone = overlay.querySelector('#ci-traz .selected')?.dataset.val === 'true';
     const sleepQuality = parseInt(overlay.querySelector('#ci-sq .selected')?.dataset.val || '3');
     const sleepHours = parseFloat(overlay.querySelector('#ci-hours').value || '0');
-    saveCheckin(today(), { energy, brainFog, muscleWeak, cpapHours, trazodone, sleepQuality, sleepHours });
+    saveCheckin(today(), { energy, whyText, brainFog, muscleWeak, cpapHours, trazodone, sleepQuality, sleepHours });
+    // Mirror the morning energy into the Today energy scale for a single source of truth
+    saveEnergy(today(), 'am', energy);
     overlay.remove();
     flash('Morning check-in saved!');
     renderPage('today');
@@ -713,143 +855,307 @@ function openCheckinModal() {
   document.body.appendChild(overlay);
 }
 
+function wireScalePickers(root) {
+  root.querySelectorAll('.scale-row').forEach(row => {
+    row.querySelectorAll('.scale-btn').forEach(btn => btn.addEventListener('click', () => {
+      row.querySelectorAll('.scale-btn').forEach(b => b.classList.remove('selected'));
+      btn.classList.add('selected');
+    }));
+  });
+}
+function wireTogglePickers(root) {
+  root.querySelectorAll('.toggle-row').forEach(row => {
+    row.querySelectorAll('.toggle-btn').forEach(btn => btn.addEventListener('click', () => {
+      row.querySelectorAll('.toggle-btn').forEach(b => b.classList.remove('selected'));
+      btn.classList.add('selected');
+      if (row.id === 'sym-fog') {
+        const wrap = root.querySelector('#sym-fog-sev-wrap');
+        if (wrap) wrap.style.display = btn.dataset.val === 'true' ? '' : 'none';
+      }
+    }));
+  });
+}
+
 // ═══════════════════════════════════════════════════════
-// LOG PAGE
+// END-OF-DAY REFLECTION
 // ═══════════════════════════════════════════════════════
 
-let _selectedActId = null;
-let _isCustom = false;
-let _selectedZone = null;
-let _selectedDir = null;
+function openReflectionModal(ds) {
+  ds = ds || today();
+  const existing = getReflection(ds) || {};
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.innerHTML = `
+    <div class="modal">
+      <div class="modal-handle"></div>
+      <div class="modal-title">🌙 End-of-Day Reflection</div>
+      <p style="font-size:13px;color:var(--text-muted);margin-bottom:16px">For: ${fmtDate(ds)}</p>
+      <div class="form-group">
+        <label class="form-label">What went well today?</label>
+        <textarea id="rf-well" placeholder="One good thing…">${existing.wentWell ? escapeHTML(existing.wentWell) : ''}</textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label">How overwhelming was today? <span class="hint">(1 = calm, 5 = too much)</span></label>
+        <div class="scale-row" id="rf-overwhelm">${scaleButtonsHTML(5, existing.overwhelm)}</div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Reminder for tomorrow?</label>
+        <input type="text" id="rf-tomorrow" placeholder="Shows on tomorrow's Today tab" value="${existing.tomorrow ? escapeHTML(existing.tomorrow) : ''}" />
+      </div>
+      <button class="btn btn-primary" id="rf-save" style="margin-top:8px">Save Reflection</button>
+      <button class="btn btn-secondary" id="rf-cancel" style="margin-top:8px">Cancel</button>
+    </div>`;
+  wireScalePickers(overlay);
+  overlay.querySelector('#rf-save').addEventListener('click', () => {
+    const wentWell = overlay.querySelector('#rf-well').value.trim();
+    const overwhelm = parseInt(overlay.querySelector('#rf-overwhelm .selected')?.dataset.val || '0') || null;
+    const tomorrow = overlay.querySelector('#rf-tomorrow').value.trim();
+    saveReflection(ds, { wentWell, overwhelm, tomorrow });
+    overlay.remove();
+    flash('Reflection saved 🌙');
+    if (['today', 'history'].includes(window._currentPage)) renderPage(window._currentPage);
+  });
+  overlay.querySelector('#rf-cancel').addEventListener('click', () => overlay.remove());
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+  document.body.appendChild(overlay);
+}
+
+// ═══════════════════════════════════════════════════════
+// LOG PAGE  (one-tap logging)
+// ═══════════════════════════════════════════════════════
+
+let _multiMode = false;
+let _multiSel = new Set();
+let _longPressTimer = null;
 
 function renderLog() {
-  _selectedActId = null;
-  _isCustom = false;
-  _selectedZone = null;
-  _selectedDir = null;
+  _multiMode = false;
+  _multiSel = new Set();
 
   const allActs = getAllActivities();
   const grid = el('log-activity-grid');
   grid.innerHTML = '';
 
   allActs.forEach(act => {
-    const btn = document.createElement('button');
-    btn.className = 'activity-select-btn';
-    btn.dataset.id = act.id;
-    const costLabel = act.spoons < 0 ? `+${Math.abs(act.spoons)} recovery`
-      : act.spoons === 0 ? 'free'
-      : `${act.spoons} spoon${act.spoons === 1 ? '' : 's'}`;
-    const zId = getActivityDefaultZone(act.id);
-    const z = getZone(zId);
-    btn.innerHTML = `<span class="emoji">${act.emoji}</span><div class="info"><div class="n">${act.name}${z ? `<span class="zone-dot" style="background:${z.color};margin-left:4px"></span>` : ''}</div><div class="s">${costLabel}</div></div>`;
-    btn.addEventListener('click', () => {
-      grid.querySelectorAll('.activity-select-btn').forEach(b => b.classList.remove('selected'));
-      btn.classList.add('selected');
-      _selectedActId = act.id;
-      _isCustom = false;
-      el('log-custom-section').hidden = true;
-      // Pre-select default zone
-      const defZone = getActivityDefaultZone(act.id);
-      if (defZone) selectZoneBtn(defZone);
-    });
-    grid.appendChild(btn);
+    grid.appendChild(makeLogButton(act));
   });
 
+  const multiToggle = el('log-multi-toggle');
+  if (multiToggle) {
+    multiToggle.hidden = false;
+    multiToggle.textContent = 'Select multiple';
+    multiToggle.classList.remove('active');
+    multiToggle.onclick = toggleMultiMode;
+  }
+  const multiSubmit = el('log-multi-submit');
+  if (multiSubmit) { multiSubmit.hidden = true; multiSubmit.onclick = submitMultiLog; }
+
+  // Custom + advanced toggles
   el('log-custom-toggle').onclick = () => {
-    grid.querySelectorAll('.activity-select-btn').forEach(b => b.classList.remove('selected'));
-    _selectedActId = null;
-    _isCustom = true;
-    el('log-custom-section').hidden = false;
-    selectZoneBtn(null);
+    const sec = el('log-custom-section');
+    sec.hidden = !sec.hidden;
+    if (!sec.hidden) sec.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   };
+  el('log-advanced-toggle').onclick = () => {
+    const sec = el('log-advanced-section');
+    sec.hidden = !sec.hidden;
+    if (!sec.hidden) {
+      el('log-timestamp').value = etNowInput();
+      sec.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+  };
+  el('log-custom-submit').onclick = submitCustomLog;
 
-  // Zone picker
-  const zonePicker = el('log-zone-picker');
-  zonePicker.innerHTML = '';
-  ZONES.forEach(z => {
-    const btn = document.createElement('button');
-    btn.className = 'zone-pick-btn';
-    btn.dataset.zone = z.id;
-    btn.innerHTML = `<span>${z.emoji}</span><span class="zpb-label">${z.label}</span>`;
-    btn.title = `${z.fullLabel} — ${z.costNote}`;
-    btn.style.setProperty('--zone-color', z.color);
-    btn.style.setProperty('--zone-bg', z.bg);
-    btn.addEventListener('click', () => selectZoneBtn(z.id));
-    zonePicker.appendChild(btn);
-  });
-
-  // Energy direction picker
-  const dirPicker = el('log-dir-picker');
-  dirPicker.innerHTML = '';
-  ENERGY_DIRS.forEach(dir => {
-    const btn = document.createElement('button');
-    btn.className = 'dir-pick-btn';
-    btn.dataset.dir = dir.id;
-    btn.innerHTML = `<span class="dir-label">${dir.label}</span><span class="dir-title">${dir.title}</span>`;
-    btn.style.setProperty('--dir-color', dir.color);
-    btn.addEventListener('click', () => {
-      dirPicker.querySelectorAll('.dir-pick-btn').forEach(b => b.classList.remove('selected'));
-      if (_selectedDir === dir.id) { _selectedDir = null; }
-      else { btn.classList.add('selected'); _selectedDir = dir.id; }
-    });
-    dirPicker.appendChild(btn);
-  });
-
-  el('log-timestamp').value = etNowInput();
+  const cat = el('custom-category'); if (cat) cat.value = 'household';
 }
 
-function selectZoneBtn(zoneId) {
-  _selectedZone = zoneId;
-  document.querySelectorAll('#log-zone-picker .zone-pick-btn').forEach(b => {
-    b.classList.toggle('selected', b.dataset.zone === zoneId);
+function makeLogButton(act) {
+  const btn = document.createElement('button');
+  btn.className = 'activity-select-btn';
+  btn.dataset.id = act.id;
+  const costLabel = act.spoons < 0 ? `+${Math.abs(act.spoons)} recovery`
+    : act.spoons === 0 ? 'free'
+    : `${act.spoons} spoon${act.spoons === 1 ? '' : 's'}`;
+  btn.innerHTML = `<span class="emoji">${act.emoji}</span><div class="info"><div class="n">${act.name}</div><div class="s">${costLabel}</div></div>`;
+
+  btn.addEventListener('click', () => {
+    if (_multiMode) {
+      toggleMultiSelect(act.id, btn);
+    } else {
+      logFromGrid(act, btn);
+    }
   });
+
+  // Long-press → edit this activity's library entry
+  btn.addEventListener('contextmenu', e => { e.preventDefault(); openActivityEditor(act); });
+  btn.addEventListener('touchstart', () => {
+    _longPressTimer = setTimeout(() => openActivityEditor(act), 550);
+  }, { passive: true });
+  ['touchend', 'touchmove', 'touchcancel'].forEach(ev =>
+    btn.addEventListener(ev, () => clearTimeout(_longPressTimer), { passive: true }));
+
+  return btn;
 }
 
-function submitLog() {
-  const d = today();
-  const settings = getSettings();
-  const timestamp = el('log-timestamp').value
-    ? parseETInput(el('log-timestamp').value)
-    : new Date().toISOString();
-  const note = el('log-note').value.trim();
+function readAdvancedOpts() {
+  const advSec = el('log-advanced-section');
+  const opts = {};
+  if (advSec && !advSec.hidden) {
+    const ts = el('log-timestamp').value;
+    if (ts) opts.timestamp = parseETInput(ts);
+    const note = el('log-note').value.trim();
+    if (note) opts.note = note;
+  }
+  return opts;
+}
 
-  let act;
-  if (_isCustom) {
-    const name = el('custom-name').value.trim();
-    const spoons = parseFloat(el('custom-spoons').value);
-    const emoji = el('custom-emoji').value.trim() || '⚡';
-    if (!name || isNaN(spoons)) { alert('Please enter a name and spoon cost.'); return; }
-    act = { id: 'custom_' + Date.now(), name, spoons, emoji, recovery: spoons < 0 };
-  } else if (_selectedActId) {
-    act = getAllActivities().find(a => a.id === _selectedActId);
-    if (!act) { alert('Please select an activity.'); return; }
-  } else { alert('Please select an activity.'); return; }
-
-  const entries = getActivitiesForDate(d);
-  const entry = {
-    id: Date.now().toString(),
-    activityId: act.id,
-    name: act.name,
-    emoji: act.emoji,
-    baseCost: act.spoons,
-    isRecovery: act.recovery || act.spoons < 0,
-    timestamp,
-    note,
-    zone: _selectedZone || getActivityDefaultZone(act.id) || null,
-    energyDir: _selectedDir,
-  };
-  entry.effectiveCost = calcEntryEffectiveCost(entry, entries, settings);
-  saveActivityForDate(d, entry);
-
-  el('log-note').value = '';
-  if (el('custom-name')) el('custom-name').value = '';
-  if (el('custom-spoons')) el('custom-spoons').value = '';
-  el('log-custom-section').hidden = true;
-  renderLog();
-
-  const costMsg = entry.isRecovery ? `+${Math.abs(act.spoons)} spoons restored` : `${entry.effectiveCost} spoon${entry.effectiveCost === 1 ? '' : 's'}`;
+function logFromGrid(act, btn) {
+  const opts = readAdvancedOpts();
+  logActivity(act, opts);
+  const costMsg = act.spoons < 0 ? `+${Math.abs(act.spoons)} recovery` : `${act.spoons} spoon${act.spoons === 1 ? '' : 's'}`;
   flash(`${act.emoji} ${act.name} logged (${costMsg})`);
+  // brief visual confirmation
+  btn.classList.add('just-logged');
+  setTimeout(() => btn.classList.remove('just-logged'), 700);
+  // reset advanced note after use
+  const noteEl = el('log-note'); if (noteEl) noteEl.value = '';
+}
+
+function toggleMultiMode() {
+  _multiMode = !_multiMode;
+  _multiSel = new Set();
+  const multiToggle = el('log-multi-toggle');
+  const multiSubmit = el('log-multi-submit');
+  const hint = el('log-hint');
+  multiToggle.textContent = _multiMode ? 'Cancel' : 'Select multiple';
+  multiToggle.classList.toggle('active', _multiMode);
+  if (multiSubmit) multiSubmit.hidden = !_multiMode;
+  if (hint) hint.textContent = _multiMode ? 'Tap activities to select, then "Log Selected".' : 'Tap any activity to log it instantly.';
+  el('log-activity-grid').querySelectorAll('.activity-select-btn').forEach(b => b.classList.remove('selected'));
+  updateMultiSubmit();
+}
+
+function toggleMultiSelect(id, btn) {
+  if (_multiSel.has(id)) { _multiSel.delete(id); btn.classList.remove('selected'); }
+  else { _multiSel.add(id); btn.classList.add('selected'); }
+  updateMultiSubmit();
+}
+
+function updateMultiSubmit() {
+  const multiSubmit = el('log-multi-submit');
+  if (multiSubmit) multiSubmit.textContent = `Log Selected (${_multiSel.size})`;
+}
+
+function submitMultiLog() {
+  if (_multiSel.size === 0) { flash('Nothing selected'); return; }
+  const opts = readAdvancedOpts();
+  const ts = opts.timestamp || new Date().toISOString();
+  const allActs = getAllActivities();
+  let n = 0;
+  _multiSel.forEach(id => {
+    const act = allActs.find(a => a.id === id);
+    if (act) { logActivity(act, { ...opts, timestamp: ts }); n++; }
+  });
+  flash(`${n} activit${n === 1 ? 'y' : 'ies'} logged`);
   showPage('today');
+}
+
+function submitCustomLog() {
+  const name = el('custom-name').value.trim();
+  const spoons = parseFloat(el('custom-spoons').value);
+  const emoji = el('custom-emoji').value.trim() || '⚡';
+  const category = el('custom-category').value || 'household';
+  if (!name || isNaN(spoons)) { alert('Please enter a name and spoon cost.'); return; }
+  const act = { id: 'custom_' + Date.now(), name, spoons, emoji, category, recovery: spoons < 0 };
+
+  if (el('custom-save-lib').checked) {
+    const customs = getCustomActivities();
+    customs.push({ ...act });
+    save(KEYS.CUSTOM_ACT, customs);
+  }
+
+  logActivity(act, readAdvancedOpts());
+  el('custom-name').value = '';
+  el('custom-spoons').value = '';
+  el('custom-emoji').value = '';
+  el('log-custom-section').hidden = true;
+  flash(`${emoji} ${name} logged`);
+  showPage('today');
+}
+
+// ═══════════════════════════════════════════════════════
+// ACTIVITY EDITOR (long-press on Log grid / Settings)
+// ═══════════════════════════════════════════════════════
+
+function openActivityEditor(act) {
+  const isCustom = act.id.startsWith('custom_');
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.innerHTML = `
+    <div class="modal">
+      <div class="modal-handle"></div>
+      <div class="modal-title">Edit ${escapeHTML(act.name)}</div>
+      <div class="row" style="margin-bottom:12px">
+        <div class="form-group" style="flex:0 0 64px;margin-bottom:0">
+          <label class="form-label">Emoji</label>
+          <input type="text" id="ae-emoji" maxlength="2" style="text-align:center" value="${escapeHTML(act.emoji)}" />
+        </div>
+        <div class="form-group" style="flex:1;margin-bottom:0">
+          <label class="form-label">Name</label>
+          <input type="text" id="ae-name" value="${escapeHTML(act.name)}" />
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Spoon Cost <span class="hint">(negative = recovery)</span></label>
+        <input type="number" id="ae-spoons" min="-5" max="10" step="0.5" value="${act.spoons}" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Category</label>
+        <select id="ae-category">
+          ${CATEGORIES.map(c => `<option value="${c.id}"${(act.category || 'household') === c.id ? ' selected' : ''}>${c.label}</option>`).join('')}
+        </select>
+      </div>
+      <button class="btn btn-primary" id="ae-save" style="margin-top:8px">Save</button>
+      ${isCustom ? '<button class="btn btn-danger" id="ae-delete" style="margin-top:8px">Delete Activity</button>' : ''}
+      <button class="btn btn-secondary" id="ae-cancel" style="margin-top:8px">Cancel</button>
+    </div>`;
+
+  overlay.querySelector('#ae-save').addEventListener('click', () => {
+    const name = overlay.querySelector('#ae-name').value.trim() || act.name;
+    const emoji = overlay.querySelector('#ae-emoji').value.trim() || act.emoji;
+    const spoons = parseFloat(overlay.querySelector('#ae-spoons').value);
+    const category = overlay.querySelector('#ae-category').value;
+    if (isCustom) {
+      const customs = getCustomActivities().map(a => a.id === act.id
+        ? { ...a, name, emoji, spoons: isNaN(spoons) ? a.spoons : spoons, category, recovery: (isNaN(spoons) ? a.spoons : spoons) < 0 }
+        : a);
+      save(KEYS.CUSTOM_ACT, customs);
+    } else {
+      const settings = getSettings();
+      if (!settings.overrides) settings.overrides = {};
+      const ov = { name, emoji, category };
+      if (!isNaN(spoons)) ov.spoons = spoons;
+      settings.overrides[act.id] = ov;
+      // keep legacy spoonOverrides in sync so the Settings cost table matches
+      if (!settings.spoonOverrides) settings.spoonOverrides = {};
+      if (!isNaN(spoons)) settings.spoonOverrides[act.id] = spoons;
+      saveSettings(settings);
+    }
+    overlay.remove();
+    flash('Activity updated');
+    renderPage(window._currentPage);
+  });
+  const delBtn = overlay.querySelector('#ae-delete');
+  if (delBtn) delBtn.addEventListener('click', () => {
+    if (!confirm(`Delete "${act.name}" from your library?`)) return;
+    save(KEYS.CUSTOM_ACT, getCustomActivities().filter(a => a.id !== act.id));
+    overlay.remove();
+    flash('Activity deleted');
+    renderPage(window._currentPage);
+  });
+  overlay.querySelector('#ae-cancel').addEventListener('click', () => overlay.remove());
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+  document.body.appendChild(overlay);
 }
 
 // ═══════════════════════════════════════════════════════
@@ -874,9 +1180,7 @@ function openSymptomModal(ds) {
       </div>
       <div class="form-group" id="sym-fog-sev-wrap" style="${existing.brainFog ? '' : 'display:none'}">
         <label class="form-label">Brain Fog Severity <span class="hint">(1-5)</span></label>
-        <div class="scale-row" id="sym-fog-sev">
-          ${[1,2,3,4,5].map(n=>`<button class="scale-btn${existing.brainFogSev===n?' selected':''}" data-val="${n}">${n}</button>`).join('')}
-        </div>
+        <div class="scale-row" id="sym-fog-sev">${scaleButtonsHTML(5, existing.brainFogSev)}</div>
       </div>
       <div class="form-group">
         <label class="form-label">Falls / Balance Issues?</label>
@@ -887,33 +1191,18 @@ function openSymptomModal(ds) {
       </div>
       <div class="form-group">
         <label class="form-label">Muscle Weakness Severity <span class="hint">(1-5)</span></label>
-        <div class="scale-row" id="sym-weak">
-          ${[1,2,3,4,5].map(n=>`<button class="scale-btn${existing.muscleWeakSev===n?' selected':''}" data-val="${n}">${n}</button>`).join('')}
-        </div>
+        <div class="scale-row" id="sym-weak">${scaleButtonsHTML(5, existing.muscleWeakSev)}</div>
       </div>
       <div class="form-group">
         <label class="form-label">Next-Day Fatigue <span class="hint">(how did yesterday leave you?)</span></label>
-        <div class="scale-row" id="sym-fatigue">
-          ${[1,2,3,4,5].map(n=>`<button class="scale-btn${existing.nextDayFatigue===n?' selected':''}" data-val="${n}">${n}</button>`).join('')}
-        </div>
+        <div class="scale-row" id="sym-fatigue">${scaleButtonsHTML(5, existing.nextDayFatigue)}</div>
       </div>
       <button class="btn btn-primary" id="sym-save" style="margin-top:8px">Save Symptoms</button>
       <button class="btn btn-secondary" id="sym-cancel" style="margin-top:8px">Cancel</button>
     </div>`;
 
-  overlay.querySelectorAll('.scale-row').forEach(row => {
-    row.querySelectorAll('.scale-btn').forEach(btn => btn.addEventListener('click', () => {
-      row.querySelectorAll('.scale-btn').forEach(b => b.classList.remove('selected'));
-      btn.classList.add('selected');
-    }));
-  });
-  overlay.querySelectorAll('.toggle-row').forEach(row => {
-    row.querySelectorAll('.toggle-btn').forEach(btn => btn.addEventListener('click', () => {
-      row.querySelectorAll('.toggle-btn').forEach(b => b.classList.remove('selected'));
-      btn.classList.add('selected');
-      if (row.id === 'sym-fog') overlay.querySelector('#sym-fog-sev-wrap').style.display = btn.dataset.val === 'true' ? '' : 'none';
-    }));
-  });
+  wireScalePickers(overlay);
+  wireTogglePickers(overlay);
   overlay.querySelector('#sym-save').addEventListener('click', () => {
     const brainFog = overlay.querySelector('#sym-fog .selected')?.dataset.val === 'true';
     const brainFogSev = parseInt(overlay.querySelector('#sym-fog-sev .selected')?.dataset.val || '0');
@@ -923,7 +1212,7 @@ function openSymptomModal(ds) {
     saveSymptoms(ds || today(), { brainFog, brainFogSev, falls, muscleWeakSev, nextDayFatigue });
     overlay.remove();
     flash('Symptoms saved');
-    if (['history','today'].includes(window._currentPage)) renderPage(window._currentPage);
+    if (['history', 'today'].includes(window._currentPage)) renderPage(window._currentPage);
   });
   overlay.querySelector('#sym-cancel').addEventListener('click', () => overlay.remove());
   overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
@@ -934,140 +1223,240 @@ function openSymptomModal(ds) {
 // HISTORY PAGE
 // ═══════════════════════════════════════════════════════
 
+let _historyDaysShown = 7;
+
 function renderHistory() {
-  const days = last7Days().reverse();
   const container = el('history-list');
   container.innerHTML = '';
 
-  days.forEach(d => {
-    const entries = getActivitiesForDate(d);
-    const checkin = getCheckin(d);
-    const symptoms = getSymptoms(d);
-    const { budget, used, remaining } = calcSpoonsRemaining(d);
-    const isToday = d === today();
-    const cls = spoonColorClass(remaining);
+  // Build the set of dates that actually have data, plus the last N days
+  const dataKeys = new Set([
+    ...Object.keys(load(KEYS.ACTIVITIES) || {}),
+    ...Object.keys(load(KEYS.CHECKINS) || {}),
+    ...Object.keys(load(KEYS.SYMPTOMS) || {}),
+    ...Object.keys(load(KEYS.REFLECTIONS) || {}),
+  ]);
+  lastNDays(_historyDaysShown).forEach(d => dataKeys.add(d));
+  const allDays = [...dataKeys].sort().reverse().slice(0, _historyDaysShown);
 
-    const dayDiv = document.createElement('div');
-    dayDiv.className = 'history-day';
+  allDays.forEach(d => container.appendChild(makeHistoryDay(d)));
 
-    const header = document.createElement('div');
-    header.className = 'history-day-header';
-    header.innerHTML = `
-      <div>
-        <div class="day-name">${isToday ? '📍 Today' : fmtDate(d)}</div>
-        <div class="day-stats">${entries.length} activit${entries.length === 1 ? 'y' : 'ies'} · ${used}/${budget} spoons used</div>
-      </div>
-      <span class="chip ${cls}" style="margin-right:8px">${remaining} left</span>
-      <span class="expand-icon">›</span>`;
+  const moreBtn = el('history-more');
+  if (moreBtn) {
+    const totalAvailable = new Set([...dataKeys]).size;
+    moreBtn.hidden = allDays.length >= totalAvailable && _historyDaysShown >= 30;
+    moreBtn.onclick = () => { _historyDaysShown += 14; renderHistory(); };
+  }
 
-    const body = document.createElement('div');
-    body.className = 'history-day-body';
-    let html = '';
+  const jump = el('history-jump');
+  if (jump && !jump._wired) {
+    jump._wired = true;
+    jump.addEventListener('change', () => {
+      const ds = jump.value;
+      if (!ds) return;
+      const existing = document.getElementById('hist-' + ds);
+      if (existing) {
+        existing.querySelector('.history-day-header').click();
+        existing.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      } else {
+        // insert a standalone day card at the top
+        const card = makeHistoryDay(ds);
+        container.prepend(card);
+        card.querySelector('.history-day-header').click();
+        card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    });
+  }
+}
 
-    if (entries.length) {
-      entries.forEach(e => {
-        const isRecov = e.isRecovery || e.baseCost < 0;
-        const cost = isRecov ? `+${Math.abs(e.baseCost)}` : e.baseCost === 0 ? 'free' : `-${e.effectiveCost != null ? e.effectiveCost : e.baseCost}`;
-        const z = e.zone ? getZone(e.zone) : null;
-        const dir = e.energyDir ? ENERGY_DIRS.find(x=>x.id===e.energyDir) : null;
-        html += `<div class="activity-item">
-          <span class="act-icon">${e.emoji}</span>
-          <div class="act-info">
-            <div class="name">${e.name}${z ? `<span class="zone-dot" style="background:${z.color}"></span>` : ''}</div>
-            <div class="time">${fmtTime(e.timestamp)}</div>
-            ${e.note ? `<div class="note">"${e.note}"</div>` : ''}
-          </div>
-          <div class="act-right">
-            ${dir ? `<span class="energy-dir-badge ${dir.id}">${dir.label}</span>` : ''}
-            <span class="act-cost ${isRecov ? 'positive' : e.baseCost === 0 ? 'zero' : 'negative'}">${cost}</span>
-          </div>
-        </div>`;
-      });
-    } else {
-      html += `<p style="font-size:13px;color:var(--text-muted);padding:8px 0">No activities logged</p>`;
-    }
+function makeHistoryDay(d) {
+  const entries = getActivitiesForDate(d);
+  const checkin = getCheckin(d);
+  const symptoms = getSymptoms(d);
+  const reflection = getReflection(d);
+  const notes = getNotes(d);
+  const { budget, used, remaining } = calcSpoonsRemaining(d);
+  const isToday = d === today();
+  const cls = spoonColorClass(remaining);
 
-    html += `<div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border)">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-        <span style="font-size:12px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em">Symptoms</span>
-        <button class="btn btn-secondary btn-sm" onclick="openSymptomModal('${d}')">Log</button>
-      </div>`;
-    if (symptoms) {
-      html += `<div class="symptom-chips">`;
-      if (symptoms.brainFog) html += `<span class="chip yellow">🌫 Brain fog${symptoms.brainFogSev ? ' '+symptoms.brainFogSev+'/5' : ''}</span>`;
-      if (symptoms.falls) html += `<span class="chip red">⚠️ Falls</span>`;
-      if (symptoms.muscleWeakSev > 0) html += `<span class="chip yellow">💪 Weakness ${symptoms.muscleWeakSev}/5</span>`;
-      if (symptoms.nextDayFatigue > 0) html += `<span class="chip ${symptoms.nextDayFatigue >= 4 ? 'red' : 'yellow'}">😴 Fatigue ${symptoms.nextDayFatigue}/5</span>`;
-      html += `</div>`;
-    } else { html += `<p style="font-size:13px;color:var(--text-muted)">None logged</p>`; }
-    html += `</div>`;
+  const dayDiv = document.createElement('div');
+  dayDiv.className = 'history-day';
+  dayDiv.id = 'hist-' + d;
 
-    if (checkin) {
-      html += `<div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border)">
-        <div style="font-size:12px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Morning Check-In</div>
-        <div class="tag-row">
-          ${checkin.energy ? `<span class="tag">⚡ Energy ${checkin.energy}/10</span>` : ''}
-          ${checkin.sleepHours ? `<span class="tag">💤 ${checkin.sleepHours}h sleep</span>` : ''}
-          ${checkin.cpapHours ? `<span class="tag">😷 CPAP ${checkin.cpapHours}h</span>` : ''}
-          ${checkin.trazodone ? `<span class="tag">💊 Trazodone</span>` : ''}
+  const header = document.createElement('div');
+  header.className = 'history-day-header';
+  header.innerHTML = `
+    <div>
+      <div class="day-name">${isToday ? '📍 Today' : fmtDate(d)}</div>
+      <div class="day-stats">${entries.length} activit${entries.length === 1 ? 'y' : 'ies'} · ${used}/${budget} spoons used</div>
+    </div>
+    <span class="chip ${cls}" style="margin-right:8px">${remaining} left</span>
+    <span class="expand-icon">›</span>`;
+
+  const body = document.createElement('div');
+  body.className = 'history-day-body';
+  let html = '';
+
+  if (entries.length) {
+    const settings = getSettings();
+    entries.forEach(e => {
+      const isRecov = e.isRecovery || e.baseCost < 0;
+      const eff = calcEntryEffectiveCost(e, entries, settings);
+      const cost = isRecov ? `+${Math.abs(e.baseCost)}` : eff === 0 ? 'free' : `-${eff}`;
+      html += `<div class="activity-item">
+        <span class="act-icon">${e.emoji}</span>
+        <div class="act-info">
+          <div class="name">${e.name}</div>
+          <div class="time">${fmtTime(e.timestamp)}</div>
+          ${e.note ? `<div class="note">"${escapeHTML(e.note)}"</div>` : ''}
+        </div>
+        <div class="act-right">
+          <span class="act-cost ${isRecov ? 'positive' : e.baseCost === 0 ? 'zero' : 'negative'}">${cost}</span>
         </div>
       </div>`;
-    }
-
-    body.innerHTML = html;
-    header.addEventListener('click', () => {
-      body.classList.toggle('open');
-      header.querySelector('.expand-icon').textContent = body.classList.contains('open') ? '∨' : '›';
     });
+  } else {
+    html += `<p style="font-size:13px;color:var(--text-muted);padding:8px 0">No activities logged</p>`;
+  }
 
-    dayDiv.appendChild(header);
-    dayDiv.appendChild(body);
-    container.appendChild(dayDiv);
+  // Symptoms
+  html += `<div class="hist-section">
+    <div class="hist-section-head">
+      <span>Symptoms</span>
+      <button class="btn btn-secondary btn-sm" onclick="openSymptomModal('${d}')">Log</button>
+    </div>`;
+  if (symptoms) {
+    html += `<div class="symptom-chips">`;
+    if (symptoms.brainFog) html += `<span class="chip yellow">🌫 Brain fog${symptoms.brainFogSev ? ' ' + symptoms.brainFogSev + '/5' : ''}</span>`;
+    if (symptoms.falls) html += `<span class="chip red">⚠️ Falls</span>`;
+    if (symptoms.muscleWeakSev > 0) html += `<span class="chip yellow">💪 Weakness ${symptoms.muscleWeakSev}/5</span>`;
+    if (symptoms.nextDayFatigue > 0) html += `<span class="chip ${symptoms.nextDayFatigue >= 4 ? 'red' : 'yellow'}">😴 Fatigue ${symptoms.nextDayFatigue}/5</span>`;
+    html += `</div>`;
+  } else { html += `<p style="font-size:13px;color:var(--text-muted)">None logged</p>`; }
+  html += `</div>`;
 
-    if (isToday) { body.classList.add('open'); header.querySelector('.expand-icon').textContent = '∨'; }
+  // Morning check-in
+  if (checkin) {
+    html += `<div class="hist-section">
+      <div class="hist-section-head"><span>Morning Check-In</span></div>
+      <div class="tag-row">
+        ${checkin.energy ? `<span class="tag">⚡ Energy ${checkin.energy}/10</span>` : ''}
+        ${checkin.sleepHours ? `<span class="tag">💤 ${checkin.sleepHours}h sleep</span>` : ''}
+        ${checkin.cpapHours ? `<span class="tag">😷 CPAP ${checkin.cpapHours}h</span>` : ''}
+        ${checkin.trazodone ? `<span class="tag">💊 Trazodone</span>` : ''}
+      </div>
+      ${checkin.whyText ? `<div class="note" style="margin-top:6px">"${escapeHTML(checkin.whyText)}"</div>` : ''}
+    </div>`;
+  }
+
+  // End-of-day reflection
+  html += `<div class="hist-section">
+    <div class="hist-section-head">
+      <span>Reflection</span>
+      <button class="btn btn-secondary btn-sm" onclick="openReflectionModal('${d}')">${reflection ? 'Edit' : 'Add'}</button>
+    </div>`;
+  if (reflection) {
+    html += `<div class="reflection-block">`;
+    if (reflection.wentWell) html += `<div class="rf-line"><strong>Went well:</strong> ${escapeHTML(reflection.wentWell)}</div>`;
+    if (reflection.overwhelm) html += `<div class="rf-line"><strong>Overwhelm:</strong> ${reflection.overwhelm}/5</div>`;
+    if (reflection.tomorrow) html += `<div class="rf-line"><strong>For tomorrow:</strong> ${escapeHTML(reflection.tomorrow)}</div>`;
+    html += `</div>`;
+  } else { html += `<p style="font-size:13px;color:var(--text-muted)">None logged</p>`; }
+  html += `</div>`;
+
+  // Notes
+  if (notes) {
+    html += `<div class="hist-section">
+      <div class="hist-section-head"><span>Notes</span></div>
+      <div class="note">"${escapeHTML(notes)}"</div>
+    </div>`;
+  }
+
+  body.innerHTML = html;
+  header.addEventListener('click', () => {
+    body.classList.toggle('open');
+    header.querySelector('.expand-icon').textContent = body.classList.contains('open') ? '∨' : '›';
   });
+
+  dayDiv.appendChild(header);
+  dayDiv.appendChild(body);
+  if (isToday) { body.classList.add('open'); header.querySelector('.expand-icon').textContent = '∨'; }
+  return dayDiv;
 }
 
 // ═══════════════════════════════════════════════════════
-// WEEKLY PAGE
+// PATTERNS PAGE  (formerly Weekly)
 // ═══════════════════════════════════════════════════════
 
 let _charts = {};
 
 function renderWeekly() {
   const days = last7Days();
-  const labels = days.map(d => fmtDate(d).split(',')[0]);
   const settings = getSettings();
 
+  // Section A — week strip + net
+  const strip = el('week-strip');
+  if (strip) {
+    strip.innerHTML = '';
+    days.forEach(d => {
+      const { remaining } = calcSpoonsRemaining(d);
+      const cls = remaining < 0 ? 'red' : remaining <= 1 ? 'yellow' : 'green';
+      const cell = document.createElement('div');
+      cell.className = `week-cell ${cls}`;
+      cell.innerHTML = `<div class="wc-day">${fmtDate(d).split(',')[0].split(' ')[0]}</div><div class="wc-bal">${remaining}</div>`;
+      strip.appendChild(cell);
+    });
+  }
+  const net = el('week-net');
+  if (net) {
+    const netVal = parseFloat(days.reduce((sum, d) => sum + calcSpoonsRemaining(d).remaining, 0).toFixed(1));
+    const label = netVal >= 0 ? 'surplus' : 'deficit';
+    net.className = 'week-net ' + (netVal >= 0 ? 'pos' : 'neg');
+    net.innerHTML = `<span class="wn-num">${netVal >= 0 ? '+' : ''}${netVal}</span><span class="wn-label">net spoon ${label} this week</span>`;
+  }
+
   const usedData = days.map(d => calcSpoonsUsed(getActivitiesForDate(d), settings));
-  const budgetData = days.map(d => calcDailyBudget(getCheckin(d)));
-  const energyData = days.map(d => getCheckin(d)?.energy ?? null);
-  const fatigueData = days.map(d => getSymptoms(d)?.nextDayFatigue ?? null);
+  const budgetData = days.map(d => getDailyBudget(d));
   const sleepData = days.map(d => getCheckin(d)?.sleepHours ?? null);
+  const labels = days.map(d => fmtDate(d).split(',')[0]);
+
+  // Stat tiles
+  const totalUsed = usedData.reduce((a, b) => a + b, 0);
+  el('weekly-total-used').textContent = totalUsed.toFixed(1);
+  el('weekly-avg-used').textContent = (totalUsed / 7).toFixed(1);
+  const fatigueData = days.map(d => getSymptoms(d)?.nextDayFatigue ?? null);
+  el('weekly-days-fatigue').textContent = fatigueData.filter(f => f >= 4).length;
+  const energyData = days.map(d => getEnergy(d)?.am?.score ?? getCheckin(d)?.energy ?? null);
+  const validEnergy = energyData.filter(e => e !== null);
+  el('weekly-avg-energy').textContent = validEnergy.length
+    ? (validEnergy.reduce((a, b) => a + b, 0) / validEnergy.length).toFixed(1) : '—';
+
+  // Section C — category breakdown (last 7 days)
+  renderCategoryBreakdown(days);
 
   if (typeof Chart === 'undefined') return;
 
+  // Section B — 30-day morning energy vs. closing balance
+  const days30 = last30Days();
+  const labels30 = days30.map(d => fmtDate(d).split(',')[0].split(' ')[1] || fmtDate(d).split(' ')[2]);
+  const energy30 = days30.map(d => getEnergy(d)?.am?.score ?? getCheckin(d)?.energy ?? null);
+  const balance30 = days30.map(d => calcSpoonsRemaining(d).remaining);
+  renderChart('chart-energy-trend', 'line', labels30, [
+    { label: 'Morning Energy', data: energy30, borderColor: '#f59e0b', backgroundColor: '#f59e0b22', tension: 0.4, spanGaps: true, yAxisID: 'y' },
+    { label: 'Closing Balance', data: balance30, borderColor: '#6366f1', backgroundColor: '#6366f122', tension: 0.4, yAxisID: 'y1' },
+  ], {
+    y: { beginAtZero: true, max: 10, position: 'left', title: { display: true, text: 'Energy', font: { size: 10 } } },
+    y1: { position: 'right', grid: { display: false }, title: { display: true, text: 'Balance', font: { size: 10 } } },
+  });
+
   renderChart('chart-spoons', 'bar', labels, [
     { label: 'Spoons Used', data: usedData, backgroundColor: '#6366f1cc', borderColor: '#6366f1', borderWidth: 2, borderRadius: 6 },
-    { label: 'Daily Budget', data: budgetData, type: 'line', borderColor: '#16a34a', borderWidth: 2, pointRadius: 3, fill: false, tension: 0.4, borderDash: [4,4] },
+    { label: 'Daily Budget', data: budgetData, type: 'line', borderColor: '#16a34a', borderWidth: 2, pointRadius: 3, fill: false, tension: 0.4, borderDash: [4, 4] },
   ], { y: { beginAtZero: true, max: 16 } });
-
-  renderChart('chart-energy', 'line', labels, [
-    { label: 'Morning Energy', data: energyData, borderColor: '#f59e0b', backgroundColor: '#f59e0b22', fill: true, tension: 0.4, spanGaps: true },
-    { label: 'Next-Day Fatigue', data: fatigueData, borderColor: '#ef4444', backgroundColor: '#ef444422', fill: true, tension: 0.4, spanGaps: true },
-  ], { y: { beginAtZero: true, max: 10 } });
 
   renderChart('chart-sleep', 'bar', labels, [
     { label: 'Sleep Hours', data: sleepData, backgroundColor: '#8b5cf6cc', borderColor: '#8b5cf6', borderWidth: 2, borderRadius: 6, spanGaps: true },
   ], { y: { beginAtZero: true, max: 12 } });
-
-  const totalUsed = usedData.reduce((a,b) => a+b, 0);
-  el('weekly-total-used').textContent = totalUsed.toFixed(1);
-  el('weekly-avg-used').textContent = (totalUsed / 7).toFixed(1);
-  el('weekly-days-fatigue').textContent = fatigueData.filter(f => f >= 4).length;
-  const validEnergy = energyData.filter(e => e !== null);
-  el('weekly-avg-energy').textContent = validEnergy.length
-    ? (validEnergy.reduce((a,b) => a+b, 0) / validEnergy.length).toFixed(1) : '—';
 
   const patterns = detectPatterns();
   const patternDiv = el('weekly-patterns');
@@ -1077,6 +1466,47 @@ function renderWeekly() {
   } else {
     patternDiv.innerHTML = `<p style="font-size:13px;color:var(--text-muted)">No crash patterns detected yet. Keep logging to build your pattern library.</p>`;
   }
+}
+
+function renderCategoryBreakdown(days) {
+  const container = el('category-breakdown');
+  if (!container) return;
+  const settings = getSettings();
+  const totals = {};
+  let grand = 0;
+  days.forEach(d => {
+    const entries = getActivitiesForDate(d);
+    entries.forEach(e => {
+      const cost = calcEntryEffectiveCost(e, entries, settings);
+      if (cost > 0) {
+        const cat = entryCategory(e);
+        totals[cat] = (totals[cat] || 0) + cost;
+        grand += cost;
+      }
+    });
+  });
+
+  if (grand === 0) {
+    container.innerHTML = `<p style="font-size:13px;color:var(--text-muted)">No spending logged this week yet.</p>`;
+    return;
+  }
+
+  container.innerHTML = '';
+  CATEGORIES.filter(c => totals[c.id] > 0)
+    .sort((a, b) => totals[b.id] - totals[a.id])
+    .forEach(c => {
+      const spoons = parseFloat(totals[c.id].toFixed(1));
+      const pct = Math.round(spoons / grand * 100);
+      const row = document.createElement('div');
+      row.className = 'cat-bar-row';
+      row.innerHTML = `
+        <div class="cat-bar-head">
+          <span class="cat-label">${c.label}</span>
+          <span class="cat-stats">${spoons} · ${pct}%</span>
+        </div>
+        <div class="cat-track"><div class="cat-fill" style="width:${pct}%;background:${c.color}"></div></div>`;
+      container.appendChild(row);
+    });
 }
 
 function renderChart(canvasId, type, labels, datasets, scales = {}) {
@@ -1089,115 +1519,12 @@ function renderChart(canvasId, type, labels, datasets, scales = {}) {
       responsive: true, maintainAspectRatio: false,
       plugins: { legend: { position: 'bottom', labels: { font: { size: 11 } } } },
       scales: {
-        x: { grid: { display: false }, ticks: { font: { size: 11 } } },
+        x: { grid: { display: false }, ticks: { font: { size: 10 }, maxRotation: 0, autoSkip: true } },
         y: { grid: { color: '#e2e8f0' }, ticks: { font: { size: 11 } }, ...scales.y },
+        ...(scales.y1 ? { y1: scales.y1 } : {}),
       },
     },
   });
-}
-
-// ═══════════════════════════════════════════════════════
-// ZONES AUDIT PAGE
-// ═══════════════════════════════════════════════════════
-
-function renderZones() {
-  const days = last7Days();
-  const { totals, grandTotal, dirCounts } = calcZoneAudit(days);
-  const prevAudit = calcZoneAuditPrevWeek();
-
-  // Genius callout
-  const geniusSpoons = totals.genius || 0;
-  const prevGenius = prevAudit.totals.genius || 0;
-  const genuisTrend = prevGenius > 0
-    ? geniusSpoons > prevGenius ? `↑ +${(geniusSpoons - prevGenius).toFixed(1)} vs last week`
-    : geniusSpoons < prevGenius ? `↓ ${(geniusSpoons - prevGenius).toFixed(1)} vs last week`
-    : '→ Same as last week'
-    : '';
-  el('genius-callout').innerHTML = `
-    <div class="genius-num">${geniusSpoons.toFixed(1)}</div>
-    <div class="genius-label">spoons in Zone of Genius this week</div>
-    ${genuisTrend ? `<div class="genius-trend">${genuisTrend}</div>` : ''}
-    <div class="genius-sub">This is your target zone — where time disappears and energy flows.</div>`;
-
-  // Leak warning
-  const leakAlert = el('zone-leak-alert');
-  const leakPct = grandTotal > 0
-    ? Math.round(((totals.incompetence || 0) + (totals.competence || 0)) / grandTotal * 100) : 0;
-  const maintPct = grandTotal > 0 ? Math.round((totals.maintenance || 0) / grandTotal * 100) : 0;
-
-  leakAlert.innerHTML = '';
-  if (grandTotal > 0) {
-    const leakDiv = document.createElement('div');
-    leakDiv.className = `alert ${leakPct > 20 ? 'yellow' : 'green'}`;
-    leakDiv.innerHTML = leakPct > 20
-      ? `<span class="alert-icon">⚠️</span><span class="alert-text"><strong>Leak zones: ${leakPct}%</strong> — above your 20% target. This is energy you need for your job search.</span>`
-      : `<span class="alert-icon">✅</span><span class="alert-text"><strong>Leak zones: ${leakPct}%</strong> — within your 20% target. Your energy is well-allocated.</span>`;
-    leakAlert.appendChild(leakDiv);
-
-    const maintDiv = document.createElement('div');
-    maintDiv.className = 'alert blue';
-    maintDiv.innerHTML = `<span class="alert-icon">🔵</span><span class="alert-text"><strong>Maintenance (protected): ${maintPct}%</strong> — PT, medical, infrastructure. Not a leak.</span>`;
-    leakAlert.appendChild(maintDiv);
-  }
-
-  // Zone breakdown bars
-  const breakdown = el('zone-breakdown');
-  breakdown.innerHTML = '';
-  if (grandTotal === 0) {
-    breakdown.innerHTML = `<p style="font-size:13px;color:var(--text-muted)">No activity data yet this week. Start logging to see your zone breakdown.</p>`;
-  } else {
-    ZONES.forEach(z => {
-      const spoons = totals[z.id] || 0;
-      const pct = grandTotal > 0 ? Math.round(spoons / grandTotal * 100) : 0;
-      const row = document.createElement('div');
-      row.className = 'zone-bar-row';
-      row.innerHTML = `
-        <div class="zb-header">
-          <span class="zb-label">${z.emoji} ${z.fullLabel}</span>
-          <span class="zb-stats">${spoons.toFixed(1)} spoons · ${pct}%</span>
-        </div>
-        <div class="zb-track">
-          <div class="zb-fill" style="width:${pct}%;background:${z.color}"></div>
-        </div>`;
-      breakdown.appendChild(row);
-    });
-  }
-
-  // Zone doughnut chart
-  if (typeof Chart !== 'undefined' && grandTotal > 0) {
-    const zoneData = ZONES.map(z => totals[z.id] || 0);
-    const zoneColors = ZONES.map(z => z.color);
-    if (_charts['chart-zones']) _charts['chart-zones'].destroy();
-    _charts['chart-zones'] = new Chart(el('chart-zones'), {
-      type: 'doughnut',
-      data: {
-        labels: ZONES.map(z => z.label),
-        datasets: [{ data: zoneData, backgroundColor: zoneColors, borderWidth: 2, borderColor: '#fff' }],
-      },
-      options: {
-        responsive: true, maintainAspectRatio: false,
-        plugins: { legend: { position: 'right', labels: { font: { size: 11 }, boxWidth: 12 } } },
-        cutout: '60%',
-      },
-    });
-    el('chart-zones-wrap').hidden = false;
-  } else {
-    el('chart-zones-wrap').hidden = true;
-  }
-
-  // Energy direction summary
-  const dirDiv = el('zone-energy-dir');
-  const totalLogged = dirCounts.gave + dirCounts.neutral + dirCounts.drained;
-  if (totalLogged === 0) {
-    dirDiv.innerHTML = `<p style="font-size:13px;color:var(--text-muted)">No energy direction data yet. Tag activities with +/0/− when logging.</p>`;
-  } else {
-    dirDiv.innerHTML = `
-      <div class="dir-summary-row">
-        <div class="dir-sum-item gave"><span class="dir-sum-num">${dirCounts.gave}</span><span class="dir-sum-label">+ gave energy</span></div>
-        <div class="dir-sum-item neutral"><span class="dir-sum-num">${dirCounts.neutral}</span><span class="dir-sum-label">0 neutral</span></div>
-        <div class="dir-sum-item drained"><span class="dir-sum-num">${dirCounts.drained}</span><span class="dir-sum-label">− drained</span></div>
-      </div>`;
-  }
 }
 
 // ═══════════════════════════════════════════════════════
@@ -1207,15 +1534,17 @@ function renderZones() {
 function renderSettings() {
   const settings = getSettings();
   el('set-base-budget').value = settings.baseBudget || 10;
-  el('set-after-six').checked = settings.enableAfterSixModifier !== false;
-  el('set-stacking').checked = settings.enableStackingPenalty !== false;
+  setToggle('set-auto-adjust', settings.autoAdjust !== false);
+  setToggle('set-after-six', settings.enableAfterSixModifier !== false);
+  setToggle('set-stacking', settings.enableStackingPenalty !== false);
+  setToggle('set-evening-reminder', settings.enableEveningReminder === true);
 
   // Spoon overrides
   const allActs = getAllActivities();
   const tbody = el('spoon-overrides-body');
   tbody.innerHTML = '';
   allActs.filter(a => !a.id.startsWith('custom_')).forEach(act => {
-    const currentCost = settings.spoonOverrides?.[act.id] ?? act.spoons;
+    const currentCost = act.spoons;
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td style="padding:8px 4px;font-size:14px">${act.emoji} ${act.name}</td>
@@ -1226,30 +1555,55 @@ function renderSettings() {
     tbody.appendChild(tr);
   });
 
-  // Quick log customizer
   renderQuickPicker();
 
-  // Custom activities
+  // Custom activities — inline editable
   const customActs = getCustomActivities();
   const customList = el('custom-activities-list');
   customList.innerHTML = '';
   if (customActs.length === 0) {
     customList.innerHTML = `<p style="font-size:13px;color:var(--text-muted)">No custom activities yet.</p>`;
   } else {
-    customActs.forEach(act => {
-      const div = document.createElement('div');
-      div.className = 'activity-item';
-      div.innerHTML = `
-        <span class="act-icon">${act.emoji}</span>
-        <div class="act-info"><div class="name">${act.name}</div><div class="time">${act.spoons} spoons</div></div>
-        <button class="act-delete" data-id="${act.id}">✕</button>`;
-      div.querySelector('.act-delete').addEventListener('click', () => {
-        save(KEYS.CUSTOM_ACT, getCustomActivities().filter(a => a.id !== act.id));
-        renderSettings();
-      });
-      customList.appendChild(div);
-    });
+    customActs.forEach(act => customList.appendChild(makeCustomEditRow(act)));
   }
+}
+
+function setToggle(id, on) {
+  const input = el(id);
+  if (!input) return;
+  input.checked = on;
+  const span = input.nextElementSibling;
+  if (span) span.style.background = on ? 'var(--primary)' : '#ccc';
+}
+
+function makeCustomEditRow(act) {
+  const row = document.createElement('div');
+  row.className = 'custom-edit-row';
+  row.innerHTML = `
+    <input type="text" class="ce-emoji" maxlength="2" value="${escapeHTML(act.emoji)}" />
+    <input type="text" class="ce-name" value="${escapeHTML(act.name)}" />
+    <input type="number" class="ce-spoons" step="0.5" min="-5" max="10" value="${act.spoons}" />
+    <select class="ce-cat">${CATEGORIES.map(c => `<option value="${c.id}"${(act.category || 'household') === c.id ? ' selected' : ''}>${c.label}</option>`).join('')}</select>
+    <button class="act-delete" title="Delete">✕</button>`;
+
+  const commit = () => {
+    const emoji = row.querySelector('.ce-emoji').value.trim() || act.emoji;
+    const name = row.querySelector('.ce-name').value.trim() || act.name;
+    const spoons = parseFloat(row.querySelector('.ce-spoons').value);
+    const category = row.querySelector('.ce-cat').value;
+    const customs = getCustomActivities().map(a => a.id === act.id
+      ? { ...a, emoji, name, spoons: isNaN(spoons) ? a.spoons : spoons, category, recovery: (isNaN(spoons) ? a.spoons : spoons) < 0 }
+      : a);
+    save(KEYS.CUSTOM_ACT, customs);
+  };
+  row.querySelectorAll('.ce-emoji, .ce-name, .ce-spoons').forEach(inp =>
+    inp.addEventListener('blur', commit));
+  row.querySelector('.ce-cat').addEventListener('change', commit);
+  row.querySelector('.act-delete').addEventListener('click', () => {
+    save(KEYS.CUSTOM_ACT, getCustomActivities().filter(a => a.id !== act.id));
+    renderSettings();
+  });
+  return row;
 }
 
 function renderQuickPicker() {
@@ -1259,7 +1613,6 @@ function renderQuickPicker() {
   const grid = el('quick-picker-grid');
   if (!grid) return;
   grid.innerHTML = '';
-
   el('quick-picker-count').textContent = `${currentIds.length}/5 selected`;
 
   allActs.forEach(act => {
@@ -1290,8 +1643,11 @@ function toggleQuickPick(actId) {
 function saveSettingsForm() {
   const settings = getSettings();
   settings.baseBudget = parseFloat(el('set-base-budget').value) || 10;
+  settings.autoAdjust = el('set-auto-adjust').checked;
   settings.enableAfterSixModifier = el('set-after-six').checked;
   settings.enableStackingPenalty = el('set-stacking').checked;
+  const wasEvening = settings.enableEveningReminder === true;
+  settings.enableEveningReminder = el('set-evening-reminder').checked;
 
   if (!settings.spoonOverrides) settings.spoonOverrides = {};
   document.querySelectorAll('.spoon-override-input').forEach(input => {
@@ -1300,9 +1656,16 @@ function saveSettingsForm() {
     const defAct = DEFAULT_ACTIVITIES.find(a => a.id === id);
     if (defAct && val !== defAct.spoons) settings.spoonOverrides[id] = val;
     else delete settings.spoonOverrides[id];
+    // keep overrides map cost in sync
+    if (settings.overrides?.[id]) {
+      if (defAct && val !== defAct.spoons) settings.overrides[id].spoons = val;
+      else delete settings.overrides[id].spoons;
+    }
   });
 
   saveSettings(settings);
+  // (Re)schedule evening reminder if it was just enabled
+  if (!wasEvening && settings.enableEveningReminder) scheduleEvening();
   flash('Settings saved!');
 }
 
@@ -1310,9 +1673,10 @@ function addCustomActivity() {
   const name = el('new-custom-name').value.trim();
   const spoons = parseFloat(el('new-custom-spoons').value);
   const emoji = el('new-custom-emoji').value.trim() || '⚡';
+  const category = el('new-custom-category')?.value || 'household';
   if (!name || isNaN(spoons)) { alert('Please enter a name and spoon cost.'); return; }
   const customs = getCustomActivities();
-  customs.push({ id: 'custom_' + Date.now(), name, spoons, emoji, category: 'custom', recovery: spoons < 0 });
+  customs.push({ id: 'custom_' + Date.now(), name, spoons, emoji, category, recovery: spoons < 0 });
   save(KEYS.CUSTOM_ACT, customs);
   el('new-custom-name').value = '';
   el('new-custom-spoons').value = '';
@@ -1328,8 +1692,8 @@ function addCustomActivity() {
 function shareToHusband() {
   const d = today();
   const { remaining, budget, used } = calcSpoonsRemaining(d);
-  const ci = getCheckin(d);
-  const text = `🥄 Elaine's Energy Update — ${fmtDate(d)}\n\nSpoons remaining: ${remaining}/${budget}\nSpoons used: ${used}\nMorning energy: ${ci ? ci.energy + '/10' : '?'}\n\nSent via CMT Energy Tracker`;
+  const energy = getEnergy(d)?.am?.score ?? getCheckin(d)?.energy;
+  const text = `🥄 Elaine's Energy Update — ${fmtDate(d)}\n\nSpoons remaining: ${remaining}/${budget}\nSpoons used: ${used}\nMorning energy: ${energy ? energy + '/10' : '?'}\n\nSent via CMT Energy Tracker`;
   if (navigator.share) navigator.share({ title: 'Energy Update', text }).catch(() => copyToClipboard(text));
   else copyToClipboard(text);
 }
@@ -1348,25 +1712,28 @@ function copyToClipboard(text) {
 
 function exportCSV() {
   const days = last30Days();
-  const settings = getSettings();
-  const rows = [['Date','Budget','Spoons Used','Spoons Remaining','Activities','Zones','Energy Direction','Brain Fog','Falls','Muscle Weakness','Next-Day Fatigue','Morning Energy','Sleep Hours','CPAP Hours','Trazodone']];
+  const rows = [['Date', 'Budget', 'Spoons Used', 'Spoons Remaining', 'Activities',
+    'Morning Energy', 'Morning Why', 'Sleep Hours', 'CPAP Hours', 'Trazodone',
+    'Brain Fog', 'Falls', 'Muscle Weakness', 'Next-Day Fatigue',
+    'Overwhelm', 'What Went Well', 'Tomorrow Reminder', 'Notes']];
 
   days.forEach(d => {
     const entries = getActivitiesForDate(d);
     const { budget, used, remaining } = calcSpoonsRemaining(d);
     const sym = getSymptoms(d) || {};
     const ci = getCheckin(d) || {};
+    const rf = getReflection(d) || {};
+    const en = getEnergy(d) || {};
     const acts = entries.map(e => e.name).join('; ');
-    const zones = entries.map(e => e.zone || '').join('; ');
-    const dirs = entries.map(e => e.energyDir || '').join('; ');
-    rows.push([d, budget, used, remaining, acts, zones, dirs,
+    rows.push([d, budget, used, remaining, acts,
+      en.am?.score ?? ci.energy ?? '', ci.whyText || '',
+      ci.sleepHours || '', ci.cpapHours || '', ci.trazodone ? 'Yes' : 'No',
       sym.brainFog ? 'Yes' : 'No', sym.falls ? 'Yes' : 'No',
       sym.muscleWeakSev || '', sym.nextDayFatigue || '',
-      ci.energy || '', ci.sleepHours || '', ci.cpapHours || '',
-      ci.trazodone ? 'Yes' : 'No']);
+      rf.overwhelm || '', rf.wentWell || '', rf.tomorrow || '', getNotes(d) || '']);
   });
 
-  const csv = rows.map(r => r.map(v => `"${v}"`).join(',')).join('\n');
+  const csv = rows.map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
   const blob = new Blob([csv], { type: 'text/csv' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
@@ -1384,40 +1751,63 @@ function exportCSV() {
 function loadSampleData() {
   if (!confirm('Load sample data? This will add example entries for the last 3 days.')) return;
   const d = today();
-  const yesterday = dateStr(new Date(Date.now() - 86400000));
+  const yesterday = yesterdayStr();
   const two = dateStr(new Date(Date.now() - 2 * 86400000));
 
   const all = load(KEYS.ACTIVITIES) || {};
   all[two] = [
-    { id:'s1', activityId:'pt', name:'PT Session', emoji:'🏥', baseCost:4, effectiveCost:4, isRecovery:false, timestamp:two+'T10:00:00Z', note:'Balance focus', zone:'maintenance', energyDir:'drained' },
-    { id:'s2', activityId:'cmt_class', name:'CMT Exercise Class', emoji:'💪', baseCost:3, effectiveCost:3, isRecovery:false, timestamp:two+'T14:00:00Z', note:'', zone:'maintenance', energyDir:'drained' },
-    { id:'s3', activityId:'journaling', name:'Journaling', emoji:'✍️', baseCost:0, effectiveCost:0, isRecovery:false, timestamp:two+'T20:00:00Z', note:'Evening reflection', zone:'genius', energyDir:'gave' },
+    { id: 's1', activityId: 'pt', name: 'PT Session', emoji: '🏥', baseCost: 4, effectiveCost: 4, category: 'medical', isRecovery: false, timestamp: two + 'T14:00:00Z', note: 'Balance focus', zone: 'maintenance' },
+    { id: 's2', activityId: 'cmt_class', name: 'CMT Exercise Class', emoji: '💪', baseCost: 3, effectiveCost: 3, category: 'exercise', isRecovery: false, timestamp: two + 'T18:00:00Z', note: '', zone: 'maintenance' },
+    { id: 's3', activityId: 'journaling', name: 'Journaling', emoji: '✍️', baseCost: 0, effectiveCost: 0, category: 'rest', isRecovery: false, timestamp: two + 'T23:00:00Z', note: 'Evening reflection', zone: 'genius' },
   ];
   all[yesterday] = [
-    { id:'s4', activityId:'tv_rest', name:'Watching TV / Resting', emoji:'📺', baseCost:0, effectiveCost:0, isRecovery:false, timestamp:yesterday+'T10:00:00Z', note:'', zone:'competence', energyDir:'neutral' },
-    { id:'s5', activityId:'meditation', name:'Meditation', emoji:'🧘‍♀️', baseCost:-1, effectiveCost:-1, isRecovery:true, timestamp:yesterday+'T13:00:00Z', note:'20 min guided', zone:'genius', energyDir:'gave' },
-    { id:'s6', activityId:'dog_walk', name:'Walking Dog', emoji:'🐕', baseCost:1, effectiveCost:1, isRecovery:false, timestamp:yesterday+'T16:00:00Z', note:'Short walk', zone:'competence', energyDir:'neutral' },
+    { id: 's4', activityId: 'tv_rest', name: 'Watching TV / Resting', emoji: '📺', baseCost: 0, effectiveCost: 0, category: 'rest', isRecovery: false, timestamp: yesterday + 'T14:00:00Z', note: '', zone: 'competence' },
+    { id: 's5', activityId: 'meditation', name: 'Meditation', emoji: '🧘‍♀️', baseCost: -1, effectiveCost: -1, category: 'recovery', isRecovery: true, timestamp: yesterday + 'T17:00:00Z', note: '20 min guided', zone: 'genius' },
+    { id: 's6', activityId: 'dog_walk', name: 'Walking Dog', emoji: '🐕', baseCost: 1, effectiveCost: 1, category: 'exercise', isRecovery: false, timestamp: yesterday + 'T20:00:00Z', note: 'Short walk', zone: 'competence' },
   ];
   all[d] = [
-    { id:'s7', activityId:'cooking', name:'Cooking Meal', emoji:'🍳', baseCost:1, effectiveCost:1, isRecovery:false, timestamp:d+'T09:00:00Z', note:'', zone:'competence', energyDir:'neutral' },
-    { id:'s8', activityId:'yoga', name:'Yoga', emoji:'🧘', baseCost:2, effectiveCost:2, isRecovery:false, timestamp:d+'T11:00:00Z', note:'Gentle flow', zone:'maintenance', energyDir:'gave' },
+    { id: 's7', activityId: 'cooking', name: 'Cooking Meal', emoji: '🍳', baseCost: 1, effectiveCost: 1, category: 'household', isRecovery: false, timestamp: d + 'T13:00:00Z', note: '', zone: 'competence' },
+    { id: 's8', activityId: 'yoga', name: 'Yoga', emoji: '🧘', baseCost: 2, effectiveCost: 2, category: 'exercise', isRecovery: false, timestamp: d + 'T15:00:00Z', note: 'Gentle flow', zone: 'maintenance' },
   ];
   save(KEYS.ACTIVITIES, all);
 
   const checkins = load(KEYS.CHECKINS) || {};
-  checkins[two] = { date:two, energy:7, brainFog:false, muscleWeak:false, cpapHours:6, trazodone:true, sleepQuality:3, sleepHours:7, napCount:0 };
-  checkins[yesterday] = { date:yesterday, energy:4, brainFog:true, muscleWeak:true, cpapHours:5, trazodone:true, sleepQuality:2, sleepHours:6, napCount:0 };
-  checkins[d] = { date:d, energy:6, brainFog:false, muscleWeak:false, cpapHours:6, trazodone:true, sleepQuality:3, sleepHours:7.5, napCount:0 };
+  checkins[two] = { date: two, energy: 7, whyText: 'Slept okay', brainFog: false, muscleWeak: false, cpapHours: 6, trazodone: true, sleepQuality: 3, sleepHours: 7 };
+  checkins[yesterday] = { date: yesterday, energy: 4, whyText: 'Rough night', brainFog: true, muscleWeak: true, cpapHours: 5, trazodone: true, sleepQuality: 2, sleepHours: 6 };
+  checkins[d] = { date: d, energy: 6, brainFog: false, muscleWeak: false, cpapHours: 6, trazodone: true, sleepQuality: 3, sleepHours: 7.5 };
   save(KEYS.CHECKINS, checkins);
 
+  const energy = load(KEYS.ENERGY) || {};
+  energy[two] = { am: { score: 7, ts: two + 'T10:00:00Z' } };
+  energy[yesterday] = { am: { score: 4, ts: yesterday + 'T10:00:00Z' }, pm: { score: 3, ts: yesterday + 'T23:00:00Z' } };
+  energy[d] = { am: { score: 6, ts: d + 'T10:00:00Z' } };
+  save(KEYS.ENERGY, energy);
+
   const symptoms = load(KEYS.SYMPTOMS) || {};
-  symptoms[two] = { date:two, brainFog:false, falls:false, muscleWeakSev:1, nextDayFatigue:0 };
-  symptoms[yesterday] = { date:yesterday, brainFog:true, brainFogSev:4, falls:false, muscleWeakSev:3, nextDayFatigue:5 };
-  symptoms[d] = { date:d, brainFog:false, falls:false, muscleWeakSev:1, nextDayFatigue:2 };
+  symptoms[two] = { date: two, brainFog: false, falls: false, muscleWeakSev: 1, nextDayFatigue: 0 };
+  symptoms[yesterday] = { date: yesterday, brainFog: true, brainFogSev: 4, falls: false, muscleWeakSev: 3, nextDayFatigue: 5 };
+  symptoms[d] = { date: d, brainFog: false, falls: false, muscleWeakSev: 1, nextDayFatigue: 2 };
   save(KEYS.SYMPTOMS, symptoms);
+
+  const reflections = load(KEYS.REFLECTIONS) || {};
+  reflections[yesterday] = { wentWell: 'Got a good walk in with Charlie', overwhelm: 4, tomorrow: 'Take it easy — no stacking PT and class', timestamp: yesterday + 'T23:30:00Z' };
+  save(KEYS.REFLECTIONS, reflections);
 
   flash('Sample data loaded!');
   renderPage(window._currentPage || 'today');
+}
+
+// ═══════════════════════════════════════════════════════
+// SERVICE WORKER SCHEDULING
+// ═══════════════════════════════════════════════════════
+
+let _sw = null;
+
+function scheduleMorning() {
+  if (_sw) _sw.postMessage({ type: 'SCHEDULE_MORNING' });
+}
+function scheduleEvening() {
+  if (_sw && getSettings().enableEveningReminder) _sw.postMessage({ type: 'SCHEDULE_EVENING' });
 }
 
 // ═══════════════════════════════════════════════════════
@@ -1427,7 +1817,11 @@ function loadSampleData() {
 function init() {
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('sw.js').then(reg => {
-      if (reg.active) reg.active.postMessage({ type: 'SCHEDULE_MORNING' });
+      _sw = reg.active;
+      if (reg.active) {
+        reg.active.postMessage({ type: 'SCHEDULE_MORNING' });
+        if (getSettings().enableEveningReminder) reg.active.postMessage({ type: 'SCHEDULE_EVENING' });
+      }
     }).catch(() => {});
   }
   if ('Notification' in window && Notification.permission === 'default') {
@@ -1439,8 +1833,13 @@ function init() {
   });
 
   el('morning-prompt').addEventListener('click', openCheckinModal);
-  el('log-submit').addEventListener('click', submitLog);
   el('log-symptom-btn').addEventListener('click', () => openSymptomModal(today()));
+  el('reflect-btn').addEventListener('click', () => openReflectionModal(today()));
+  el('budget-edit-btn').addEventListener('click', editBudget);
+
+  const notesEl = el('today-notes');
+  if (notesEl) notesEl.addEventListener('blur', () => { saveNotes(today(), notesEl.value.trim()); });
+
   el('settings-save').addEventListener('click', saveSettingsForm);
   el('add-custom-btn').addEventListener('click', addCustomActivity);
   el('share-btn').addEventListener('click', shareToHusband);
