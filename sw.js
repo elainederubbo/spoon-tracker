@@ -1,4 +1,4 @@
-const CACHE = 'cmt-tracker-v3';
+const CACHE = 'cmt-tracker-v4';
 const ASSETS = ['/', '/index.html', '/styles.css', '/app.js'];
 
 self.addEventListener('install', e => {
@@ -13,10 +13,26 @@ self.addEventListener('activate', e => {
   self.clients.claim();
 });
 
+// Network-first for same-origin GETs so new code is always picked up when online;
+// the freshly fetched response is cached for offline use. Falls back to cache when
+// the network is unavailable. This avoids stale app.js/CSS after an update.
 self.addEventListener('fetch', e => {
-  e.respondWith(
-    caches.match(e.request).then(cached => cached || fetch(e.request).catch(() => cached))
-  );
+  const req = e.request;
+  if (req.method !== 'GET') return;
+  const sameOrigin = new URL(req.url).origin === self.location.origin;
+
+  if (sameOrigin) {
+    e.respondWith(
+      fetch(req).then(res => {
+        const copy = res.clone();
+        caches.open(CACHE).then(c => c.put(req, copy)).catch(() => {});
+        return res;
+      }).catch(() => caches.match(req).then(cached => cached || caches.match('/index.html')))
+    );
+  } else {
+    // Cross-origin (e.g. the Chart.js CDN): cache-first, then network.
+    e.respondWith(caches.match(req).then(cached => cached || fetch(req)));
+  }
 });
 
 const TZ = 'America/New_York';
