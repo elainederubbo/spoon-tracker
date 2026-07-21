@@ -91,7 +91,7 @@ After you've been logging for a week or more, the Patterns view automatically fl
 ---
 
 ## Sharing with Dan
-- **Patterns tab → "📤 Share Spoon Count with Dan"**
+- **Patterns tab → "📤 Share Spoon Count"**
 - On iPhone: opens the share sheet so you can text/iMessage directly
 - On Mac: copies a text summary to clipboard
 

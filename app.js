@@ -1,7 +1,7 @@
 'use strict';
 
 // Build version — shown in Settings so it's easy to confirm the running code.
-const APP_VERSION = '7';
+const APP_VERSION = '8';
 
 // ═══════════════════════════════════════════════════════
 // CONSTANTS & DEFAULTS
