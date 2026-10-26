@@ -4,78 +4,75 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Spoon Tracker — UX Research Case Study · Elaine DeRubbo</title>
-  <link href="https://fonts.googleapis.com/css2?family=Josefin+Sans:ital,wght@0,300;0,400;0,600;0,700;1,400&family=Josefin+Slab:ital,wght@0,300;0,400;0,600;0,700;1,300;1,400&display=swap" rel="stylesheet" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;0,600;1,400&family=Nunito+Sans:ital,wght@0,300;0,400;0,600;0,700;1,400&display=swap" rel="stylesheet" />
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --purple:     #69306D;
-      --purple-bg:  #F4EDF4;
-      --teal:       #138070;
-      --teal-light: #34D1BF;
-      --teal-bg:    #EAF5F3;
-      --navy:       #0C1A27;
-      --near-black: #1A1A1A;
-      --body-text:  #333333;
-      --gray:       #777777;
-      --warm-gray:  #A59DA2;
-      --light-gray: #F7F7F7;
+      /* Brand tokens (decided Oct 20, 2026) */
+      --plum:       #4A1F45;
+      --raspberry:  #8E2347;
+      --sage:       #CBD9C3;
+      --page:       #FBFAF7;
+      --ink:        #231E22;
+      --muted:      #5E5660;
+      --on-dark:    #FFFFFF;
+      --hairline:   #E3DFDA;
+
+      /* Older names kept as aliases so the rest of the page maps to the new brand */
+      --purple:     var(--plum);
+      --purple-bg:  var(--sage);
+      --teal:       var(--raspberry);
+      --teal-light: var(--sage);
+      --teal-bg:    var(--sage);
+      --navy:       var(--plum);
+      --near-black: var(--ink);
+      --black:      var(--ink);
+      --body-text:  var(--ink);
+      --gray:       var(--muted);
+      --warm-gray:  var(--raspberry);
+      --light-gray: #FFFFFF;
       --white:      #FFFFFF;
-      --border:     #E2E2E2;
-      --rule:       #CCCCCC;
+      --border:     var(--hairline);
+      --rule:       var(--hairline);
     }
 
     html { scroll-behavior: smooth; }
+    a:focus-visible, button:focus-visible, video:focus-visible {
+      outline: 3px solid var(--raspberry);
+      outline-offset: 3px;
+      border-radius: 4px;
+    }
+    .site-header a:focus-visible, .site-footer a:focus-visible { outline-color: var(--on-dark); }
 
     body {
-      font-family: 'Josefin Sans', sans-serif;
-      font-size: 16px;
-      line-height: 1.75;
+      font-family: 'Nunito Sans', sans-serif;
+      font-size: 17px;
+      line-height: 28px;
       color: var(--body-text);
-      background: var(--white);
+      background: var(--page);
     }
 
-    /* ── NAV ── */
-    nav {
-      background: var(--navy);
-      padding: 0 48px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      height: 60px;
-      position: sticky;
-      top: 0;
-      z-index: 100;
+    /* ── HEADER (same as the portfolio site) ── */
+    .site-header { background: var(--plum); color: var(--on-dark); }
+    .site-header .wrap, .site-footer .wrap {
+      max-width: 1080px; margin: 0 auto; padding: 16px 24px;
     }
-    .nav-brand {
-      font-family: 'Josefin Slab', serif;
-      font-weight: 700;
-      font-size: 15px;
-      color: var(--navy);
-      background: var(--white);
-      padding: 6px 16px;
-      border-radius: 3px;
-      text-decoration: none;
-      letter-spacing: 0.03em;
-      white-space: nowrap;
+    .site-header .wrap {
+      display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
+      gap: 8px 24px;
     }
-    .nav-links { display: flex; gap: 32px; list-style: none; align-items: center; }
-    .nav-links a {
-      font-size: 13px;
-      font-weight: 600;
-      letter-spacing: 0.06em;
-      color: rgba(255,255,255,0.8);
-      text-decoration: none;
-      transition: color 0.2s;
+    .site-name {
+      color: var(--on-dark); font-family: 'Lora', serif; font-size: 22px; line-height: 30px;
+      font-weight: 500; text-decoration: none;
     }
-    .nav-links a:hover { color: var(--white); }
-    .nav-links .active {
-      background: var(--teal-light);
-      color: var(--navy);
-      padding: 6px 16px;
-      border-radius: 3px;
+    .site-nav ul { display: flex; flex-wrap: wrap; gap: 8px 24px; margin: 0; padding: 0; list-style: none; }
+    .site-nav a { color: var(--on-dark); font-weight: 600; text-decoration: none; }
+    .site-nav a:hover, .site-nav a[aria-current="page"] {
+      text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 6px;
     }
-    .nav-links .active:hover { color: var(--navy); }
 
     /* ── LAYOUT ── */
     .page-wrap { max-width: 740px; margin: 0 auto; padding: 0 40px; }
@@ -86,26 +83,27 @@
       border-bottom: 1px solid var(--border);
     }
     .breadcrumb {
-      font-size: 11px;
-      font-weight: 700;
-      letter-spacing: 0.14em;
+      font-size: 12px;
+      line-height: 16px;
+      font-weight: 600;
+      letter-spacing: 0.12em;
       text-transform: uppercase;
       color: var(--warm-gray);
       margin-bottom: 20px;
     }
     .breadcrumb span { opacity: 0.5; margin: 0 6px; }
     .case-header h1 {
-      font-family: 'Josefin Slab', serif;
-      font-size: clamp(28px, 4.5vw, 46px);
-      font-weight: 700;
-      line-height: 1.15;
+      font-family: 'Lora', serif;
+      font-size: clamp(30px, 5vw, 36px);
+      font-weight: 500;
+      line-height: 1.22;
       color: var(--purple);
       margin-bottom: 20px;
     }
     .case-header .intro {
-      font-size: 17px;
-      font-weight: 300;
-      line-height: 1.7;
+      font-size: 19px;
+      font-weight: 400;
+      line-height: 30px;
       color: var(--body-text);
       max-width: 600px;
       margin-bottom: 40px;
@@ -119,15 +117,16 @@
     }
     .meta-item label {
       display: block;
-      font-size: 10px;
-      font-weight: 700;
+      font-size: 12px;
+      line-height: 16px;
+      font-weight: 600;
       letter-spacing: 0.12em;
       text-transform: uppercase;
-      color: var(--gray);
+      color: var(--muted);
       margin-bottom: 4px;
     }
     .meta-item span {
-      font-size: 14px;
+      font-size: 15px;
       font-weight: 400;
       color: var(--near-black);
     }
@@ -144,9 +143,10 @@
       display: flex;
       align-items: center;
       gap: 14px;
-      font-size: 11px;
-      font-weight: 700;
-      letter-spacing: 0.14em;
+      font-size: 12px;
+      line-height: 16px;
+      font-weight: 600;
+      letter-spacing: 0.12em;
       text-transform: uppercase;
       color: var(--warm-gray);
       margin-bottom: 16px;
@@ -159,18 +159,19 @@
     }
 
     h2 {
-      font-family: 'Josefin Slab', serif;
-      font-size: clamp(22px, 3vw, 30px);
-      font-weight: 700;
-      line-height: 1.2;
+      font-family: 'Lora', serif;
+      font-size: clamp(24px, 3.4vw, 28px);
+      font-weight: 500;
+      line-height: 1.29;
       color: var(--purple);
       margin-bottom: 20px;
     }
     h3 {
-      font-family: 'Josefin Slab', serif;
-      font-size: 19px;
-      font-weight: 600;
-      color: var(--near-black);
+      font-family: 'Lora', serif;
+      font-size: 22px;
+      line-height: 30px;
+      font-weight: 500;
+      color: var(--plum);
       margin-bottom: 12px;
       margin-top: 40px;
     }
@@ -181,30 +182,31 @@
 
     /* ── CALLOUTS ── */
     .callout {
-      border-left: 3px solid var(--teal);
-      background: var(--teal-bg);
-      padding: 20px 24px;
-      margin: 28px 0;
-      border-radius: 0 4px 4px 0;
+      background: var(--sage);
+      color: var(--ink);
+      padding: 24px;
+      margin: 24px 0;
+      border-radius: 12px;
     }
     .callout p { margin-bottom: 0; font-size: 15px; }
-    .callout strong { color: var(--teal); }
+    .callout strong { color: var(--plum); }
 
     /* ── STAT ROW ── */
     .stat-row { display: flex; flex-wrap: wrap; gap: 16px; margin: 32px 0; }
     .stat-card {
       flex: 1;
       min-width: 120px;
-      background: var(--light-gray);
-      border-radius: 4px;
-      padding: 20px 16px;
+      background: var(--white);
+      border: 1px solid var(--hairline);
+      border-radius: 12px;
+      padding: 24px 16px;
       text-align: center;
     }
     .stat-card .num {
-      font-family: 'Josefin Slab', serif;
-      font-size: 38px;
-      font-weight: 700;
-      color: var(--teal);
+      font-family: 'Lora', serif;
+      font-size: 40px;
+      font-weight: 500;
+      color: var(--plum);
       line-height: 1;
       margin-bottom: 6px;
     }
@@ -223,16 +225,17 @@
       display: flex;
       gap: 16px;
       align-items: flex-start;
-      padding: 16px 20px;
-      background: var(--light-gray);
-      border-radius: 4px;
+      padding: 16px 24px;
+      background: var(--white);
+      border: 1px solid var(--hairline);
+      border-radius: 12px;
     }
     .rq-list li::before {
       content: "RQ" counter(rq);
       font-size: 10px;
       font-weight: 700;
       letter-spacing: 0.08em;
-      color: var(--purple);
+      color: var(--raspberry);
       flex-shrink: 0;
       padding-top: 3px;
       width: 28px;
@@ -244,11 +247,10 @@
     .method-steps li { display: flex; gap: 20px; align-items: flex-start; padding: 24px 0; border-bottom: 1px solid var(--border); }
     .method-steps li:last-child { border-bottom: none; padding-bottom: 0; }
     .step-num {
-      font-family: 'Josefin Slab', serif;
+      font-family: 'Lora', serif;
       font-size: 22px;
-      font-weight: 700;
-      color: var(--purple);
-      opacity: 0.25;
+      font-weight: 500;
+      color: var(--raspberry);
       flex-shrink: 0;
       width: 32px;
       line-height: 1;
@@ -258,19 +260,19 @@
       font-size: 13px;
       font-weight: 700;
       letter-spacing: 0.06em;
-      color: var(--purple);
+      color: var(--plum);
       margin-bottom: 4px;
       text-transform: uppercase;
     }
     .step-body p { margin-bottom: 0; font-size: 15px; }
 
     /* ── FINDINGS TABLE ── */
-    .findings-table-wrap { overflow-x: auto; margin: 24px 0; border: 1px solid var(--border); border-radius: 4px; }
-    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .findings-table-wrap { overflow-x: auto; margin: 24px 0; border: 1px solid var(--border); border-radius: 12px; }
+    table { width: 100%; border-collapse: collapse; font-size: 14px; }
     thead { background: var(--purple); color: var(--white); }
-    thead th { padding: 10px 14px; text-align: left; font-weight: 700; font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; }
+    thead th { padding: 10px 14px; text-align: left; font-weight: 600; font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; }
     tbody tr { background: var(--white); }
-    tbody tr:nth-child(even) { background: var(--light-gray); }
+    tbody tr:nth-child(even) { background: var(--page); }
     tbody td { padding: 11px 14px; border-bottom: 1px solid var(--border); vertical-align: top; line-height: 1.5; }
     tbody tr:last-child td { border-bottom: none; }
     .emoji-col { font-size: 16px; width: 36px; text-align: center; }
@@ -278,69 +280,69 @@
     .spoon-pos { color: var(--near-black); font-weight: 700; }
 
     /* ── TIER BADGES ── */
-    .tier-1 { display: inline-block; background: var(--purple); color: var(--white); font-size: 9px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; padding: 2px 7px; border-radius: 3px; margin-left: 4px; }
-    .tier-2 { display: inline-block; background: var(--gray); color: var(--white); font-size: 9px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; padding: 2px 7px; border-radius: 3px; margin-left: 4px; }
-    .tier-3 { display: inline-block; background: var(--border); color: var(--gray); font-size: 9px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; padding: 2px 7px; border-radius: 3px; margin-left: 4px; }
+    .tier-1 { display: inline-block; background: var(--purple); color: var(--white); font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; padding: 2px 7px; border-radius: 4px; margin-left: 4px; }
+    .tier-2 { display: inline-block; background: var(--gray); color: var(--white); font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; padding: 2px 7px; border-radius: 4px; margin-left: 4px; }
+    .tier-3 { display: inline-block; background: var(--border); color: var(--gray); font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; padding: 2px 7px; border-radius: 4px; margin-left: 4px; }
 
     /* ── PATTERN CARDS ── */
     .pattern-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; margin-top: 24px; }
-    .pattern-card { background: var(--light-gray); border-radius: 4px; padding: 20px; }
+    .pattern-card { background: var(--white); border: 1px solid var(--hairline); border-radius: 12px; padding: 24px; }
     .pattern-card .pattern-icon { font-size: 24px; margin-bottom: 10px; }
-    .pattern-card h4 { font-size: 14px; font-weight: 700; color: var(--purple); margin-bottom: 6px; }
-    .pattern-card p { font-size: 13px; line-height: 1.6; color: var(--body-text); margin: 0; }
+    .pattern-card h4 { font-size: 15px; font-weight: 700; color: var(--plum); margin-bottom: 8px; }
+    .pattern-card p { font-size: 15px; line-height: 1.6; color: var(--body-text); margin: 0; }
 
     /* ── SHOWER BLOCK ── */
     .shower-block {
       background: var(--navy);
       color: var(--white);
-      border-radius: 4px;
-      padding: 36px 40px;
-      margin: 36px 0;
+      border-radius: 12px;
+      padding: 48px;
+      margin: 48px 0;
       position: relative;
       overflow: hidden;
     }
     .shower-block::before {
       content: '"';
-      font-family: 'Josefin Slab', serif;
+      font-family: 'Lora', serif;
       font-size: 160px;
-      color: var(--teal-light);
-      opacity: 0.15;
+      color: var(--on-dark);
+      opacity: 0.12;
       position: absolute;
       top: -30px;
       left: 16px;
       line-height: 1;
       pointer-events: none;
     }
-    .shower-block p { font-family: 'Josefin Slab', serif; font-size: 20px; font-weight: 300; line-height: 1.55; position: relative; margin-bottom: 16px; }
-    .shower-block .attribution { font-size: 12px; color: var(--teal-light); letter-spacing: 0.06em; }
+    .shower-block p { font-family: 'Lora', serif; font-size: 22px; font-weight: 400; font-style: italic; line-height: 1.55; position: relative; margin-bottom: 16px; }
+    .shower-block .attribution { font-family: 'Nunito Sans', sans-serif; font-style: normal; font-size: 14px; font-weight: 600; color: var(--on-dark); letter-spacing: 0.06em; }
 
     /* ── CATEGORY TAGS ── */
     .cat-grid { display: flex; flex-wrap: wrap; gap: 8px; margin: 20px 0; }
-    .cat-tag { display: flex; align-items: center; gap: 7px; background: var(--light-gray); border: 1px solid var(--border); border-radius: 3px; padding: 6px 12px; font-size: 12px; font-weight: 600; color: var(--body-text); }
-    .cat-tag.new { border-color: var(--purple); background: var(--purple-bg); color: var(--purple); }
+    .cat-tag { display: flex; align-items: center; gap: 8px; background: var(--white); border: 1px solid var(--hairline); border-radius: 4px; padding: 6px 12px; font-size: 14px; font-weight: 600; color: var(--ink); }
+    .cat-tag.new { border-color: var(--sage); background: var(--sage); color: var(--plum); }
     .cat-tag .dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
 
     /* ── OUTCOMES ── */
-    .outcome-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: var(--border); border-radius: 4px; overflow: hidden; margin: 28px 0; }
-    .outcome-cell { background: var(--white); padding: 20px 24px; }
-    .outcome-cell .oc-label { font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--gray); margin-bottom: 4px; }
-    .outcome-cell .oc-before { font-size: 24px; font-family: 'Josefin Slab', serif; font-weight: 700; color: var(--rule); text-decoration: line-through; margin-bottom: 2px; }
-    .outcome-cell .oc-after { font-size: 24px; font-family: 'Josefin Slab', serif; font-weight: 700; color: var(--purple); }
-    .outcome-cell .oc-note { font-size: 12px; color: var(--gray); margin-top: 4px; }
+    .outcome-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: var(--border); border: 1px solid var(--hairline); border-radius: 12px; overflow: hidden; margin: 28px 0; }
+    .outcome-cell { background: var(--white); padding: 24px; }
+    .outcome-cell .oc-label { font-size: 12px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--gray); margin-bottom: 4px; }
+    .outcome-cell .oc-before { font-size: 24px; font-family: 'Lora', serif; font-weight: 500; color: var(--muted); text-decoration: line-through; margin-bottom: 2px; }
+    .outcome-cell .oc-after { font-size: 24px; font-family: 'Lora', serif; font-weight: 500; color: var(--plum); }
+    .outcome-cell .oc-note { font-size: 14px; color: var(--gray); margin-top: 4px; }
 
     /* ── ZONE CARDS ── */
     .zone-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; margin-top: 20px; }
-    .zone-card { padding: 18px; border-radius: 4px; border: 1px solid var(--border); background: var(--white); }
+    .zone-card { padding: 24px; border-radius: 12px; border: 1px solid var(--hairline); background: var(--white); }
     .zone-card .zone-icon { font-size: 22px; margin-bottom: 8px; }
-    .zone-card h4 { font-size: 13px; font-weight: 700; color: var(--purple); margin-bottom: 4px; }
-    .zone-card p { font-size: 13px; line-height: 1.55; color: var(--body-text); margin: 0; }
+    .zone-card h4 { font-size: 15px; font-weight: 700; color: var(--plum); margin-bottom: 4px; }
+    .zone-card p { font-size: 15px; line-height: 1.55; color: var(--body-text); margin: 0; }
 
     /* ── APP TOUR REVEAL ── */
     .reveal-panel {
       background: var(--navy);
-      border-radius: 4px;
-      padding: 32px 20px;
-      margin: 28px 0 0;
+      border-radius: 12px;
+      padding: 48px 24px;
+      margin: 24px 0 0;
       text-align: center;
     }
     .reveal-panel video {
@@ -350,25 +352,19 @@
       border-radius: 28px;
       display: block;
       margin: 0 auto;
-      box-shadow: 0 20px 60px rgba(0,0,0,0.45);
-      background: #14181D;
+      background: var(--ink);
     }
 
     /* ── FOOTER ── */
-    footer {
-      background: var(--navy);
-      color: rgba(255,255,255,0.6);
-      padding: 40px;
-      text-align: center;
-      font-size: 13px;
-    }
-    footer a { color: var(--teal-light); text-decoration: none; }
-    footer a:hover { text-decoration: underline; }
-    footer .footer-name { font-family: 'Josefin Slab', serif; font-size: 16px; font-weight: 700; color: var(--white); margin-bottom: 6px; }
+    .site-footer { background: var(--plum); color: var(--on-dark); padding: 32px 0; }
+    .site-footer h2 { color: var(--on-dark); font-family: 'Lora', serif; font-weight: 500; font-size: 22px; line-height: 30px; margin: 0 0 16px; }
+    .site-footer a { color: var(--on-dark); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }
+    .site-footer a:hover { text-decoration-thickness: 2px; }
+    .footer-links { display: flex; flex-wrap: wrap; gap: 8px 24px; margin: 0 0 24px; padding: 0; list-style: none; }
+    .site-footer .small { margin: 0; font-size: 14px; line-height: 22px; }
 
     @media (max-width: 640px) {
-      nav { padding: 0 20px; }
-      .nav-links { display: none; }
+      .site-header .wrap, .site-footer .wrap { padding-left: 16px; padding-right: 16px; }
       .page-wrap { padding: 0 20px; }
       .case-header { padding: 40px 0 36px; }
       section { padding: 44px 0; }
@@ -379,16 +375,19 @@
 </head>
 <body>
 
-<!-- NAV -->
-<nav>
-  <a class="nav-brand" href="https://elainederubbo.com">Elaine DeRubbo</a>
-  <ul class="nav-links">
-    <li><a href="https://elainederubbo.com">Home</a></li>
-    <li><a href="https://elainederubbo.com/about-me">About Me</a></li>
-    <li><a href="https://elainederubbo.com/case-study-selection" class="active">Portfolio</a></li>
-    <li><a href="https://elainederubbo.com/contact-me">Contact Me!</a></li>
-  </ul>
-</nav>
+<!-- HEADER (same as the portfolio site) -->
+<header class="site-header">
+  <div class="wrap">
+    <a class="site-name" href="https://elainederubbo.github.io/">Elaine DeRubbo</a>
+    <nav class="site-nav" aria-label="Main">
+      <ul>
+        <li><a href="https://elainederubbo.github.io/">Home</a></li>
+        <li><a href="https://elainederubbo.github.io/portfolio.html" aria-current="page">Portfolio</a></li>
+        <li><a href="https://elainederubbo.github.io/about.html">About</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
 
 <!-- PAGE HEADER -->
 <div class="page-wrap">
@@ -426,11 +425,11 @@
   <p>I built an energy-tracking app for my hereditary motor neuropathy, lived in it for 90 days, then audited my real calendar against its presets. The audit showed the app was blind to a third of my life. I shipped 17 new activity presets and 3 new categories, with AI writing the code, without breaking a single existing log entry. Daily "custom entry" workarounds dropped to almost none. The result matters on two levels:</p>
   <div class="outcome-row" style="margin-top:1.2rem;">
     <div class="outcome-cell">
-      <div style="font-size:1.4rem; font-family:'Josefin Slab',serif; font-weight:700; color:var(--purple); margin-bottom:0.6rem;">Personal impact</div>
+      <div style="font-size:1.4rem; font-family:'Lora',serif; font-weight:500; color:var(--plum); margin-bottom:0.6rem;">Personal impact</div>
       <p style="font-size:0.95rem; color:var(--black); line-height:1.7; margin:0;">I use this app every day to decide what my body can afford. It surfaced energy I was spending without noticing: showers, paperwork, phone calls, travel days. Because of what it showed me, I now spread appointments out instead of batching them, count massage as recovery instead of cost, and plan around a flight like the major expense it is. It's not a side project. It's infrastructure.</p>
     </div>
     <div class="outcome-cell">
-      <div style="font-size:1.4rem; font-family:'Josefin Slab',serif; font-weight:700; color:var(--purple); margin-bottom:0.6rem;">Professional impact</div>
+      <div style="font-size:1.4rem; font-family:'Lora',serif; font-weight:500; color:var(--plum); margin-bottom:0.6rem;">Professional impact</div>
       <p style="font-size:0.95rem; color:var(--black); line-height:1.7; margin:0;">This is my research practice applied to the hardest participant to study honestly: myself. Behavioral data over self-report, taxonomy design, tiered prioritization, and one hard ship constraint (don't break months of logged data). AI wrote every line of code. I scoped the problems, wrote the prompts, caught the mistakes, and shipped. Those are skills I'm building on purpose, and this project is where I build them.</p>
     </div>
   </div>
@@ -539,16 +538,16 @@
   <h3>Missing Categories</h3>
   <p>It wasn't just individual activities missing — whole parts of my life had no category at all.</p>
   <div class="cat-grid">
-    <div class="cat-tag"><div class="dot" style="background:#aaa"></div> medical</div>
-    <div class="cat-tag"><div class="dot" style="background:#aaa"></div> exercise</div>
-    <div class="cat-tag"><div class="dot" style="background:#aaa"></div> errand</div>
-    <div class="cat-tag"><div class="dot" style="background:#aaa"></div> household</div>
-    <div class="cat-tag"><div class="dot" style="background:#aaa"></div> social</div>
-    <div class="cat-tag"><div class="dot" style="background:#aaa"></div> rest</div>
-    <div class="cat-tag"><div class="dot" style="background:#aaa"></div> recovery</div>
-    <div class="cat-tag new"><div class="dot" style="background:#69306D"></div> work ✦ new</div>
-    <div class="cat-tag new"><div class="dot" style="background:#69306D"></div> travel ✦ new</div>
-    <div class="cat-tag new"><div class="dot" style="background:#69306D"></div> self-care ✦ new</div>
+    <div class="cat-tag"><div class="dot" style="background:var(--muted)"></div> medical</div>
+    <div class="cat-tag"><div class="dot" style="background:var(--muted)"></div> exercise</div>
+    <div class="cat-tag"><div class="dot" style="background:var(--muted)"></div> errand</div>
+    <div class="cat-tag"><div class="dot" style="background:var(--muted)"></div> household</div>
+    <div class="cat-tag"><div class="dot" style="background:var(--muted)"></div> social</div>
+    <div class="cat-tag"><div class="dot" style="background:var(--muted)"></div> rest</div>
+    <div class="cat-tag"><div class="dot" style="background:var(--muted)"></div> recovery</div>
+    <div class="cat-tag new"><div class="dot" style="background:var(--plum)"></div> work ✦ new</div>
+    <div class="cat-tag new"><div class="dot" style="background:var(--plum)"></div> travel ✦ new</div>
+    <div class="cat-tag new"><div class="dot" style="background:var(--plum)"></div> self-care ✦ new</div>
   </div>
   <p><strong>Work</strong> was the biggest miss — job search blocks, case study work, Job Searching Groups, applications. All happening multiple times a week with nowhere to go. <strong>Travel</strong> exists because a flight to Dallas is nothing like a grocery run, even though "errand" was technically covering both. <strong>Self-care</strong> is there because of the shower — and everything like it that costs spoons but had been invisible.</p>
 </section>
@@ -684,10 +683,16 @@
 
 </div>
 
-<footer>
-  <div class="footer-name">Elaine DeRubbo</div>
-  <p>UX Researcher &amp; Strategist · Grand Rapids, MI</p>
-  <p style="margin-top:10px"><a href="https://elainederubbo.com">elainederubbo.com</a></p>
+<!-- FOOTER (same as the portfolio site) -->
+<footer class="site-footer">
+  <div class="wrap">
+    <h2>Let's talk</h2>
+    <ul class="footer-links">
+      <li><a href="mailto:elaine.derubbo@gmail.com">Email me</a></li>
+      <li><a href="https://www.linkedin.com/in/elaine-derubbo/">LinkedIn</a></li>
+    </ul>
+    <p class="small">&copy; 2026 Elaine DeRubbo</p>
+  </div>
 </footer>
 
 </body>
