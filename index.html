@@ -19,7 +19,10 @@
   <main id="page-today" class="page">
     <div class="page-header">
       <h1 id="today-title">🥄 My Spoons</h1>
-      <span class="date-badge" id="today-date"></span>
+      <span class="header-actions">
+        <span class="date-badge" id="today-date"></span>
+        <button class="gear-btn" data-goto="settings" title="Settings" aria-label="Settings">⚙️</button>
+      </span>
     </div>
 
     <!-- Reminder-for-today banner (set from yesterday's reflection) -->
@@ -36,7 +39,7 @@
 
     <div class="card spoon-meter">
       <div class="spoon-count green" id="spoon-count">10</div>
-      <div class="spoon-label">spoons remaining</div>
+      <div class="spoon-label">spoons remaining<span class="spoon-guidance" id="spoon-guidance"></span></div>
       <div class="progress-bar-wrap">
         <div class="progress-bar-fill green" id="spoon-bar" style="width:100%"></div>
       </div>
@@ -48,13 +51,31 @@
         <span id="spoon-recovered" hidden style="color:var(--green)"></span>
       </div>
       <div class="budget-source" id="budget-source"></div>
+      <button class="energy-latest" id="energy-latest" data-goto="energy"></button>
     </div>
 
     <div id="today-alerts"></div>
 
+    <button class="btn btn-primary big-add-btn" data-goto="log">＋ Log an activity</button>
+  </main>
+
+  <!-- ══════════════ ENERGY CHECK PAGE ══════════════ -->
+  <main id="page-energy" class="page" hidden>
+    <div class="page-header">
+      <h1>🔋 Energy Check</h1>
+      <button class="gear-btn" data-goto="settings" title="Settings" aria-label="Settings">⚙️</button>
+    </div>
+
+    <!-- Morning check-in status -->
+    <div class="card" id="energy-morning-card">
+      <div class="card-title">🌅 Morning Check-In</div>
+      <div id="energy-morning-body"></div>
+    </div>
+
     <!-- Energy check (independent of the morning check-in; many per day) -->
     <div class="card">
-      <div class="card-title">Energy Check</div>
+      <div class="card-title">Check-In Through the Day</div>
+      <div class="energy-due" id="energy-due"></div>
       <div class="energy-prompt">How's your energy right now?</div>
       <div class="scale-row" id="energy-scale"></div>
       <div class="form-group" style="margin:14px 0 0">
@@ -65,49 +86,74 @@
       <div class="energy-log" id="energy-log"></div>
     </div>
 
+    <!-- Calendar reminders (.ics download) -->
     <div class="card">
-      <div class="card-title" style="display:flex;justify-content:space-between;align-items:center">
-        Quick Log
-        <span style="display:flex;gap:6px">
-          <button class="btn btn-sm btn-secondary" id="quick-edit-btn" style="margin:0">✏️ Edit</button>
-          <button class="btn btn-sm btn-primary" onclick="showPage('log')" style="margin:0">Full list</button>
-        </span>
+      <div class="card-title">Reminders</div>
+      <p class="card-note">Add repeating energy-check alerts to your phone's calendar. Each alert links back to this tab.</p>
+      <div class="row">
+        <div class="form-group">
+          <label class="form-label">First check</label>
+          <input type="time" id="rem-start" value="09:30" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Last check by</label>
+          <input type="time" id="rem-end" value="20:00" />
+        </div>
       </div>
-      <div class="quick-grid" id="quick-grid"></div>
+      <div class="form-group">
+        <label class="form-label">Every</label>
+        <select id="rem-interval">
+          <option value="120">2 hours</option>
+          <option value="150" selected>2½ hours</option>
+          <option value="180">3 hours</option>
+        </select>
+      </div>
+      <div class="card-note" id="rem-preview"></div>
+      <button class="btn btn-secondary" id="rem-download">📅 Add to Calendar</button>
     </div>
-
-    <div class="card">
-      <div class="card-title">Today's Activities</div>
-      <div id="today-activities"></div>
-    </div>
-
-    <button class="btn btn-secondary" id="reflect-btn" style="width:100%">🌙 Reflect on Today</button>
   </main>
 
   <!-- ══════════════ LOG PAGE ══════════════ -->
   <main id="page-log" class="page" hidden>
     <div class="page-header">
-      <h1>Log Activity</h1>
-      <button class="btn btn-sm btn-secondary" onclick="showPage('today')" style="margin:0">Done</button>
+      <h1>Log an Activity</h1>
+      <button class="gear-btn" data-goto="settings" title="Settings" aria-label="Settings">⚙️</button>
     </div>
 
-    <div class="log-hint" id="log-hint">Tap any activity to log it instantly.</div>
-
-    <div class="card">
-      <div class="card-title" style="display:flex;justify-content:space-between;align-items:center">
-        <span id="log-grid-title">Tap to Log</span>
-        <button class="multi-toggle" id="log-multi-toggle" hidden>Select multiple</button>
+    <!-- Calendar events waiting for review (imported by the iPhone Shortcut) -->
+    <div class="card cal-review" id="cal-review" hidden>
+      <div class="log-group-head">
+        <span class="card-title" style="margin:0">📅 From my calendar <span class="lg-count" id="cal-review-count"></span></span>
       </div>
-      <div class="activity-grid" id="log-activity-grid"></div>
-      <div style="display:flex;gap:8px;margin-top:8px">
-        <button class="btn btn-secondary btn-sm" id="log-custom-toggle" style="flex:1">+ Custom</button>
-        <button class="btn btn-secondary btn-sm" id="log-advanced-toggle" style="flex:1">⚙︎ Advanced</button>
-      </div>
-      <button class="btn btn-primary" id="log-multi-submit" hidden style="margin-top:10px">Log Selected</button>
+      <div id="cal-review-body"></div>
     </div>
+
+    <!-- Logged today: fix or delete a mistaken entry -->
+    <div class="card logged-today" id="logged-today" hidden>
+      <div class="log-group-head">
+        <span class="card-title" style="margin:0">Logged today <span class="lg-count" id="logged-today-count"></span></span>
+        <button class="link-btn" id="logged-today-more" style="margin:0" hidden></button>
+      </div>
+      <div id="logged-today-list"></div>
+    </div>
+
+    <div class="log-toolbar">
+      <input type="search" id="log-search" placeholder="Search items or tags…" autocomplete="off" />
+      <div class="tag-chips" id="log-tag-chips"></div>
+    </div>
+
+    <div class="log-hint" id="log-hint">Tap any item to log it instantly.</div>
+
+    <div style="display:flex;gap:8px;margin-bottom:12px">
+      <button class="btn btn-primary btn-sm" id="log-custom-toggle" style="flex:1;margin:0">＋ New item</button>
+      <button class="multi-toggle" id="log-multi-toggle">Select multiple</button>
+      <button class="multi-toggle" id="log-edit-toggle">✏️ Edit items</button>
+    </div>
+    <button class="btn btn-primary" id="log-multi-submit" hidden style="margin-bottom:12px">Log Selected</button>
+    <button class="link-btn" id="log-advanced-toggle">🕒 Log at a different time or add a note</button>
 
     <div class="card" id="log-custom-section" hidden>
-      <div class="card-title">Custom Activity</div>
+      <div class="card-title">New Spoon Item</div>
       <div class="row" style="margin-bottom:12px">
         <div class="form-group" style="flex:0 0 60px;margin-bottom:0">
           <label class="form-label">Emoji</label>
@@ -137,15 +183,19 @@
           <option value="recovery">Recovery</option>
         </select>
       </div>
+      <div class="form-group" style="margin-bottom:12px">
+        <label class="form-label">Tags <span class="hint">(optional)</span></label>
+        <div id="custom-tags"></div>
+      </div>
       <label class="save-lib-row">
         <input type="checkbox" id="custom-save-lib" checked />
         <span>Save to my activity library</span>
       </label>
-      <button class="btn btn-primary" id="log-custom-submit" style="margin-top:12px">Log Custom Activity</button>
+      <button class="btn btn-primary" id="log-custom-submit" style="margin-top:12px">Log New Item</button>
     </div>
 
     <div class="card" id="log-advanced-section" hidden>
-      <div class="card-title">Advanced <span class="hint" style="text-transform:none;letter-spacing:0;font-weight:400">— applies to your next tap</span></div>
+      <div class="card-title">Time &amp; Note <span class="hint" style="text-transform:none;letter-spacing:0;font-weight:400">— applies to your next tap</span></div>
       <div class="form-group">
         <label class="form-label">When</label>
         <input type="datetime-local" id="log-timestamp" />
@@ -155,12 +205,15 @@
         <textarea id="log-note" placeholder="How did it go? Any context…"></textarea>
       </div>
     </div>
+
+    <div id="log-groups"></div>
   </main>
 
   <!-- ══════════════ HISTORY PAGE ══════════════ -->
   <main id="page-history" class="page" hidden>
     <div class="page-header">
       <h1>History</h1>
+      <button class="gear-btn" data-goto="settings" title="Settings" aria-label="Settings">⚙️</button>
     </div>
     <div class="card" style="padding:12px 16px">
       <div class="form-group" style="margin-bottom:0;display:flex;align-items:center;gap:10px">
@@ -176,6 +229,7 @@
   <main id="page-weekly" class="page" hidden>
     <div class="page-header">
       <h1>📈 Patterns</h1>
+      <button class="gear-btn" data-goto="settings" title="Settings" aria-label="Settings">⚙️</button>
     </div>
 
     <!-- Section A — This week at a glance -->
@@ -246,6 +300,7 @@
   <main id="page-settings" class="page" hidden>
     <div class="page-header">
       <h1>Settings</h1>
+      <button class="btn btn-sm btn-secondary" data-goto="today" style="margin:0;width:auto">Done</button>
     </div>
 
     <div class="card">
@@ -308,10 +363,36 @@
             style="position:absolute;inset:0;border-radius:12px;background:#ccc;transition:.3s;cursor:pointer"></span>
         </label>
       </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Check-Ins &amp; Reminders</div>
+      <div class="settings-item">
+        <div>
+          <div class="s-label">Morning Check-In Prompt</div>
+          <div class="s-sub">Opens the check-in when you open the app 5–7 AM Eastern, once per morning</div>
+        </div>
+        <label style="position:relative;display:inline-block;width:44px;height:24px">
+          <input type="checkbox" id="set-morning-prompt" style="opacity:0;width:0;height:0;position:absolute" />
+          <span onclick="this.previousElementSibling.click();this.style.background=this.previousElementSibling.checked?'var(--primary)':'#ccc'"
+            style="position:absolute;inset:0;border-radius:12px;background:#ccc;transition:.3s;cursor:pointer"></span>
+        </label>
+      </div>
+      <div class="settings-item">
+        <div>
+          <div class="s-label">Energy Check Reminder Dot</div>
+          <div class="s-sub">Red dot on the Energy tab after 3 hours without a check (7 AM–9 PM). Calendar alerts are set up on the Energy tab.</div>
+        </div>
+        <label style="position:relative;display:inline-block;width:44px;height:24px">
+          <input type="checkbox" id="set-energy-dot" style="opacity:0;width:0;height:0;position:absolute" />
+          <span onclick="this.previousElementSibling.click();this.style.background=this.previousElementSibling.checked?'var(--primary)':'#ccc'"
+            style="position:absolute;inset:0;border-radius:12px;background:#ccc;transition:.3s;cursor:pointer"></span>
+        </label>
+      </div>
       <div class="settings-item">
         <div>
           <div class="s-label">Evening Reflection Reminder</div>
-          <div class="s-sub">Notification at 9 PM Eastern for your end-of-day reflection</div>
+          <div class="s-sub">Notification at 9 PM Eastern. Add reflections from any day in History.</div>
         </div>
         <label style="position:relative;display:inline-block;width:44px;height:24px">
           <input type="checkbox" id="set-evening-reminder" style="opacity:0;width:0;height:0;position:absolute" />
@@ -319,21 +400,62 @@
             style="position:absolute;inset:0;border-radius:12px;background:#ccc;transition:.3s;cursor:pointer"></span>
         </label>
       </div>
+      <div class="settings-item" style="display:block">
+        <div class="s-label">Saved Symptoms</div>
+        <div class="s-sub" style="margin-bottom:8px">Symptoms you've added to the morning check-in. Tap ✕ to remove one from the list (past check-ins keep it).</div>
+        <div class="tag-chips tag-picker" id="saved-symptoms-list"></div>
+      </div>
+    </div>
+
+    <div class="card" id="cal-settings-card">
+      <div class="card-title">Calendar Import</div>
+      <p class="card-note">An iPhone Shortcut reads today's calendar and sends the events here to review on the Log tab. Nothing is logged until you confirm it. <span id="cal-last-import"></span></p>
+      <details class="cal-howto">
+        <summary>How to set up the Shortcut</summary>
+        <ol>
+          <li>Open the <strong>Shortcuts</strong> app → <strong>＋</strong> → name it “Spoon Tracker Calendar”.</li>
+          <li>Add <strong>Find Calendar Events</strong>. Set the filter to <em>Start Date is today</em>, sort by <em>Start Date</em>, oldest first.</li>
+          <li>Add <strong>Repeat with Each</strong> (it uses the events). Inside it, add a <strong>Text</strong> action containing:<br>
+            <code>Title|Start Date|End Date|Calendar</code><br>
+            Replace each word with the <em>Repeat Item</em> variable's matching detail. For Start Date and End Date, tap the variable and set <em>Date Format</em> to <strong>ISO 8601</strong>. Keep the <code>|</code> between them.</li>
+          <li>After <em>End Repeat</em>, add <strong>Combine Text</strong> (Repeat Results, with <em>New Lines</em>).</li>
+          <li>Add <strong>URL Encode</strong> on the combined text.</li>
+          <li>Add <strong>Text</strong>: <code id="cal-url-base"></code> followed by the <em>URL Encoded Text</em> variable.</li>
+          <li>Add <strong>Open URLs</strong>. It opens in your default browser, so use the same browser you track in (your data lives there).</li>
+          <li>Optional: <strong>Automation</strong> tab → <em>Time of Day</em> (e.g. 7 PM daily) → <em>Run Immediately</em> → run this Shortcut.</li>
+        </ol>
+      </details>
+      <div class="settings-item" style="display:block">
+        <div class="s-label">Always Skip Events Starting With</div>
+        <div class="s-sub" style="margin-bottom:8px">For shared events that aren't yours, e.g. “dan”.</div>
+        <div class="tag-chips tag-picker" id="cal-skip-list"></div>
+        <div class="tag-add-row">
+          <input type="text" id="cal-skip-input" placeholder="e.g. dan" maxlength="30" />
+          <button type="button" class="btn btn-secondary btn-sm" id="cal-skip-add" style="margin:0;width:auto">Add</button>
+        </div>
+      </div>
+      <div class="settings-item">
+        <div>
+          <div class="s-label">Remembered Matches</div>
+          <div class="s-sub" id="cal-memory-count"></div>
+        </div>
+        <button class="btn btn-secondary btn-sm" id="cal-memory-clear" style="margin:0;width:auto">Forget all</button>
+      </div>
     </div>
 
     <!-- Quick Log Customizer -->
     <div class="card">
       <div class="card-title" style="display:flex;justify-content:space-between;align-items:center">
-        Quick Log Buttons
+        Favorites
         <span id="quick-picker-count" style="font-size:12px;color:var(--text-muted);font-weight:400;text-transform:none;letter-spacing:0">0/9 selected</span>
       </div>
-      <p style="font-size:13px;color:var(--text-muted);margin-bottom:10px">Choose up to 9 activities for the Quick Log grid on Today</p>
+      <p style="font-size:13px;color:var(--text-muted);margin-bottom:10px">Choose up to 9 favorites — they're pinned to the top of the Log tab</p>
       <div class="quick-picker-grid" id="quick-picker-grid"></div>
     </div>
 
     <div class="card">
       <div class="card-title">Customize Spoon Costs</div>
-      <p style="font-size:13px;color:var(--text-muted);margin-bottom:12px">Override defaults based on YOUR experience</p>
+      <p style="font-size:13px;color:var(--text-muted);margin-bottom:12px">Override defaults based on YOUR experience. Tap Save Settings below when done.</p>
       <table style="width:100%;border-collapse:collapse">
         <tbody id="spoon-overrides-body"></tbody>
       </table>
@@ -341,6 +463,7 @@
 
     <div class="card">
       <div class="card-title">Custom Activities</div>
+      <p style="font-size:13px;color:var(--text-muted);margin-bottom:10px">To change tags on any item, use ✏️ Edit items on the Log tab.</p>
       <div id="custom-activities-list"></div>
       <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border)">
         <div class="card-title">Add New</div>
@@ -373,6 +496,10 @@
             <option value="recovery">Recovery</option>
           </select>
         </div>
+        <div class="form-group" style="margin-bottom:10px">
+          <label class="form-label">Tags <span class="hint">(optional)</span></label>
+          <div id="new-custom-tags"></div>
+        </div>
         <button class="btn btn-secondary" id="add-custom-btn">+ Add Activity</button>
       </div>
     </div>
@@ -398,19 +525,19 @@
   <!-- ══════════════ NAVIGATION ══════════════ -->
   <nav>
     <button id="nav-today" data-page="today" class="active">
-      <span class="nav-icon">🥄</span>Today
+      <span class="nav-icon">🥄</span>Spoons
     </button>
     <button id="nav-log" data-page="log">
       <span class="nav-icon">➕</span>Log
+    </button>
+    <button id="nav-energy" data-page="energy">
+      <span class="nav-icon">🔋<span class="nav-dot" id="energy-due-dot" hidden></span></span>Energy
     </button>
     <button id="nav-history" data-page="history">
       <span class="nav-icon">📋</span>History
     </button>
     <button id="nav-weekly" data-page="weekly">
       <span class="nav-icon">📈</span>Patterns
-    </button>
-    <button id="nav-settings" data-page="settings">
-      <span class="nav-icon">⚙️</span>Settings
     </button>
   </nav>
 

@@ -1,7 +1,7 @@
 'use strict';
 
 // Build version — shown in Settings so it's easy to confirm the running code.
-const APP_VERSION = '10';
+const APP_VERSION = '15';
 
 // ═══════════════════════════════════════════════════════
 // CONSTANTS & DEFAULTS
@@ -17,13 +17,14 @@ const KEYS = {
   NOTES:           'cmt_notes',             // per-day freeform notes string
   REFLECTIONS:     'cmt_reflections',       // per-day end-of-day reflection
   BUDGET_OVERRIDE: 'cmt_budget_override',   // per-day starting-balance override
+  CAL_EVENTS:      'cmt_cal_events',        // per-day imported calendar events + review status
   PROFILE:         'sp_profile',            // { id, name, owner, createdAt }
 };
 
 // Data keys that belong to a person's profile — used for backup/restore and reset.
 const DATA_KEYS = [
   KEYS.ACTIVITIES, KEYS.CHECKINS, KEYS.SYMPTOMS, KEYS.SETTINGS, KEYS.CUSTOM_ACT,
-  KEYS.ENERGY, KEYS.NOTES, KEYS.REFLECTIONS, KEYS.BUDGET_OVERRIDE,
+  KEYS.ENERGY, KEYS.NOTES, KEYS.REFLECTIONS, KEYS.BUDGET_OVERRIDE, KEYS.CAL_EVENTS,
 ];
 
 // Specialized presets that belong only to the owner's (Elaine's) profile. New users
@@ -135,6 +136,21 @@ const DEFAULT_ZONES = {
   puzzle: 'competence', bowel: 'maintenance', massage: 'maintenance', nap: 'maintenance', sleep: 'maintenance',
 };
 
+// Starter tags, seeded from category so the library is filterable on day one. Any item's
+// tags can be edited (stored in settings.overrides[id].tags for presets, or on the custom
+// activity itself); once edited, the saved list replaces these defaults.
+const STARTER_TAGS = ['exercise', 'work', 'restorative'];
+const DEFAULT_TAGS_BY_CATEGORY = { exercise: ['exercise'], work: ['work'], recovery: ['restorative'], rest: ['restorative'] };
+const DEFAULT_TAGS_BY_ID = { pt_ex: ['exercise'], ot_ex: ['exercise'] };
+
+function defaultTagsFor(a) {
+  return [...(DEFAULT_TAGS_BY_ID[a.id] || DEFAULT_TAGS_BY_CATEGORY[a.category] || [])];
+}
+
+function normalizeTag(t) {
+  return String(t || '').trim().toLowerCase().replace(/\s+/g, ' ').slice(0, 24);
+}
+
 const QUICK_IDS = ['pt', 'cmt_class', 'yoga', 'meditation', 'nap', 'dog_walk', 'cooking', 'shower', 'charlie_time'];
 const MAX_QUICK = 9;
 
@@ -145,6 +161,8 @@ const DEFAULT_SETTINGS = {
   enableAfterSixModifier: true,
   enableStackingPenalty: true,
   enableEveningReminder: false,
+  enableMorningPrompt: true,
+  enableEnergyDueDot: true,
 };
 
 // ═══════════════════════════════════════════════════════
@@ -176,18 +194,30 @@ function getAllActivities() {
   const presets = DEFAULT_ACTIVITIES.filter(a => owner || !a.specialized).map(a => {
     const ov = overrides[a.id] || {};
     const cost = ov.spoons ?? legacyCost[a.id] ?? a.spoons;
+    const category = ov.category ?? a.category;
     return {
       ...a,
       name: ov.name ?? a.name,
       emoji: ov.emoji ?? a.emoji,
-      category: ov.category ?? a.category,
+      category,
       spoons: cost,
       recovery: cost < 0 ? true : a.recovery,
+      tags: ov.tags ?? defaultTagsFor({ id: a.id, category }),
     };
   });
   // Custom activities: default missing category to 'household'
-  const custom = getCustomActivities().map(a => ({ ...a, category: a.category || 'household' }));
+  const custom = getCustomActivities().map(a => {
+    const category = a.category || 'household';
+    return { ...a, category, tags: a.tags ?? defaultTagsFor({ id: a.id, category }) };
+  });
   return [...presets, ...custom];
+}
+
+// Every tag in use across the library, starter tags first.
+function getAllTags() {
+  const seen = new Set(STARTER_TAGS);
+  getAllActivities().forEach(a => (a.tags || []).forEach(t => seen.add(t)));
+  return [...STARTER_TAGS, ...[...seen].filter(t => !STARTER_TAGS.includes(t)).sort()];
 }
 
 function getActivitiesForDate(ds) { return (load(KEYS.ACTIVITIES) || {})[ds] || []; }
@@ -216,7 +246,7 @@ function deleteActivityForDate(ds, entryId) {
 function getCheckin(ds) { return (load(KEYS.CHECKINS) || {})[ds] || null; }
 function saveCheckin(ds, data) {
   const all = load(KEYS.CHECKINS) || {};
-  all[ds] = { ...(all[ds] || {}), ...data, date: ds };
+  all[ds] = { ...(all[ds] || {}), ...data, date: ds, savedAt: new Date().toISOString() };
   save(KEYS.CHECKINS, all);
 }
 function getSymptoms(ds) { return (load(KEYS.SYMPTOMS) || {})[ds] || null; }
@@ -482,6 +512,13 @@ function calcSpoonsRemaining(ds) {
   return { budget, used, recovered, remaining: parseFloat((budget - used + recovered).toFixed(1)) };
 }
 
+function spoonGuidance(remaining) {
+  if (remaining <= 0) return 'Out of spoons — please rest';
+  if (remaining <= 2) return 'Rest for the rest of the day';
+  if (remaining <= 5) return 'Lighter activities only';
+  return '';
+}
+
 function spoonColorClass(remaining) {
   if (remaining <= 2) return 'red';
   if (remaining <= 5) return 'yellow';
@@ -508,17 +545,10 @@ function detectPatterns() {
 function getTodayAlerts() {
   const alerts = [];
   const d = today();
-  const { remaining, budget, used } = calcSpoonsRemaining(d);
+  const { budget, used } = calcSpoonsRemaining(d);
   const settings = getSettings();
   const entries = getActivitiesForDate(d);
 
-  if (remaining <= 0) {
-    alerts.push({ type: 'red', icon: '🚨', text: "You're out of spoons for today. Please rest — no more activities." });
-  } else if (remaining <= 2) {
-    alerts.push({ type: 'red', icon: '⚠️', text: `Only ${remaining} spoon${remaining === 1 ? '' : 's'} left. Rest for the remainder of the day.` });
-  } else if (remaining <= 5) {
-    alerts.push({ type: 'yellow', icon: '⚡', text: `${remaining} spoons remaining. Lighter activities only.` });
-  }
   if (used >= budget * 0.8) {
     alerts.push({ type: 'yellow', icon: '🔮', text: "Based on today's activity, you may need extra rest tomorrow." });
   }
@@ -554,13 +584,25 @@ function showPage(name) {
   const btn = el('nav-' + name);
   if (btn) btn.classList.add('active');
   window._currentPage = name;
+  // Drop a stale deep-link hash so a reload doesn't jump back to that tab.
+  if (location.hash && pageFromHash() !== name) history.replaceState(null, '', location.pathname + location.search);
   renderPage(name);
+  updateEnergyDueDot();
+}
+
+// Deep links: #energy, #log, etc. open that tab (used by calendar reminders).
+const PAGE_ALIASES = { spoons: 'today', home: 'today' };
+function pageFromHash() {
+  const h = (location.hash || '').replace('#', '').toLowerCase();
+  const name = PAGE_ALIASES[h] || h;
+  return el('page-' + name) ? name : null;
 }
 
 function renderPage(name) {
   switch (name) {
     case 'today':    renderToday();    break;
     case 'log':      renderLog();      break;
+    case 'energy':   renderEnergy();   break;
     case 'history':  renderHistory();  break;
     case 'weekly':   renderWeekly();   break;
     case 'settings': renderSettings(); break;
@@ -578,6 +620,7 @@ function scaleButtonsHTML(max, selected) {
 // ═══════════════════════════════════════════════════════
 
 let _energySelectedScore = null;
+let _todayAlertsOpen = false;
 
 function renderToday() {
   const d = today();
@@ -615,6 +658,19 @@ function renderToday() {
 
   el('morning-prompt').hidden = !!checkin;
 
+  // Pacing guidance lives under the big number (it used to be a separate alert that
+  // repeated the count).
+  el('spoon-guidance').textContent = spoonGuidance(remaining);
+  el('spoon-guidance').className = 'spoon-guidance ' + cls;
+
+  // Latest energy reading — the newest energy check, else the morning check-in.
+  const latestCheck = getEnergyChecks(d).slice().sort((a, b) => a.ts < b.ts ? -1 : 1).pop();
+  const latest = latestCheck ? { score: latestCheck.score, ts: latestCheck.ts }
+    : (checkin?.energy ? { score: checkin.energy, ts: checkin.savedAt, morning: true } : null);
+  el('energy-latest').innerHTML = latest
+    ? `🔋 Energy <strong>${latest.score}/10</strong>${latest.ts ? ` ${latest.morning ? 'this morning' : 'at ' + fmtTime(latest.ts)}` : ''} <span class="el-arrow">›</span>`
+    : `🔋 No energy check yet today · <span class="el-link">Check in ›</span>`;
+
   // Reminder-for-today banner (from yesterday's reflection)
   const reminderBanner = el('today-reminder');
   const yRef = getReflection(yesterdayStr());
@@ -627,41 +683,23 @@ function renderToday() {
     }
   }
 
-  // Alerts
+  // Alerts — only the most urgent one shows; the rest sit behind "more".
   const alertsDiv = el('today-alerts');
   alertsDiv.innerHTML = '';
-  getTodayAlerts().forEach(a => {
+  const alerts = getTodayAlerts();
+  alerts.forEach((a, i) => {
     const div = document.createElement('div');
     div.className = `alert ${a.type}`;
+    div.hidden = i > 0 && !_todayAlertsOpen;
     div.innerHTML = `<span class="alert-icon">${a.icon}</span><span class="alert-text">${a.text}</span>`;
     alertsDiv.appendChild(div);
   });
-
-  renderEnergyCard(d);
-
-  // Quick buttons
-  const settings = getSettings();
-  const allActs = getAllActivities();
-  const quickIds = settings.quickIds || QUICK_IDS;
-  const quickGrid = el('quick-grid');
-  quickGrid.innerHTML = '';
-  quickIds.map(id => allActs.find(a => a.id === id)).filter(Boolean).forEach(act => {
-    const btn = document.createElement('button');
-    btn.className = 'quick-btn';
-    const costLabel = act.spoons < 0 ? `+${Math.abs(act.spoons)} 💚` : act.spoons === 0 ? 'free' : `${act.spoons} 🥄`;
-    btn.innerHTML = `<span class="act-emoji">${act.emoji}</span><span class="act-name">${act.name}</span><span class="act-spoons">${costLabel}</span>`;
-    btn.addEventListener('click', () => quickLog(act));
-    quickGrid.appendChild(btn);
-  });
-
-  // Activity list
-  const entries = getActivitiesForDate(d);
-  const listDiv = el('today-activities');
-  listDiv.innerHTML = '';
-  if (entries.length === 0) {
-    listDiv.innerHTML = `<div class="empty-state"><div class="emoji">📋</div><p>No activities logged yet today.</p></div>`;
-  } else {
-    entries.slice().reverse().forEach(e => listDiv.appendChild(makeActivityItem(e, d)));
+  if (alerts.length > 1) {
+    const more = document.createElement('button');
+    more.className = 'link-btn';
+    more.textContent = _todayAlertsOpen ? 'Show fewer alerts' : `+${alerts.length - 1} more alert${alerts.length > 2 ? 's' : ''}`;
+    more.addEventListener('click', () => { _todayAlertsOpen = !_todayAlertsOpen; renderToday(); });
+    alertsDiv.appendChild(more);
   }
 }
 
@@ -708,7 +746,152 @@ function saveEnergyCheck() {
   _energySelectedScore = null;
   el('energy-why').value = '';
   flash('Energy check saved 🔋');
-  renderEnergyCard(today());
+  renderEnergy();
+  updateEnergyDueDot();
+}
+
+// ═══════════════════════════════════════════════════════
+// ENERGY CHECK PAGE
+// ═══════════════════════════════════════════════════════
+
+// A check is "due" during waking hours when nothing (morning check-in or energy
+// check) has been logged in the last 3 hours. Drives the dot on the Energy tab.
+const ENERGY_DUE_HOURS = 3;
+const ENERGY_WAKE_START = 7;   // 7 AM Eastern
+const ENERGY_WAKE_END = 21;    // 9 PM Eastern
+
+function lastEnergyTouch(ds) {
+  const times = getEnergyChecks(ds).map(c => c.ts);
+  const ci = getCheckin(ds);
+  if (ci?.savedAt) times.push(ci.savedAt);
+  return times.length ? times.sort().pop() : null;
+}
+
+function energyCheckStatus() {
+  const hour = etHourNow();
+  const last = lastEnergyTouch(today());
+  const awake = hour >= ENERGY_WAKE_START && hour < ENERGY_WAKE_END;
+  const nextAt = last ? new Date(new Date(last).getTime() + ENERGY_DUE_HOURS * 3600000) : null;
+  const due = awake && (!nextAt || nextAt <= new Date());
+  return { last, nextAt, due };
+}
+
+function updateEnergyDueDot() {
+  const dot = el('energy-due-dot');
+  if (dot) dot.hidden = getSettings().enableEnergyDueDot === false || !energyCheckStatus().due;
+}
+
+function renderEnergy() {
+  const d = today();
+
+  // Morning check-in status
+  const body = el('energy-morning-body');
+  const ci = getCheckin(d);
+  if (ci) {
+    const bits = [];
+    if (ci.energy) bits.push(`⚡ Energy ${ci.energy}/10`);
+    const sleepMin = toMinutes(ci.sleepMinutes, ci.sleepHours);
+    const cpapMin = toMinutes(ci.cpapMinutes, ci.cpapHours);
+    if (sleepMin) bits.push(`💤 ${fmtHM(sleepMin)} sleep`);
+    if (cpapMin) bits.push(`😷 CPAP ${fmtHM(cpapMin)}`);
+    else if (ci.cpapUsed === false) bits.push('😷 No CPAP');
+    if (ci.trazodone) bits.push('💊 Trazodone');
+    if (ci.brainFog) bits.push('🌫 Brain fog');
+    if (ci.muscleWeak) bits.push(`💪 Weakness${ci.muscleWeakSev ? ' ' + ci.muscleWeakSev + '/5' : ''}`);
+    (ci.otherSymptoms || []).forEach(t => bits.push(escapeHTML(t)));
+    body.innerHTML = `<div class="ci-done-row"><span class="ci-done">✓ Done${ci.savedAt ? ' at ' + fmtTime(ci.savedAt) : ''}</span>
+        <button class="link-btn" id="energy-morning-edit" style="margin:0">Edit</button></div>
+      <div class="tag-row">${bits.map(b => `<span class="tag">${b}</span>`).join('')}</div>
+      ${ci.whyText ? `<div class="note" style="margin-top:6px">"${escapeHTML(ci.whyText)}"</div>` : ''}
+      ${ci.symptomNote ? `<div class="note" style="margin-top:4px">"${escapeHTML(ci.symptomNote)}"</div>` : ''}`;
+    el('energy-morning-edit').addEventListener('click', () => openCheckinModal());
+  } else {
+    body.innerHTML = `<p class="card-note">Not done yet today. It sets your spoon budget.</p>
+      <button class="btn btn-primary" id="energy-morning-start">Start Morning Check-In</button>`;
+    el('energy-morning-start').addEventListener('click', () => openCheckinModal());
+  }
+
+  // Due / next-check hint
+  const { last, nextAt, due } = energyCheckStatus();
+  const dueEl = el('energy-due');
+  if (due) {
+    dueEl.className = 'energy-due due';
+    dueEl.textContent = last ? `Time for a check-in — last one was at ${fmtTime(last)}.` : 'Time for your first check-in of the day.';
+  } else if (nextAt) {
+    dueEl.className = 'energy-due';
+    dueEl.textContent = `Last check ${fmtTime(last)} · next suggested around ${fmtTime(nextAt.toISOString())}`;
+  } else {
+    dueEl.className = 'energy-due';
+    dueEl.textContent = '';
+  }
+
+  renderEnergyCard(d);
+  updateReminderPreview();
+}
+
+// ── Calendar reminders (.ics) ──
+
+function reminderTimes() {
+  const toMin = v => { const [h, m] = (v || '0:0').split(':').map(Number); return h * 60 + m; };
+  const start = toMin(el('rem-start').value || '09:30');
+  const end = toMin(el('rem-end').value || '20:00');
+  const step = parseInt(el('rem-interval').value, 10) || 150;
+  const out = [];
+  for (let t = start; t <= end && out.length < 12; t += step) out.push(t);
+  return out;
+}
+
+function fmtMinutes(t) {
+  const h = Math.floor(t / 60), m = t % 60;
+  return `${((h + 11) % 12) + 1}:${String(m).padStart(2, '0')} ${h < 12 ? 'AM' : 'PM'}`;
+}
+
+function updateReminderPreview() {
+  const prev = el('rem-preview');
+  if (!prev) return;
+  const times = reminderTimes();
+  prev.textContent = times.length ? `Daily alerts at ${times.map(fmtMinutes).join(', ')} (Eastern)` : 'Pick a first check before the last check.';
+}
+
+function downloadReminderCalendar() {
+  const times = reminderTimes();
+  if (!times.length) { flash('Pick a first check before the last check'); return; }
+  const appUrl = location.origin + location.pathname + '#energy';
+  const pad = n => String(n).padStart(2, '0');
+  const dateKey = today().replace(/-/g, '');
+  const stamp = new Date().toISOString().replace(/[-:]/g, '').replace(/\.\d+/, '');
+  const lines = [
+    'BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Spoon Tracker//Energy Checks//EN', 'CALSCALE:GREGORIAN', 'METHOD:PUBLISH',
+    'BEGIN:VTIMEZONE', 'TZID:America/New_York',
+    'BEGIN:DAYLIGHT', 'TZOFFSETFROM:-0500', 'TZOFFSETTO:-0400', 'TZNAME:EDT', 'DTSTART:19700308T020000', 'RRULE:FREQ=YEARLY;BYMONTH=3;BYDAY=2SU', 'END:DAYLIGHT',
+    'BEGIN:STANDARD', 'TZOFFSETFROM:-0400', 'TZOFFSETTO:-0500', 'TZNAME:EST', 'DTSTART:19701101T020000', 'RRULE:FREQ=YEARLY;BYMONTH=11;BYDAY=1SU', 'END:STANDARD',
+    'END:VTIMEZONE',
+  ];
+  times.forEach((t, i) => {
+    lines.push(
+      'BEGIN:VEVENT',
+      `UID:spoon-energy-${dateKey}-${i}-${Date.now()}@spoon-tracker`,
+      `DTSTAMP:${stamp}`,
+      `DTSTART;TZID=America/New_York:${dateKey}T${pad(Math.floor(t / 60))}${pad(t % 60)}00`,
+      'DURATION:PT5M',
+      'RRULE:FREQ=DAILY',
+      'SUMMARY:🔋 Energy check',
+      `DESCRIPTION:How's your energy right now? Open Spoon Tracker: ${appUrl}`,
+      `URL:${appUrl}`,
+      'TRANSP:TRANSPARENT',
+      'BEGIN:VALARM', 'ACTION:DISPLAY', 'DESCRIPTION:🔋 Energy check', 'TRIGGER:PT0M', 'END:VALARM',
+      'END:VEVENT',
+    );
+  });
+  lines.push('END:VCALENDAR');
+  const blob = new Blob([lines.join('\r\n') + '\r\n'], { type: 'text/calendar' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'spoon-tracker-energy-checks.ics';
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  flash('Calendar file downloaded 📅');
 }
 
 function makeActivityItem(entry, ds) {
@@ -779,13 +962,6 @@ function editBudget() {
   renderToday();
 }
 
-function quickLog(act) {
-  logActivity(act, {});
-  const costMsg = (act.spoons < 0) ? `+${Math.abs(act.spoons)} recovery` : `${act.spoons} spoon${act.spoons === 1 ? '' : 's'}`;
-  flash(`${act.emoji} ${act.name} (${costMsg})`);
-  renderPage('today');
-}
-
 // Shared logger — stamps zone default silently (data layer), no confirm step.
 function logActivity(act, opts) {
   const d = today();
@@ -802,6 +978,7 @@ function logActivity(act, opts) {
     timestamp: opts?.timestamp || new Date().toISOString(),
     note: opts?.note || '',
     zone: getActivityDefaultZone(act.id) || null,
+    tags: act.tags || [],
   };
   entry.effectiveCost = calcEntryEffectiveCost(entry, entries, settings);
   saveActivityForDate(d, entry);
@@ -812,93 +989,237 @@ function logActivity(act, opts) {
 // MORNING CHECK-IN
 // ═══════════════════════════════════════════════════════
 
-function openCheckinModal() {
+// Time entry as hours + minutes (minutes in 5-minute steps). Stored as whole minutes;
+// decimal hours (sleepHours / cpapHours) are kept alongside so the budget formula,
+// Patterns charts, and CSV keep working unchanged.
+function hmInputHTML(id, totalMin) {
+  const has = totalMin != null && totalMin > 0;
+  const h = has ? Math.floor(totalMin / 60) : '';
+  const m = has ? totalMin % 60 : 0;
+  const mins = Array.from({ length: 12 }, (_, i) => i * 5)
+    .map(v => `<option value="${v}"${v === m ? ' selected' : ''}>${String(v).padStart(2, '0')} m</option>`).join('');
+  return `<div class="hm-row" id="${id}">
+      <input type="number" class="hm-h" min="0" max="16" step="1" inputmode="numeric" placeholder="0" value="${h}" />
+      <span class="hm-unit">h</span>
+      <select class="hm-m">${mins}</select>
+    </div>`;
+}
+function readHM(root, id) {
+  const row = root.querySelector('#' + id);
+  const hRaw = row.querySelector('.hm-h').value;
+  const m = parseInt(row.querySelector('.hm-m').value, 10) || 0;
+  if (hRaw === '' && m === 0) return null;
+  return (parseInt(hRaw, 10) || 0) * 60 + m;
+}
+// Older check-ins only have decimal hours; round to the nearest 5 minutes.
+function toMinutes(minutes, hours) {
+  if (minutes != null) return minutes;
+  return hours ? Math.round(hours * 12) * 5 : null;
+}
+function fmtHM(totalMin) {
+  if (!totalMin) return '0h';
+  const h = Math.floor(totalMin / 60), m = totalMin % 60;
+  return m ? `${h}h ${m}m` : `${h}h`;
+}
+
+// Symptoms you've added yourself are remembered (per device) so they show up as
+// chips on later mornings.
+function getSavedSymptoms() { return getSettings().customSymptoms || []; }
+function rememberSymptoms(list) {
+  const s = getSettings();
+  s.customSymptoms = [...new Set([...(s.customSymptoms || []), ...list])].slice(0, 20);
+  saveSettings(s);
+}
+
+const FATIGUE_LABELS = { 1: 'Barely tired', 2: 'A little tired', 3: 'Tired', 4: 'Very tired', 5: 'Wiped out' };
+
+function openCheckinModal(opts = {}) {
+  const ds = today();
+  const ex = getCheckin(ds) || {};
+  const cpapUsedEx = ex.cpapUsed ?? (ex.cpapHours > 0 ? true : (ex.date ? false : null));
+  const otherEx = ex.otherSymptoms || [];
+  const symptomChoices = [...new Set([...getSavedSymptoms(), ...otherEx])];
+  const fatigueEx = ex.nextDayFatigue > 0 ? ex.nextDayFatigue : null;
+  const yn = (id, val) => `<div class="toggle-row" id="${id}">
+      <button class="toggle-btn yes${val === true ? ' selected' : ''}" data-val="true">Yes</button>
+      <button class="toggle-btn no${val === false ? ' selected' : ''}" data-val="false">No</button>
+    </div>`;
+
   const overlay = document.createElement('div');
   overlay.className = 'modal-overlay';
   overlay.innerHTML = `
     <div class="modal">
       <div class="modal-handle"></div>
       <div class="modal-title">🌅 Morning Check-In</div>
+      ${opts.auto ? '<p class="card-note">Good morning! A quick check-in sets today’s spoon budget.</p>' : ''}
       <div class="form-group">
         <label class="form-label">Energy Level</label>
-        <div class="scale-row" id="ci-energy">${scaleButtonsHTML(10)}</div>
+        <div class="scale-row" id="ci-energy">${scaleButtonsHTML(10, ex.energy)}</div>
       </div>
       <div class="form-group">
         <label class="form-label">Why? <span class="hint">(optional)</span></label>
-        <input type="text" id="ci-why" placeholder="e.g. slept poorly, big day ahead" />
+        <input type="text" id="ci-why" placeholder="e.g. slept poorly, big day ahead" value="${ex.whyText ? escapeHTML(ex.whyText) : ''}" />
       </div>
+
       <div class="form-group">
-        <label class="form-label">Brain Fog?</label>
-        <div class="toggle-row" id="ci-fog">
-          <button class="toggle-btn yes" data-val="true">Yes</button>
-          <button class="toggle-btn no" data-val="false">No</button>
+        <label class="form-label">Symptoms this morning <span class="hint">(tap any that apply)</span></label>
+        <div class="tag-chips tag-picker" id="ci-symptoms">
+          <button type="button" class="tag-chip${ex.brainFog ? ' active' : ''}" data-sym="brainFog">🌫 Brain fog</button>
+          <button type="button" class="tag-chip${ex.muscleWeak ? ' active' : ''}" data-sym="muscleWeak">💪 Muscle weakness</button>
+          ${symptomChoices.map(t => `<button type="button" class="tag-chip${otherEx.includes(t) ? ' active' : ''}" data-other="${escapeHTML(t)}">${escapeHTML(t)}</button>`).join('')}
+        </div>
+        <div class="tag-add-row">
+          <input type="text" id="ci-sym-new" placeholder="Add another symptom" maxlength="40" />
+          <button type="button" class="btn btn-secondary btn-sm" id="ci-sym-add" style="margin:0;width:auto">Add</button>
         </div>
       </div>
-      <div class="form-group">
-        <label class="form-label">Muscle Weakness?</label>
-        <div class="toggle-row" id="ci-weak">
-          <button class="toggle-btn yes" data-val="true">Yes</button>
-          <button class="toggle-btn no" data-val="false">No</button>
-        </div>
-      </div>
-      <div class="form-group" id="ci-weak-sev-wrap" style="display:none">
+      <div class="form-group" id="ci-weak-sev-wrap"${ex.muscleWeak ? '' : ' style="display:none"'}>
         <label class="form-label">Muscle Weakness Severity <span class="hint">(1-5)</span></label>
-        <div class="scale-row" id="ci-weak-sev">${scaleButtonsHTML(5)}</div>
+        <div class="scale-row" id="ci-weak-sev">${scaleButtonsHTML(5, ex.muscleWeakSev || null)}</div>
       </div>
       <div class="form-group">
-        <label class="form-label">Next-Day Fatigue <span class="hint">(how did yesterday leave you? 1-5)</span></label>
-        <div class="scale-row" id="ci-fatigue">${scaleButtonsHTML(5)}</div>
+        <label class="form-label">Anything else to explain? <span class="hint">(optional)</span></label>
+        <input type="text" id="ci-sym-note" placeholder="e.g. tingling in feet, headache since 3 AM" value="${ex.symptomNote ? escapeHTML(ex.symptomNote) : ''}" />
       </div>
-      <div class="row">
-        <div class="form-group">
-          <label class="form-label">CPAP Hours</label>
-          <input type="number" id="ci-cpap" min="0" max="12" step="0.5" placeholder="hrs" />
-        </div>
-        <div class="form-group">
-          <label class="form-label">Trazodone?</label>
-          <div class="toggle-row" id="ci-traz" style="margin-top:0">
-            <button class="toggle-btn yes" data-val="true">Yes</button>
-            <button class="toggle-btn no" data-val="false">No</button>
-          </div>
-        </div>
+
+      <div class="ci-section-label">Last night</div>
+      <div class="form-group">
+        <label class="form-label">Did you take Trazodone?</label>
+        ${yn('ci-traz', ex.date ? !!ex.trazodone : null)}
       </div>
-      <div class="row">
-        <div class="form-group">
-          <label class="form-label">Sleep Quality <span class="hint">(1-5)</span></label>
-          <div class="scale-row" id="ci-sq">${scaleButtonsHTML(5)}</div>
-        </div>
+      <div class="form-group">
+        <label class="form-label">Did you use your CPAP?</label>
+        ${yn('ci-cpap-used', cpapUsedEx)}
       </div>
-      <div class="row">
-        <div class="form-group">
-          <label class="form-label">Sleep Hours</label>
-          <input type="number" id="ci-hours" min="0" max="12" step="0.5" placeholder="hrs" />
-        </div>
+      <div class="form-group" id="ci-cpap-time-wrap"${cpapUsedEx ? '' : ' style="display:none"'}>
+        <label class="form-label">Time on CPAP</label>
+        ${hmInputHTML('ci-cpap-time', toMinutes(ex.cpapMinutes, ex.cpapHours))}
       </div>
+      <div class="form-group">
+        <label class="form-label">Total sleep</label>
+        ${hmInputHTML('ci-sleep-time', toMinutes(ex.sleepMinutes, ex.sleepHours))}
+      </div>
+      <div class="form-group">
+        <label class="form-label">Sleep Quality <span class="hint">(1-5)</span></label>
+        <div class="scale-row" id="ci-sq">${scaleButtonsHTML(5, ex.sleepQuality || null)}</div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Next-Day Fatigue <span class="hint">(how did yesterday leave you?)</span></label>
+        <input type="range" id="ci-fatigue" min="1" max="5" step="0.5" value="${fatigueEx ?? 3}" class="fatigue-slider${fatigueEx ? '' : ' unset'}" />
+        <div class="slider-ends"><span>1 · Barely tired</span><span>5 · Wiped out</span></div>
+        <div class="slider-value" id="ci-fatigue-val"></div>
+      </div>
+
       <button class="btn btn-primary" id="ci-save" style="margin-top:8px">Save Check-In</button>
-      <button class="btn btn-secondary" id="ci-cancel" style="margin-top:8px">Cancel</button>
+      <button class="btn btn-secondary" id="ci-cancel" style="margin-top:8px">${opts.auto ? 'Skip for now' : 'Cancel'}</button>
     </div>`;
 
   wireScalePickers(overlay);
   wireTogglePickers(overlay);
+
+  // Symptom chips
+  const symWrap = overlay.querySelector('#ci-symptoms');
+  const wireChip = chip => chip.addEventListener('click', () => {
+    chip.classList.toggle('active');
+    if (chip.dataset.sym === 'muscleWeak') {
+      overlay.querySelector('#ci-weak-sev-wrap').style.display = chip.classList.contains('active') ? '' : 'none';
+    }
+  });
+  symWrap.querySelectorAll('.tag-chip').forEach(wireChip);
+  const symInput = overlay.querySelector('#ci-sym-new');
+  const addSym = () => {
+    const t = symInput.value.trim().slice(0, 40);
+    if (!t) return;
+    let chip = [...symWrap.querySelectorAll('[data-other]')].find(c => c.dataset.other.toLowerCase() === t.toLowerCase());
+    if (!chip) {
+      chip = document.createElement('button');
+      chip.type = 'button';
+      chip.className = 'tag-chip';
+      chip.dataset.other = t;
+      chip.textContent = t;
+      wireChip(chip);
+      symWrap.appendChild(chip);
+    }
+    chip.classList.add('active');
+    symInput.value = '';
+  };
+  overlay.querySelector('#ci-sym-add').addEventListener('click', addSym);
+  symInput.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); addSym(); } });
+
+  // Fatigue slider — stays "not set" until touched, so an untouched slider saves nothing.
+  const slider = overlay.querySelector('#ci-fatigue');
+  const sliderVal = overlay.querySelector('#ci-fatigue-val');
+  let fatigueTouched = fatigueEx != null;
+  const showFatigue = () => {
+    const v = parseFloat(slider.value);
+    sliderVal.textContent = fatigueTouched ? `${v} · ${FATIGUE_LABELS[Math.round(v)]}` : 'Not set — slide to answer';
+  };
+  slider.addEventListener('input', () => { fatigueTouched = true; slider.classList.remove('unset'); showFatigue(); });
+  showFatigue();
+
+  const close = () => overlay.remove();
   overlay.querySelector('#ci-save').addEventListener('click', () => {
     const energy = parseInt(overlay.querySelector('#ci-energy .selected')?.dataset.val || '5');
     const whyText = overlay.querySelector('#ci-why').value.trim() || null;
-    const brainFog = overlay.querySelector('#ci-fog .selected')?.dataset.val === 'true';
-    const muscleWeak = overlay.querySelector('#ci-weak .selected')?.dataset.val === 'true';
+    const brainFog = !!symWrap.querySelector('[data-sym="brainFog"].active');
+    const muscleWeak = !!symWrap.querySelector('[data-sym="muscleWeak"].active');
     const muscleWeakSev = muscleWeak ? parseInt(overlay.querySelector('#ci-weak-sev .selected')?.dataset.val || '0') : 0;
-    const nextDayFatigue = parseInt(overlay.querySelector('#ci-fatigue .selected')?.dataset.val || '0');
-    const cpapHours = parseFloat(overlay.querySelector('#ci-cpap').value || '0');
+    const otherSymptoms = [...symWrap.querySelectorAll('[data-other].active')].map(c => c.dataset.other);
+    const symptomNote = overlay.querySelector('#ci-sym-note').value.trim() || null;
     const trazodone = overlay.querySelector('#ci-traz .selected')?.dataset.val === 'true';
+    const cpapAns = overlay.querySelector('#ci-cpap-used .selected')?.dataset.val;
+    const cpapUsed = cpapAns === undefined ? null : cpapAns === 'true';
+    const cpapMinutes = cpapUsed ? (readHM(overlay, 'ci-cpap-time') || 0) : 0;
+    const sleepMinutes = readHM(overlay, 'ci-sleep-time');
     const sleepQuality = parseInt(overlay.querySelector('#ci-sq .selected')?.dataset.val || '3');
-    const sleepHours = parseFloat(overlay.querySelector('#ci-hours').value || '0');
-    saveCheckin(today(), { energy, whyText, brainFog, muscleWeak, muscleWeakSev, nextDayFatigue, cpapHours, trazodone, sleepQuality, sleepHours });
-    overlay.remove();
+    const nextDayFatigue = fatigueTouched ? parseFloat(slider.value) : 0;
+    rememberSymptoms(otherSymptoms);
+    saveCheckin(ds, {
+      energy, whyText, brainFog, muscleWeak, muscleWeakSev, otherSymptoms, symptomNote,
+      trazodone, cpapUsed, cpapMinutes, cpapHours: +(cpapMinutes / 60).toFixed(2),
+      sleepMinutes, sleepHours: sleepMinutes ? +(sleepMinutes / 60).toFixed(2) : 0,
+      sleepQuality, nextDayFatigue,
+    });
+    close();
     flash('Morning check-in saved!');
-    renderPage('today');
+    if (opts.auto) showPage('today');
+    else renderPage(window._currentPage || 'today');
+    updateEnergyDueDot();
   });
-  overlay.querySelector('#ci-cancel').addEventListener('click', () => overlay.remove());
-  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+  overlay.querySelector('#ci-cancel').addEventListener('click', () => {
+    if (opts.auto) markMorningPromptSkipped();
+    close();
+  });
+  overlay.addEventListener('click', e => {
+    if (e.target !== overlay) return;
+    if (opts.auto) markMorningPromptSkipped();
+    close();
+  });
   document.body.appendChild(overlay);
+}
+
+// ── Automatic morning prompt (5–7 AM Eastern) ──
+// Opens the check-in when the app is opened in that window, unless today's check-in
+// is already done or was skipped this morning. Skips are remembered per device only.
+const MORNING_PROMPT_START = 5;
+const MORNING_PROMPT_END = 7;
+const MORNING_SKIP_KEY = 'sp_morning_skip';
+
+function markMorningPromptSkipped() {
+  try { localStorage.setItem(MORNING_SKIP_KEY, today()); } catch {}
+}
+
+function maybePromptMorningCheckin() {
+  if (getSettings().enableMorningPrompt === false) return;
+  const h = etHourNow();
+  if (h < MORNING_PROMPT_START || h >= MORNING_PROMPT_END) return;
+  if (getCheckin(today())) return;
+  let skipped = null;
+  try { skipped = localStorage.getItem(MORNING_SKIP_KEY); } catch {}
+  if (skipped === today()) return;
+  if (document.querySelector('.modal-overlay')) return;
+  openCheckinModal({ auto: true });
 }
 
 function wireScalePickers(root) {
@@ -918,8 +1239,8 @@ function wireTogglePickers(root) {
         const wrap = root.querySelector('#sym-fog-sev-wrap');
         if (wrap) wrap.style.display = btn.dataset.val === 'true' ? '' : 'none';
       }
-      if (row.id === 'ci-weak') {
-        const wrap = root.querySelector('#ci-weak-sev-wrap');
+      if (row.id === 'ci-cpap-used') {
+        const wrap = root.querySelector('#ci-cpap-time-wrap');
         if (wrap) wrap.style.display = btn.dataset.val === 'true' ? '' : 'none';
       }
     }));
@@ -992,34 +1313,41 @@ function openReflectionModal(ds) {
 let _multiMode = false;
 let _multiSel = new Set();
 let _longPressTimer = null;
+let _editMode = false;
+let _logFilter = 'all';   // 'all' | 'fav' | a tag
+let _logSearch = '';
+let _customTagPicker = null;
 
 function renderLog() {
   _multiMode = false;
   _multiSel = new Set();
-
-  const allActs = getAllActivities();
-  const grid = el('log-activity-grid');
-  grid.innerHTML = '';
-
-  allActs.forEach(act => {
-    grid.appendChild(makeLogButton(act));
-  });
+  _editMode = false;
 
   const multiToggle = el('log-multi-toggle');
-  if (multiToggle) {
-    multiToggle.hidden = false;
-    multiToggle.textContent = 'Select multiple';
-    multiToggle.classList.remove('active');
-    multiToggle.onclick = toggleMultiMode;
-  }
+  multiToggle.textContent = 'Select multiple';
+  multiToggle.classList.remove('active');
+  multiToggle.onclick = toggleMultiMode;
+  const editToggle = el('log-edit-toggle');
+  editToggle.textContent = '✏️ Edit items';
+  editToggle.classList.remove('active');
+  editToggle.onclick = toggleEditMode;
   const multiSubmit = el('log-multi-submit');
-  if (multiSubmit) { multiSubmit.hidden = true; multiSubmit.onclick = submitMultiLog; }
+  multiSubmit.hidden = true;
+  multiSubmit.onclick = submitMultiLog;
+  updateLogHint();
 
-  // Custom + advanced toggles
+  const search = el('log-search');
+  search.value = _logSearch;
+  search.oninput = () => { _logSearch = search.value; drawLogGroups(); };
+
+  // New item + time/note toggles
   el('log-custom-toggle').onclick = () => {
     const sec = el('log-custom-section');
     sec.hidden = !sec.hidden;
-    if (!sec.hidden) sec.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    if (!sec.hidden) {
+      _customTagPicker = makeTagPicker(el('custom-tags'), []);
+      sec.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
   };
   el('log-advanced-toggle').onclick = () => {
     const sec = el('log-advanced-section');
@@ -1032,23 +1360,119 @@ function renderLog() {
   el('log-custom-submit').onclick = submitCustomLog;
 
   const cat = el('custom-category'); if (cat) cat.value = 'household';
+  _loggedTodayAll = false;
+  drawCalendarReview();
+  drawLoggedToday();
+  drawLogGroups();
+}
+
+// "Logged today" strip at the top of the Log tab — the place to delete a mistaken
+// entry or tap its cost to change it. Shows the latest 3 unless expanded.
+const LOGGED_TODAY_PREVIEW = 3;
+let _loggedTodayAll = false;
+
+function drawLoggedToday() {
+  const d = today();
+  const entries = getActivitiesForDate(d).slice().reverse();
+  const card = el('logged-today');
+  card.hidden = entries.length === 0;
+  if (!entries.length) return;
+  el('logged-today-count').textContent = entries.length;
+  const list = el('logged-today-list');
+  list.innerHTML = '';
+  (_loggedTodayAll ? entries : entries.slice(0, LOGGED_TODAY_PREVIEW))
+    .forEach(e => list.appendChild(makeActivityItem(e, d)));
+  const more = el('logged-today-more');
+  more.hidden = entries.length <= LOGGED_TODAY_PREVIEW;
+  more.textContent = _loggedTodayAll ? 'Show less' : `Show all ${entries.length}`;
+  more.onclick = () => { _loggedTodayAll = !_loggedTodayAll; drawLoggedToday(); };
+}
+
+function updateLogHint() {
+  const hint = el('log-hint');
+  if (!hint) return;
+  hint.textContent = _editMode ? 'Tap an item to edit its name, cost, category, or tags.'
+    : _multiMode ? 'Tap items to select, then "Log Selected".'
+    : 'Tap any item to log it instantly.';
+}
+
+function drawTagChips() {
+  const wrap = el('log-tag-chips');
+  const chips = [{ id: 'all', label: 'All' }, { id: 'fav', label: '⭐ Favorites' },
+    ...getAllTags().map(t => ({ id: t, label: '#' + t }))];
+  if (!chips.some(c => c.id === _logFilter)) _logFilter = 'all';
+  wrap.innerHTML = '';
+  chips.forEach(c => {
+    const b = document.createElement('button');
+    b.className = 'tag-chip' + (_logFilter === c.id ? ' active' : '');
+    b.textContent = c.label;
+    b.addEventListener('click', () => { _logFilter = c.id; drawLogGroups(); });
+    wrap.appendChild(b);
+  });
+}
+
+function activityMatchesSearch(act, q) {
+  if (!q) return true;
+  const catLabel = CATEGORIES.find(c => c.id === act.category)?.label || '';
+  return [act.name, catLabel, ...(act.tags || [])].some(v => v.toLowerCase().includes(q));
+}
+
+// Full library, grouped by category, with favorites pinned on top.
+function drawLogGroups() {
+  drawTagChips();
+  const container = el('log-groups');
+  container.innerHTML = '';
+  const q = _logSearch.trim().toLowerCase();
+  const favIds = getSettings().quickIds || QUICK_IDS;
+  let acts = getAllActivities().filter(a => activityMatchesSearch(a, q));
+  if (_logFilter === 'fav') acts = acts.filter(a => favIds.includes(a.id));
+  else if (_logFilter !== 'all') acts = acts.filter(a => (a.tags || []).includes(_logFilter));
+
+  const groups = [];
+  if (_logFilter === 'all' && !q) {
+    const favs = favIds.map(id => acts.find(a => a.id === id)).filter(Boolean);
+    if (favs.length) groups.push({ id: 'fav', label: '⭐ Favorites', acts: favs });
+  }
+  CATEGORIES.forEach(c => {
+    const inCat = acts.filter(a => (a.category || 'household') === c.id);
+    if (inCat.length) groups.push({ id: c.id, label: c.label, color: c.color, acts: inCat });
+  });
+
+  if (!groups.length) {
+    container.innerHTML = `<div class="card"><div class="empty-state"><div class="emoji">🔍</div><p>No items match. Try another search, or add it with ＋ New item.</p></div></div>`;
+    return;
+  }
+
+  groups.forEach(g => {
+    const card = document.createElement('div');
+    card.className = 'card log-group';
+    card.innerHTML = `<div class="log-group-head">
+        <span class="card-title" style="margin:0">${g.color ? `<span class="cat-dot" style="background:${g.color}"></span>` : ''}${g.label} <span class="lg-count">${g.acts.length}</span></span>
+        ${g.id === 'fav' ? '<button class="link-btn" style="margin:0">Edit favorites</button>' : ''}
+      </div>
+      <div class="activity-grid"></div>`;
+    const favEdit = card.querySelector('.link-btn');
+    if (favEdit) favEdit.addEventListener('click', openQuickLogEditor);
+    const grid = card.querySelector('.activity-grid');
+    g.acts.forEach(act => grid.appendChild(makeLogButton(act)));
+    container.appendChild(card);
+  });
 }
 
 function makeLogButton(act) {
   const btn = document.createElement('button');
-  btn.className = 'activity-select-btn';
+  btn.className = 'activity-select-btn' + (_multiSel.has(act.id) ? ' selected' : '') + (_editMode ? ' editing' : '');
   btn.dataset.id = act.id;
   const costLabel = act.spoons < 0 ? `+${Math.abs(act.spoons)} recovery`
     : act.spoons === 0 ? 'free'
     : `${act.spoons} spoon${act.spoons === 1 ? '' : 's'}`;
-  btn.innerHTML = `<span class="emoji">${act.emoji}</span><div class="info"><div class="n">${act.name}</div><div class="s">${costLabel}</div></div>`;
+  const tags = (act.tags || []).map(t => `<span class="item-tag">#${escapeHTML(t)}</span>`).join('');
+  btn.innerHTML = `<span class="emoji">${act.emoji}</span><div class="info"><div class="n">${escapeHTML(act.name)}</div><div class="s">${costLabel}</div>${tags ? `<div class="item-tags">${tags}</div>` : ''}</div>${_editMode ? '<span class="edit-pencil">✏️</span>' : ''}`;
 
   btn.addEventListener('click', () => {
-    if (_multiMode) {
-      toggleMultiSelect(act.id, btn);
-    } else {
-      logFromGrid(act, btn);
-    }
+    if (_editMode) openActivityEditor(act);
+    else if (_multiMode) toggleMultiSelect(act.id);
+    else logFromGrid(act, btn);
   });
 
   // Long-press → edit this activity's library entry
@@ -1060,6 +1484,55 @@ function makeLogButton(act) {
     btn.addEventListener(ev, () => clearTimeout(_longPressTimer), { passive: true }));
 
   return btn;
+}
+
+// After a library edit, redraw the Log list in place so edit / multi-select mode,
+// search, and tag filter all survive; other pages re-render normally.
+function refreshAfterLibraryEdit() {
+  if (window._currentPage === 'log') drawLogGroups();
+  else renderPage(window._currentPage);
+}
+
+function toggleEditMode() {
+  _editMode = !_editMode;
+  if (_editMode && _multiMode) toggleMultiMode();
+  const t = el('log-edit-toggle');
+  t.textContent = _editMode ? 'Done editing' : '✏️ Edit items';
+  t.classList.toggle('active', _editMode);
+  updateLogHint();
+  drawLogGroups();
+}
+
+// Chip-style tag picker: toggle existing tags or type a new one.
+function makeTagPicker(container, initial) {
+  const selected = new Set((initial || []).map(normalizeTag).filter(Boolean));
+  const extra = new Set();   // tags created here that aren't in the library yet
+  function draw() {
+    const all = [...new Set([...getAllTags(), ...extra, ...selected])];
+    container.innerHTML = `<div class="tag-chips tag-picker">${all.map(t =>
+        `<button type="button" class="tag-chip${selected.has(t) ? ' active' : ''}" data-tag="${escapeHTML(t)}">#${escapeHTML(t)}</button>`).join('')}</div>
+      <div class="tag-add-row">
+        <input type="text" class="tag-add-input" placeholder="Add a tag (e.g. social, pt)" maxlength="24" />
+        <button type="button" class="btn btn-secondary btn-sm tag-add-btn" style="margin:0;width:auto">Add</button>
+      </div>`;
+    container.querySelectorAll('.tag-chip').forEach(b => b.addEventListener('click', () => {
+      const t = b.dataset.tag;
+      if (selected.has(t)) selected.delete(t); else selected.add(t);
+      draw();
+    }));
+    const input = container.querySelector('.tag-add-input');
+    const add = () => {
+      const t = normalizeTag(input.value);
+      if (!t) return;
+      extra.add(t); selected.add(t);
+      draw();
+      container.querySelector('.tag-add-input').focus();
+    };
+    container.querySelector('.tag-add-btn').addEventListener('click', add);
+    input.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); add(); } });
+  }
+  draw();
+  return { get: () => [...selected] };
 }
 
 function readAdvancedOpts() {
@@ -1082,6 +1555,7 @@ function logFromGrid(act, btn) {
   // brief visual confirmation
   btn.classList.add('just-logged');
   setTimeout(() => btn.classList.remove('just-logged'), 700);
+  drawLoggedToday();
   // reset advanced note after use
   const noteEl = el('log-note'); if (noteEl) noteEl.value = '';
 }
@@ -1089,20 +1563,22 @@ function logFromGrid(act, btn) {
 function toggleMultiMode() {
   _multiMode = !_multiMode;
   _multiSel = new Set();
+  if (_multiMode && _editMode) toggleEditMode();
   const multiToggle = el('log-multi-toggle');
   const multiSubmit = el('log-multi-submit');
-  const hint = el('log-hint');
   multiToggle.textContent = _multiMode ? 'Cancel' : 'Select multiple';
   multiToggle.classList.toggle('active', _multiMode);
   if (multiSubmit) multiSubmit.hidden = !_multiMode;
-  if (hint) hint.textContent = _multiMode ? 'Tap activities to select, then "Log Selected".' : 'Tap any activity to log it instantly.';
-  el('log-activity-grid').querySelectorAll('.activity-select-btn').forEach(b => b.classList.remove('selected'));
+  updateLogHint();
+  el('log-groups').querySelectorAll('.activity-select-btn').forEach(b => b.classList.remove('selected'));
   updateMultiSubmit();
 }
 
-function toggleMultiSelect(id, btn) {
-  if (_multiSel.has(id)) { _multiSel.delete(id); btn.classList.remove('selected'); }
-  else { _multiSel.add(id); btn.classList.add('selected'); }
+function toggleMultiSelect(id) {
+  if (_multiSel.has(id)) _multiSel.delete(id); else _multiSel.add(id);
+  // Favorites show twice (pinned + in their category), so sync every copy.
+  el('log-groups').querySelectorAll(`.activity-select-btn[data-id="${CSS.escape(id)}"]`)
+    .forEach(b => b.classList.toggle('selected', _multiSel.has(id)));
   updateMultiSubmit();
 }
 
@@ -1131,7 +1607,8 @@ function submitCustomLog() {
   const emoji = el('custom-emoji').value.trim() || '⚡';
   const category = el('custom-category').value || 'household';
   if (!name || isNaN(spoons)) { alert('Please enter a name and spoon cost.'); return; }
-  const act = { id: 'custom_' + Date.now(), name, spoons, emoji, category, recovery: spoons < 0 };
+  const tags = _customTagPicker ? _customTagPicker.get() : [];
+  const act = { id: 'custom_' + Date.now(), name, spoons, emoji, category, recovery: spoons < 0, tags };
 
   if (el('custom-save-lib').checked) {
     const customs = getCustomActivities();
@@ -1144,8 +1621,301 @@ function submitCustomLog() {
   el('custom-spoons').value = '';
   el('custom-emoji').value = '';
   el('log-custom-section').hidden = true;
+  _customTagPicker = null;
   flash(`${emoji} ${name} logged`);
   showPage('today');
+}
+
+// ═══════════════════════════════════════════════════════
+// CALENDAR IMPORT  (fed by an iPhone Shortcut via the URL hash)
+// ═══════════════════════════════════════════════════════
+//
+// The Shortcut opens  …/spoon-tracker/#cal=<url-encoded text>  where each line is
+//   Title|Start (ISO 8601)|End (ISO 8601)|Calendar name
+// Everything after "#" stays in the browser — it is never sent to the server.
+// Imported events wait on the Log tab until you log or skip each one.
+
+const CAL_SKIP = '__skip';
+
+// Starter guesses from event titles. Your own corrections (calTitleMap) always win.
+const CAL_ALIASES = [
+  [/massage/i, 'massage'],
+  [/\bpt\b|physical therap/i, 'pt'],
+  [/cmt.*class|exercise class/i, 'cmt_class'],
+  [/\bdr\b\.?|doctor|appointment|\bappt\b|clinic|dentist|neurolog/i, 'doctor'],
+  [/grocer/i, 'grocery'],
+  [/yin|restorative yoga/i, 'yin_yoga'],
+  [/yoga/i, 'yoga'],
+  [/\bgym\b/i, 'gym'],
+  [/\bcall\b|zoom|facetime|catch.?up/i, 'call'],
+  [/lunch|dinner|brunch|breakfast with|restaurant/i, 'restaurant'],
+  [/flight|airport/i, 'travel_day'],
+  [/\bvet\b|groom/i, 'pet_care'],
+  [/concert|live music/i, 'live_music'],
+  [/movie|theat|show\b/i, 'event'],
+  [/interview|meeting|work/i, 'work_block'],
+];
+
+const CAL_STOPWORDS = new Set(['night', 'time', 'with', 'full', 'session', 'class', 'light', 'heavy',
+  'quick', 'other', 'favorite', 'artists', 'playlists', 'block', 'meal', 'getting', 'search', 'outing', 'project', 'trip']);
+
+function getCalEvents(ds) { return (load(KEYS.CAL_EVENTS) || {})[ds] || []; }
+function saveCalEvents(ds, list) {
+  const all = load(KEYS.CAL_EVENTS) || {};
+  all[ds] = list;
+  save(KEYS.CAL_EVENTS, all);
+}
+function updateCalEvent(ds, uid, patch) {
+  saveCalEvents(ds, getCalEvents(ds).map(e => e.uid === uid ? { ...e, ...patch } : e));
+}
+
+function calNormTitle(t) { return String(t || '').trim().toLowerCase().replace(/\s+/g, ' '); }
+
+function parseCalLines(text) {
+  return String(text || '').split(/\r?\n/).map(line => line.trim()).filter(Boolean).map(line => {
+    // Split from the right so titles may contain "|".
+    const parts = line.split('|');
+    if (parts.length < 3) return null;
+    const calendar = parts.length >= 4 ? parts.pop().trim() : '';
+    const end = parts.pop().trim();
+    const start = parts.pop().trim();
+    const title = parts.join('|').trim();
+    const startD = new Date(start);
+    if (!title || isNaN(startD)) return null;
+    const endD = new Date(end);
+    const allDay = !/T\d/.test(start) || (!isNaN(endD) && endD - startD >= 23 * 3600000);
+    return { title, start: startD.toISOString(), end: isNaN(endD) ? null : endD.toISOString(), calendar, allDay };
+  }).filter(Boolean);
+}
+
+// Merge imported events into storage by day; re-imports keep earlier decisions.
+function importCalendarText(text) {
+  const parsed = parseCalLines(text);
+  const byDay = {};
+  parsed.forEach(ev => {
+    const ds = dateStr(new Date(ev.start));
+    (byDay[ds] = byDay[ds] || []).push(ev);
+  });
+  let added = 0;
+  Object.entries(byDay).forEach(([ds, evs]) => {
+    const existing = getCalEvents(ds);
+    evs.forEach(ev => {
+      const uid = calNormTitle(ev.title) + '@' + ev.start;
+      if (existing.some(e => e.uid === uid)) return;
+      existing.push({ ...ev, uid, status: 'pending' });
+      added++;
+    });
+    existing.sort((a, b) => a.start < b.start ? -1 : 1);
+    saveCalEvents(ds, existing);
+  });
+  const s = getSettings();
+  s.calLastImport = new Date().toISOString();
+  saveSettings(s);
+  return { found: parsed.length, added };
+}
+
+function importCalendarFromHash() {
+  const h = location.hash || '';
+  if (!h.startsWith('#cal=')) return false;
+  let text = '';
+  try { text = decodeURIComponent(h.slice(5).replace(/\+/g, ' ')); } catch { text = h.slice(5); }
+  const { found, added } = importCalendarText(text);
+  history.replaceState(null, '', location.pathname + location.search);
+  flash(found ? `📅 ${added} new event${added === 1 ? '' : 's'} to review` : '📅 No events found in that import');
+  return true;
+}
+
+// Suggest an activity id (or CAL_SKIP) for an event; null = no idea.
+function suggestCalActivity(ev) {
+  const s = getSettings();
+  const norm = calNormTitle(ev.title);
+  const remembered = (s.calTitleMap || {})[norm];
+  const acts = getAllActivities();
+  if (remembered && (remembered === CAL_SKIP || acts.some(a => a.id === remembered))) return { id: remembered, why: 'remembered' };
+  // Whole-word match, so "dan" skips "Dan Soccer" but not "Dance class".
+  const startsWithWords = p => { p = p.toLowerCase(); return norm === p || (norm.startsWith(p) && !/[a-z0-9]/.test(norm[p.length])); };
+  if ((s.calSkipPrefixes || []).some(p => p && startsWithWords(p))) return { id: CAL_SKIP, why: 'rule' };
+  if (ev.allDay) return { id: CAL_SKIP, why: 'all-day' };
+  for (const [re, id] of CAL_ALIASES) {
+    if (re.test(ev.title) && acts.some(a => a.id === id)) return { id, why: 'guess' };
+  }
+  // Fall back to a word match against activity names (custom ones included),
+  // ignoring generic words like "night" or "time" that caused bad guesses.
+  const words = norm.split(/[^a-z]+/).filter(w => w.length >= 4 && !CAL_STOPWORDS.has(w));
+  const hit = acts.find(a => calNormTitle(a.name).split(/[^a-z]+/).some(w => w.length >= 4 && !CAL_STOPWORDS.has(w) && words.includes(w)));
+  return hit ? { id: hit.id, why: 'guess' } : null;
+}
+
+function rememberCalChoice(title, id) {
+  const s = getSettings();
+  s.calTitleMap = { ...(s.calTitleMap || {}), [calNormTitle(title)]: id };
+  saveSettings(s);
+}
+
+function activityOptionsHTML(selectedId) {
+  const acts = getAllActivities();
+  const groups = CATEGORIES.map(c => {
+    const inCat = acts.filter(a => (a.category || 'household') === c.id);
+    if (!inCat.length) return '';
+    return `<optgroup label="${c.label}">${inCat.map(a =>
+      `<option value="${a.id}"${a.id === selectedId ? ' selected' : ''}>${a.emoji} ${escapeHTML(a.name)}</option>`).join('')}</optgroup>`;
+  }).join('');
+  return `<option value=""${!selectedId ? ' selected' : ''}>Choose an activity…</option>
+    <option value="${CAL_SKIP}"${selectedId === CAL_SKIP ? ' selected' : ''}>Skip — not mine / don't log</option>${groups}`;
+}
+
+let _calReviewedOpen = false;
+
+function drawCalendarReview() {
+  const card = el('cal-review');
+  if (!card) return;
+  const d = today();
+  const events = getCalEvents(d);
+  const pending = events.filter(e => e.status === 'pending');
+  const reviewed = events.filter(e => e.status !== 'pending');
+  const everImported = !!getSettings().calLastImport;
+  card.hidden = false;
+
+  const body = el('cal-review-body');
+  el('cal-review-count').textContent = pending.length ? pending.length : '';
+  if (!events.length) {
+    body.innerHTML = everImported
+      ? '<p class="card-note" style="margin:0">No calendar events imported for today. Run your Spoon Tracker Shortcut to bring them in.</p>'
+      : '<p class="card-note" style="margin:0">Bring in today’s calendar events to review and log. <button class="link-btn" data-goto="settings" style="margin:0">Set up the Shortcut ›</button></p>';
+    body.querySelectorAll('[data-goto]').forEach(b => b.addEventListener('click', () => {
+      showPage(b.dataset.goto);
+      el('cal-settings-card')?.scrollIntoView({ behavior: 'smooth' });
+    }));
+    return;
+  }
+
+  const now = new Date();
+  const acts = getAllActivities();
+  body.innerHTML = '';
+  if (!pending.length) {
+    body.insertAdjacentHTML('beforeend', '<p class="card-note" style="margin:0 0 6px">✓ All of today’s events are reviewed.</p>');
+  }
+  pending.forEach(ev => {
+    const sug = suggestCalActivity(ev);
+    const later = new Date(ev.start) > now;
+    const mins = ev.end ? Math.round((new Date(ev.end) - new Date(ev.start)) / 60000) : null;
+    const row = document.createElement('div');
+    row.className = 'cal-row' + (later ? ' later' : '');
+    const whyLabel = sug?.why === 'remembered' ? 'Remembered' : sug?.why === 'rule' ? 'Skip rule' : sug?.why === 'all-day' ? 'All-day event' : sug ? 'Suggested' : '';
+    row.innerHTML = `
+      <div class="cal-head">
+        <span class="cal-time">${ev.allDay ? 'All day' : fmtTime(ev.start)}</span>
+        <span class="cal-title">${escapeHTML(ev.title)}</span>
+      </div>
+      <div class="cal-sub">${[ev.calendar && escapeHTML(ev.calendar), mins && !ev.allDay ? `${mins} min` : '', later ? 'Later today' : ''].filter(Boolean).join(' · ')}${whyLabel ? ` <span class="cal-why">${whyLabel}</span>` : ''}</div>
+      <select class="cal-act">${activityOptionsHTML(sug?.id || '')}</select>
+      <label class="cal-remember"><input type="checkbox" checked /> Remember for “${escapeHTML(ev.title.length > 40 ? ev.title.slice(0, 40) + '…' : ev.title)}”</label>
+      <div class="cal-actions">
+        <button class="btn btn-primary btn-sm cal-confirm" style="margin:0"></button>
+        <button class="btn btn-secondary btn-sm cal-skip" style="margin:0">Skip</button>
+      </div>`;
+    const sel = row.querySelector('.cal-act');
+    const confirmBtn = row.querySelector('.cal-confirm');
+    const remember = row.querySelector('.cal-remember input');
+    const syncBtn = () => {
+      const v = sel.value;
+      const act = acts.find(a => a.id === v);
+      confirmBtn.disabled = !v;
+      confirmBtn.textContent = v === CAL_SKIP ? 'Skip this event'
+        : act ? `✓ Log · ${act.spoons < 0 ? `+${Math.abs(act.spoons)} recovery` : act.spoons === 0 ? 'free' : `${act.spoons} spoon${act.spoons === 1 ? '' : 's'}`}`
+        : '✓ Log';
+      row.querySelector('.cal-skip').hidden = v === CAL_SKIP;
+    };
+    sel.addEventListener('change', syncBtn);
+    syncBtn();
+    const decide = id => {
+      if (remember.checked) rememberCalChoice(ev.title, id);
+      if (id === CAL_SKIP) {
+        updateCalEvent(d, ev.uid, { status: 'skipped' });
+        flash('Skipped');
+      } else {
+        const act = getAllActivities().find(a => a.id === id);
+        if (!act) return;
+        const entry = logActivity(act, { timestamp: ev.start, note: `📅 ${ev.title}` });
+        updateCalEvent(d, ev.uid, { status: 'logged', entryId: entry.id, activityId: id });
+        flash(`${act.emoji} ${act.name} logged`);
+      }
+      drawCalendarReview();
+      drawLoggedToday();
+    };
+    confirmBtn.addEventListener('click', () => sel.value && decide(sel.value));
+    row.querySelector('.cal-skip').addEventListener('click', () => decide(CAL_SKIP));
+    body.appendChild(row);
+  });
+
+  if (reviewed.length) {
+    const toggle = document.createElement('button');
+    toggle.className = 'link-btn';
+    toggle.style.margin = '6px 0 0';
+    toggle.textContent = `${_calReviewedOpen ? '∨' : '›'} Reviewed (${reviewed.length})`;
+    toggle.addEventListener('click', () => { _calReviewedOpen = !_calReviewedOpen; drawCalendarReview(); });
+    body.appendChild(toggle);
+    if (_calReviewedOpen) {
+      reviewed.forEach(ev => {
+        const act = acts.find(a => a.id === ev.activityId);
+        const line = document.createElement('div');
+        line.className = 'cal-done';
+        line.innerHTML = `<span>${ev.allDay ? 'All day' : fmtTime(ev.start)} · ${escapeHTML(ev.title)}</span>
+          <span class="cal-done-status">${ev.status === 'logged' ? `✓ ${act ? act.emoji + ' ' + escapeHTML(act.name) : 'Logged'}` : 'Skipped'}</span>
+          <button class="link-btn" style="margin:0">Undo</button>`;
+        line.querySelector('button').addEventListener('click', () => {
+          if (ev.status === 'logged' && ev.entryId) deleteActivityForDate(d, ev.entryId);
+          updateCalEvent(d, ev.uid, { status: 'pending', entryId: null, activityId: null });
+          drawCalendarReview();
+          drawLoggedToday();
+        });
+        body.appendChild(line);
+      });
+    }
+  }
+}
+
+// ── Settings: calendar import ──
+
+
+function renderCalendarSettings() {
+  const s = getSettings();
+  const wrap = el('cal-skip-list');
+  if (!wrap) return;
+  const prefixes = s.calSkipPrefixes || [];
+  wrap.innerHTML = prefixes.length
+    ? prefixes.map(p => `<button type="button" class="tag-chip" data-p="${escapeHTML(p)}">${escapeHTML(p)} ✕</button>`).join('')
+    : '<span class="s-sub">No skip rules yet.</span>';
+  wrap.querySelectorAll('.tag-chip').forEach(b => b.addEventListener('click', () => {
+    const st = getSettings();
+    st.calSkipPrefixes = (st.calSkipPrefixes || []).filter(x => x !== b.dataset.p);
+    saveSettings(st);
+    renderCalendarSettings();
+  }));
+  const n = Object.keys(s.calTitleMap || {}).length;
+  el('cal-memory-count').textContent = n ? `${n} remembered event name${n === 1 ? '' : 's'}` : 'No remembered event names yet';
+  el('cal-memory-clear').hidden = !n;
+  el('cal-last-import').textContent = s.calLastImport ? `Last import: ${fmtDate(dateStr(new Date(s.calLastImport)))} at ${fmtTime(s.calLastImport)}` : 'No imports yet';
+  el('cal-url-base').textContent = location.origin + location.pathname + '#cal=';
+}
+
+function addCalSkipPrefix() {
+  const input = el('cal-skip-input');
+  const p = input.value.trim().toLowerCase().slice(0, 30);
+  if (!p) return;
+  const s = getSettings();
+  s.calSkipPrefixes = [...new Set([...(s.calSkipPrefixes || []), p])];
+  saveSettings(s);
+  input.value = '';
+  renderCalendarSettings();
+}
+
+function clearCalMemory() {
+  if (!confirm('Forget all remembered event names? Suggestions will go back to guesses.')) return;
+  const s = getSettings();
+  s.calTitleMap = {};
+  saveSettings(s);
+  renderCalendarSettings();
 }
 
 // ═══════════════════════════════════════════════════════
@@ -1180,25 +1950,31 @@ function openActivityEditor(act) {
           ${CATEGORIES.map(c => `<option value="${c.id}"${(act.category || 'household') === c.id ? ' selected' : ''}>${c.label}</option>`).join('')}
         </select>
       </div>
+      <div class="form-group">
+        <label class="form-label">Tags</label>
+        <div id="ae-tags"></div>
+      </div>
       <button class="btn btn-primary" id="ae-save" style="margin-top:8px">Save</button>
       ${isCustom ? '<button class="btn btn-danger" id="ae-delete" style="margin-top:8px">Delete Activity</button>' : ''}
       <button class="btn btn-secondary" id="ae-cancel" style="margin-top:8px">Cancel</button>
     </div>`;
 
+  const tagPicker = makeTagPicker(overlay.querySelector('#ae-tags'), act.tags || []);
   overlay.querySelector('#ae-save').addEventListener('click', () => {
+    const tags = tagPicker.get();
     const name = overlay.querySelector('#ae-name').value.trim() || act.name;
     const emoji = overlay.querySelector('#ae-emoji').value.trim() || act.emoji;
     const spoons = parseFloat(overlay.querySelector('#ae-spoons').value);
     const category = overlay.querySelector('#ae-category').value;
     if (isCustom) {
       const customs = getCustomActivities().map(a => a.id === act.id
-        ? { ...a, name, emoji, spoons: isNaN(spoons) ? a.spoons : spoons, category, recovery: (isNaN(spoons) ? a.spoons : spoons) < 0 }
+        ? { ...a, name, emoji, spoons: isNaN(spoons) ? a.spoons : spoons, category, recovery: (isNaN(spoons) ? a.spoons : spoons) < 0, tags }
         : a);
       save(KEYS.CUSTOM_ACT, customs);
     } else {
       const settings = getSettings();
       if (!settings.overrides) settings.overrides = {};
-      const ov = { name, emoji, category };
+      const ov = { ...(settings.overrides[act.id] || {}), name, emoji, category, tags };
       if (!isNaN(spoons)) ov.spoons = spoons;
       settings.overrides[act.id] = ov;
       // keep legacy spoonOverrides in sync so the Settings cost table matches
@@ -1208,7 +1984,7 @@ function openActivityEditor(act) {
     }
     overlay.remove();
     flash('Activity updated');
-    renderPage(window._currentPage);
+    refreshAfterLibraryEdit();
   });
   const delBtn = overlay.querySelector('#ae-delete');
   if (delBtn) delBtn.addEventListener('click', () => {
@@ -1216,7 +1992,7 @@ function openActivityEditor(act) {
     save(KEYS.CUSTOM_ACT, getCustomActivities().filter(a => a.id !== act.id));
     overlay.remove();
     flash('Activity deleted');
-    renderPage(window._currentPage);
+    refreshAfterLibraryEdit();
   });
   overlay.querySelector('#ae-cancel').addEventListener('click', () => overlay.remove());
   overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
@@ -1346,11 +2122,13 @@ function makeHistoryDay(d) {
         ${checkin.brainFog ? `<span class="chip yellow">🌫 Brain fog</span>` : ''}
         ${weakChip}
         ${fatigueChip}
-        ${checkin.sleepHours ? `<span class="tag">💤 ${checkin.sleepHours}h sleep</span>` : ''}
-        ${checkin.cpapHours ? `<span class="tag">😷 CPAP ${checkin.cpapHours}h</span>` : ''}
+        ${(checkin.otherSymptoms || []).map(t => `<span class="chip yellow">${escapeHTML(t)}</span>`).join('')}
         ${checkin.trazodone ? `<span class="tag">💊 Trazodone</span>` : ''}
+        ${checkin.cpapHours ? `<span class="tag">😷 CPAP ${fmtHM(toMinutes(checkin.cpapMinutes, checkin.cpapHours))}</span>` : checkin.cpapUsed === false ? `<span class="tag">😷 No CPAP</span>` : ''}
+        ${checkin.sleepHours ? `<span class="tag">💤 ${fmtHM(toMinutes(checkin.sleepMinutes, checkin.sleepHours))} sleep</span>` : ''}
       </div>
       ${checkin.whyText ? `<div class="note" style="margin-top:6px">"${escapeHTML(checkin.whyText)}"</div>` : ''}
+      ${checkin.symptomNote ? `<div class="note" style="margin-top:4px">"${escapeHTML(checkin.symptomNote)}"</div>` : ''}
     </div>`;
   }
 
@@ -1552,6 +2330,11 @@ function renderSettings() {
   setToggle('set-after-six', settings.enableAfterSixModifier !== false);
   setToggle('set-stacking', settings.enableStackingPenalty !== false);
   setToggle('set-evening-reminder', settings.enableEveningReminder === true);
+  setToggle('set-morning-prompt', settings.enableMorningPrompt !== false);
+  setToggle('set-energy-dot', settings.enableEnergyDueDot !== false);
+  renderSavedSymptoms();
+  renderCalendarSettings();
+  _newCustomTagPicker = makeTagPicker(el('new-custom-tags'), []);
 
   // Spoon overrides
   const allActs = getAllActivities();
@@ -1580,6 +2363,25 @@ function renderSettings() {
   } else {
     customActs.forEach(act => customList.appendChild(makeCustomEditRow(act)));
   }
+}
+
+let _newCustomTagPicker = null;
+
+function renderSavedSymptoms() {
+  const wrap = el('saved-symptoms-list');
+  if (!wrap) return;
+  const list = getSavedSymptoms();
+  if (!list.length) {
+    wrap.innerHTML = '<span class="s-sub">None yet — add one from the morning check-in.</span>';
+    return;
+  }
+  wrap.innerHTML = list.map(t => `<button type="button" class="tag-chip" data-sym="${escapeHTML(t)}">${escapeHTML(t)} ✕</button>`).join('');
+  wrap.querySelectorAll('.tag-chip').forEach(b => b.addEventListener('click', () => {
+    const s = getSettings();
+    s.customSymptoms = (s.customSymptoms || []).filter(x => x !== b.dataset.sym);
+    saveSettings(s);
+    renderSavedSymptoms();
+  }));
 }
 
 function setToggle(id, on) {
@@ -1629,7 +2431,7 @@ function openQuickLogEditor() {
   overlay.innerHTML = `
     <div class="modal">
       <div class="modal-handle"></div>
-      <div class="modal-title">Edit Quick Log</div>
+      <div class="modal-title">Edit Favorites</div>
       <p style="font-size:13px;color:var(--text-muted);margin-bottom:4px">Tap to add or remove. Choose up to ${MAX_QUICK}.</p>
       <div style="font-size:12px;color:var(--text-muted);margin-bottom:10px" id="qle-count"></div>
       <div class="quick-picker-grid" id="qle-grid"></div>
@@ -1663,8 +2465,8 @@ function openQuickLogEditor() {
     s.quickIds = ids;
     saveSettings(s);
     overlay.remove();
-    flash('Quick Log updated');
-    renderToday();
+    flash('Favorites updated');
+    refreshAfterLibraryEdit();
   });
   overlay.querySelector('#qle-cancel').addEventListener('click', () => overlay.remove());
   overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
@@ -1713,6 +2515,8 @@ function saveSettingsForm() {
   settings.enableStackingPenalty = el('set-stacking').checked;
   const wasEvening = settings.enableEveningReminder === true;
   settings.enableEveningReminder = el('set-evening-reminder').checked;
+  settings.enableMorningPrompt = el('set-morning-prompt').checked;
+  settings.enableEnergyDueDot = el('set-energy-dot').checked;
 
   if (!settings.spoonOverrides) settings.spoonOverrides = {};
   document.querySelectorAll('.spoon-override-input').forEach(input => {
@@ -1731,6 +2535,7 @@ function saveSettingsForm() {
   saveSettings(settings);
   // (Re)schedule evening reminder if it was just enabled
   if (!wasEvening && settings.enableEveningReminder) scheduleEvening();
+  updateEnergyDueDot();
   flash('Settings saved!');
 }
 
@@ -1741,7 +2546,8 @@ function addCustomActivity() {
   const category = el('new-custom-category')?.value || 'household';
   if (!name || isNaN(spoons)) { alert('Please enter a name and spoon cost.'); return; }
   const customs = getCustomActivities();
-  customs.push({ id: 'custom_' + Date.now(), name, spoons, emoji, category, recovery: spoons < 0 });
+  const tags = _newCustomTagPicker ? _newCustomTagPicker.get() : [];
+  customs.push({ id: 'custom_' + Date.now(), name, spoons, emoji, category, recovery: spoons < 0, tags });
   save(KEYS.CUSTOM_ACT, customs);
   el('new-custom-name').value = '';
   el('new-custom-spoons').value = '';
@@ -1778,8 +2584,8 @@ function copyToClipboard(text) {
 function exportCSV() {
   const days = last30Days();
   const rows = [['Date', 'Budget', 'Spoons Used', 'Spoons Remaining', 'Activities',
-    'Energy Checks', 'Morning Energy', 'Morning Why', 'Sleep Hours', 'CPAP Hours', 'Trazodone',
-    'Brain Fog', 'Muscle Weakness', 'Next-Day Fatigue',
+    'Energy Checks', 'Morning Energy', 'Morning Why', 'Sleep Hours', 'CPAP Used', 'CPAP Hours', 'Trazodone',
+    'Brain Fog', 'Muscle Weakness', 'Other Symptoms', 'Symptom Notes', 'Next-Day Fatigue',
     'End-of-Day Energy', 'What Went Well', 'Tomorrow Reminder']];
 
   days.forEach(d => {
@@ -1793,8 +2599,8 @@ function exportCSV() {
     const weakness = ci.muscleWeak ? (ci.muscleWeakSev || 'Yes') : (sym.muscleWeakSev || '');
     rows.push([d, budget, used, remaining, acts,
       checksStr, morningEnergy(d) ?? '', ci.whyText || '',
-      ci.sleepHours || '', ci.cpapHours || '', ci.trazodone ? 'Yes' : 'No',
-      ci.brainFog ? 'Yes' : (sym.brainFog ? 'Yes' : 'No'), weakness, getNextDayFatigue(d) ?? '',
+      ci.sleepHours || '', ci.cpapUsed == null ? (ci.cpapHours ? 'Yes' : '') : (ci.cpapUsed ? 'Yes' : 'No'), ci.cpapHours || '', ci.trazodone ? 'Yes' : 'No',
+      ci.brainFog ? 'Yes' : (sym.brainFog ? 'Yes' : 'No'), weakness, (ci.otherSymptoms || []).join('; '), ci.symptomNote || '', getNextDayFatigue(d) ?? '',
       rf.endEnergy || '', rf.wentWell || '', rf.tomorrow || '']);
   });
 
@@ -1938,11 +2744,13 @@ function startApp() {
     btn.addEventListener('click', () => showPage(btn.dataset.page));
   });
 
-  el('morning-prompt').addEventListener('click', openCheckinModal);
-  el('reflect-btn').addEventListener('click', () => openReflectionModal(today()));
+  el('morning-prompt').addEventListener('click', () => openCheckinModal());
   el('budget-edit-btn').addEventListener('click', editBudget);
   el('energy-save').addEventListener('click', saveEnergyCheck);
-  el('quick-edit-btn').addEventListener('click', openQuickLogEditor);
+  el('rem-download').addEventListener('click', downloadReminderCalendar);
+  ['rem-start', 'rem-end', 'rem-interval'].forEach(id => el(id).addEventListener('change', updateReminderPreview));
+  document.querySelectorAll('[data-goto]').forEach(b =>
+    b.addEventListener('click', () => showPage(b.dataset.goto)));
 
   el('settings-save').addEventListener('click', saveSettingsForm);
   el('add-custom-btn').addEventListener('click', addCustomActivity);
@@ -1962,8 +2770,26 @@ function startApp() {
   const be = el('backup-export-btn'); if (be) be.addEventListener('click', exportBackup);
   const bi = el('backup-import-btn'); if (bi) bi.addEventListener('click', () => el('backup-import-file').click());
   const bf = el('backup-import-file'); if (bf) bf.addEventListener('change', importBackup);
+  el('cal-skip-add').addEventListener('click', addCalSkipPrefix);
+  el('cal-skip-input').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); addCalSkipPrefix(); } });
+  el('cal-memory-clear').addEventListener('click', clearCalMemory);
 
-  showPage('today');
+  window.addEventListener('hashchange', () => {
+    if (importCalendarFromHash()) { showPage('log'); return; }
+    const p = pageFromHash();
+    if (p) showPage(p);
+  });
+  // Keep the Energy tab's "check due" dot current while the app stays open.
+  setInterval(updateEnergyDueDot, 5 * 60000);
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) return;
+    updateEnergyDueDot();
+    maybePromptMorningCheckin();
+  });
+
+  if (importCalendarFromHash()) showPage('log');
+  else showPage(pageFromHash() || 'today');
+  maybePromptMorningCheckin();
 }
 
 // ═══════════════════════════════════════════════════════
@@ -1990,10 +2816,10 @@ function renderOnboarding() {
       </div>
       <div class="onboard-card">
         <div class="form-label" style="display:flex;justify-content:space-between;align-items:center">
-          <span>Pick your Quick Log</span>
+          <span>Pick your favorites</span>
           <span id="onboard-count" style="font-weight:400;color:var(--text-muted)"></span>
         </div>
-        <p style="font-size:13px;color:var(--text-muted);margin:4px 0 10px">The activities you do most — one tap to log them later. Choose up to 9; you can change these anytime.</p>
+        <p style="font-size:13px;color:var(--text-muted);margin:4px 0 10px">The activities you do most — pinned to the top of your Log tab. Choose up to 9; you can change these anytime.</p>
         <div class="quick-picker-grid" id="onboard-grid"></div>
       </div>
       <button class="btn btn-primary" id="onboard-start">Start tracking →</button>
