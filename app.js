@@ -1,7 +1,7 @@
 'use strict';
 
 // Build version — shown in Settings so it's easy to confirm the running code.
-const APP_VERSION = '15';
+const APP_VERSION = '16';
 
 // ═══════════════════════════════════════════════════════
 // CONSTANTS & DEFAULTS
@@ -181,6 +181,10 @@ function saveProfile(p) { save(KEYS.PROFILE, p); }
 function hasProfile() { return !!getProfile(); }
 function isOwner() { return getProfile()?.owner === true; }
 function profileName() { return getProfile()?.name || ''; }
+// CPAP and Trazodone questions default on for the owner's profile, off for others;
+// either can be switched in Settings → Check-Ins & Reminders.
+function tracksCpap() { return getSettings().trackCpap ?? isOwner(); }
+function tracksTrazodone() { return getSettings().trackTrazodone ?? isOwner(); }
 function getSettings() { return { ...DEFAULT_SETTINGS, ...(load(KEYS.SETTINGS) || {}) }; }
 function saveSettings(s) { save(KEYS.SETTINGS, s); }
 function getCustomActivities() { return load(KEYS.CUSTOM_ACT) || []; }
@@ -422,15 +426,19 @@ function calcBudgetBreakdown(checkin) {
   if (!checkin) return { base, goodDay: 0, poorDay: 0, sleepBonus: 0, qualityBonus: 0, total: base, description: `Base: ${base} spoons` };
 
   const { energy = 5, brainFog = false, muscleWeak = false, cpapHours = 0, sleepHours = 0, sleepQuality = 3 } = checkin;
+  // Check-ins from profiles that don't track CPAP use total sleep for the same
+  // thresholds. Older check-ins (no flag) all tracked CPAP, so they're unchanged.
+  const cpapTracked = checkin.cpapTracked !== false;
+  const restHours = cpapTracked ? cpapHours : sleepHours;
 
   let goodDay = 0, poorDay = 0;
-  const isGood = energy >= 8 && !brainFog && !muscleWeak && cpapHours >= 6;
+  const isGood = energy >= 8 && !brainFog && !muscleWeak && restHours >= 6;
   const isPoor = energy <= 5 && (brainFog || muscleWeak);
   if (isGood) goodDay = 2;
   if (isPoor) poorDay = Math.min(base - 4, base);
 
   const sleepBonus = sleepHours > 7 ? 1 : 0;
-  const qualityBonus = (sleepQuality >= 4 && cpapHours > 7.5) ? 2 : 0;
+  const qualityBonus = (sleepQuality >= 4 && restHours > 7.5) ? 2 : 0;
 
   let total;
   if (isPoor) total = Math.max(4, base - 4) + sleepBonus + qualityBonus;
@@ -440,7 +448,7 @@ function calcBudgetBreakdown(checkin) {
   if (goodDay)      parts.push(`good check-in +${goodDay}`);
   if (isPoor)       parts.push(`symptoms −${base - Math.max(4, base - 4)}`);
   if (sleepBonus)   parts.push(`sleep >7h +${sleepBonus}`);
-  if (qualityBonus) parts.push(`quality/CPAP +${qualityBonus}`);
+  if (qualityBonus) parts.push(`${cpapTracked ? 'quality/CPAP' : 'quality/sleep'} +${qualityBonus}`);
   const description = parts.join(' · ') + ` = ${total} spoons`;
 
   return { base, goodDay, poorDay, sleepBonus, qualityBonus, total, description };
@@ -1040,6 +1048,8 @@ function openCheckinModal(opts = {}) {
   const otherEx = ex.otherSymptoms || [];
   const symptomChoices = [...new Set([...getSavedSymptoms(), ...otherEx])];
   const fatigueEx = ex.nextDayFatigue > 0 ? ex.nextDayFatigue : null;
+  const askTraz = tracksTrazodone();
+  const askCpap = tracksCpap();
   const yn = (id, val) => `<div class="toggle-row" id="${id}">
       <button class="toggle-btn yes${val === true ? ' selected' : ''}" data-val="true">Yes</button>
       <button class="toggle-btn no${val === false ? ' selected' : ''}" data-val="false">No</button>
@@ -1083,18 +1093,18 @@ function openCheckinModal(opts = {}) {
       </div>
 
       <div class="ci-section-label">Last night</div>
-      <div class="form-group">
+      ${askTraz ? `<div class="form-group">
         <label class="form-label">Did you take Trazodone?</label>
         ${yn('ci-traz', ex.date ? !!ex.trazodone : null)}
-      </div>
-      <div class="form-group">
+      </div>` : ''}
+      ${askCpap ? `<div class="form-group">
         <label class="form-label">Did you use your CPAP?</label>
         ${yn('ci-cpap-used', cpapUsedEx)}
       </div>
       <div class="form-group" id="ci-cpap-time-wrap"${cpapUsedEx ? '' : ' style="display:none"'}>
         <label class="form-label">Time on CPAP</label>
         ${hmInputHTML('ci-cpap-time', toMinutes(ex.cpapMinutes, ex.cpapHours))}
-      </div>
+      </div>` : ''}
       <div class="form-group">
         <label class="form-label">Total sleep</label>
         ${hmInputHTML('ci-sleep-time', toMinutes(ex.sleepMinutes, ex.sleepHours))}
@@ -1167,8 +1177,8 @@ function openCheckinModal(opts = {}) {
     const muscleWeakSev = muscleWeak ? parseInt(overlay.querySelector('#ci-weak-sev .selected')?.dataset.val || '0') : 0;
     const otherSymptoms = [...symWrap.querySelectorAll('[data-other].active')].map(c => c.dataset.other);
     const symptomNote = overlay.querySelector('#ci-sym-note').value.trim() || null;
-    const trazodone = overlay.querySelector('#ci-traz .selected')?.dataset.val === 'true';
-    const cpapAns = overlay.querySelector('#ci-cpap-used .selected')?.dataset.val;
+    const trazodone = askTraz ? overlay.querySelector('#ci-traz .selected')?.dataset.val === 'true' : null;
+    const cpapAns = askCpap ? overlay.querySelector('#ci-cpap-used .selected')?.dataset.val : undefined;
     const cpapUsed = cpapAns === undefined ? null : cpapAns === 'true';
     const cpapMinutes = cpapUsed ? (readHM(overlay, 'ci-cpap-time') || 0) : 0;
     const sleepMinutes = readHM(overlay, 'ci-sleep-time');
@@ -1177,7 +1187,7 @@ function openCheckinModal(opts = {}) {
     rememberSymptoms(otherSymptoms);
     saveCheckin(ds, {
       energy, whyText, brainFog, muscleWeak, muscleWeakSev, otherSymptoms, symptomNote,
-      trazodone, cpapUsed, cpapMinutes, cpapHours: +(cpapMinutes / 60).toFixed(2),
+      trazodone, cpapTracked: askCpap, cpapUsed, cpapMinutes, cpapHours: +(cpapMinutes / 60).toFixed(2),
       sleepMinutes, sleepHours: sleepMinutes ? +(sleepMinutes / 60).toFixed(2) : 0,
       sleepQuality, nextDayFatigue,
     });
@@ -2332,6 +2342,8 @@ function renderSettings() {
   setToggle('set-evening-reminder', settings.enableEveningReminder === true);
   setToggle('set-morning-prompt', settings.enableMorningPrompt !== false);
   setToggle('set-energy-dot', settings.enableEnergyDueDot !== false);
+  setToggle('set-track-cpap', tracksCpap());
+  setToggle('set-track-traz', tracksTrazodone());
   renderSavedSymptoms();
   renderCalendarSettings();
   _newCustomTagPicker = makeTagPicker(el('new-custom-tags'), []);
@@ -2517,6 +2529,8 @@ function saveSettingsForm() {
   settings.enableEveningReminder = el('set-evening-reminder').checked;
   settings.enableMorningPrompt = el('set-morning-prompt').checked;
   settings.enableEnergyDueDot = el('set-energy-dot').checked;
+  settings.trackCpap = el('set-track-cpap').checked;
+  settings.trackTrazodone = el('set-track-traz').checked;
 
   if (!settings.spoonOverrides) settings.spoonOverrides = {};
   document.querySelectorAll('.spoon-override-input').forEach(input => {
@@ -2601,7 +2615,7 @@ function exportCSV() {
     const weakness = ci.muscleWeak ? (ci.muscleWeakSev || 'Yes') : (sym.muscleWeakSev || '');
     rows.push([d, budget, used, remaining, acts,
       checksStr, morningEnergy(d) ?? '', ci.whyText || '',
-      ci.sleepHours || '', ci.cpapUsed == null ? (ci.cpapHours ? 'Yes' : '') : (ci.cpapUsed ? 'Yes' : 'No'), ci.cpapHours || '', ci.trazodone ? 'Yes' : 'No',
+      ci.sleepHours || '', ci.cpapUsed == null ? (ci.cpapHours ? 'Yes' : '') : (ci.cpapUsed ? 'Yes' : 'No'), ci.cpapHours || '', ci.trazodone == null ? '' : (ci.trazodone ? 'Yes' : 'No'),
       ci.brainFog ? 'Yes' : (sym.brainFog ? 'Yes' : 'No'), weakness, (ci.otherSymptoms || []).join('; '), ci.symptomNote || '', getNextDayFatigue(d) ?? '',
       rf.endEnergy || '', rf.wentWell || '', rf.tomorrow || '']);
   });

@@ -380,6 +380,28 @@
       </div>
       <div class="settings-item">
         <div>
+          <div class="s-label">Ask About CPAP</div>
+          <div class="s-sub">Adds “Did you use your CPAP?” to the morning check-in. When off, the budget uses total sleep instead.</div>
+        </div>
+        <label style="position:relative;display:inline-block;width:44px;height:24px">
+          <input type="checkbox" id="set-track-cpap" style="opacity:0;width:0;height:0;position:absolute" />
+          <span onclick="this.previousElementSibling.click();this.style.background=this.previousElementSibling.checked?'var(--primary)':'#ccc'"
+            style="position:absolute;inset:0;border-radius:12px;background:#ccc;transition:.3s;cursor:pointer"></span>
+        </label>
+      </div>
+      <div class="settings-item">
+        <div>
+          <div class="s-label">Ask About Trazodone</div>
+          <div class="s-sub">Adds “Did you take Trazodone?” to the morning check-in</div>
+        </div>
+        <label style="position:relative;display:inline-block;width:44px;height:24px">
+          <input type="checkbox" id="set-track-traz" style="opacity:0;width:0;height:0;position:absolute" />
+          <span onclick="this.previousElementSibling.click();this.style.background=this.previousElementSibling.checked?'var(--primary)':'#ccc'"
+            style="position:absolute;inset:0;border-radius:12px;background:#ccc;transition:.3s;cursor:pointer"></span>
+        </label>
+      </div>
+      <div class="settings-item">
+        <div>
           <div class="s-label">Energy Check Reminder Dot</div>
           <div class="s-sub">Red dot on the Energy tab after 3 hours without a check (7 AM–9 PM). Calendar alerts are set up on the Energy tab.</div>
         </div>
