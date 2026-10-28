@@ -2560,11 +2560,13 @@ function addCustomActivity() {
 // SHARE / EXPORT
 // ═══════════════════════════════════════════════════════
 
-function shareToHusband() {
+function shareSpoonCount() {
   const d = today();
   const { remaining, budget, used } = calcSpoonsRemaining(d);
   const energy = morningEnergy(d);
-  const text = `🥄 Elaine's Energy Update — ${fmtDate(d)}\n\nSpoons remaining: ${remaining}/${budget}\nSpoons used: ${used}\nMorning energy: ${energy ? energy + '/10' : '?'}\n\nSent via Spoon Tracker`;
+  const name = profileName();
+  const title = name ? `${name}’s Energy Update` : 'My Energy Update';
+  const text = `🥄 ${title} — ${fmtDate(d)}\n\nSpoons remaining: ${remaining}/${budget}\nSpoons used: ${used}\nMorning energy: ${energy ? energy + '/10' : '?'}\n\nSent via Spoon Tracker`;
   if (navigator.share) navigator.share({ title: 'Energy Update', text }).catch(() => copyToClipboard(text));
   else copyToClipboard(text);
 }
@@ -2754,7 +2756,7 @@ function startApp() {
 
   el('settings-save').addEventListener('click', saveSettingsForm);
   el('add-custom-btn').addEventListener('click', addCustomActivity);
-  el('share-btn').addEventListener('click', shareToHusband);
+  el('share-btn').addEventListener('click', shareSpoonCount);
   el('export-csv-btn').addEventListener('click', exportCSV);
   el('load-sample-btn').addEventListener('click', loadSampleData);
   el('clear-data-btn').addEventListener('click', () => {
