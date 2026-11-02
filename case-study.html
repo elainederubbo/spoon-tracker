@@ -381,6 +381,10 @@
     .shot-grid img { display: block; width: 100%; height: auto; border: 1px solid var(--hairline); border-radius: 12px; background: #FFFFFF; }
     .shot-grid figcaption { margin-top: 8px; font-size: 14px; line-height: 22px; color: var(--muted); }
     @media (max-width: 560px) { .shot-grid { grid-template-columns: 1fr; } .shot-grid figure { max-width: 340px; } }
+    .vq { margin: 0 0 24px; padding: 20px 24px; background: #FFFFFF; border: 1px solid var(--hairline); border-radius: 12px; }
+    .vq-label { font-size: 12px; line-height: 16px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--raspberry); margin-bottom: 8px; }
+    .vq-plain { font-family: 'Lora', serif; font-weight: 500; font-size: 22px; line-height: 30px; color: var(--plum); margin: 0 0 8px; }
+    .vq-formal { font-size: 15px; line-height: 24px; color: var(--muted); margin: 0; }
   </style>
 </head>
 <body>
@@ -420,7 +424,7 @@
       </div>
       <div class="meta-item">
         <label>Versions</label>
-        <span>1: Mar – Jun · 2: Jun – Jul · 3: Oct 2026</span>
+        <span>1 · Mar – Jun: Track every activity<br>2 · Jun – Jul: Open it to other people<br>3 · Oct: Make it easy enough to use daily</span>
       </div>
     </div>
   </header>
@@ -448,6 +452,11 @@
 <section id="problem">
   <div class="section-label">March – June 2026</div>
   <h2>Version One: The Tracker Couldn't See My Whole Day</h2>
+  <div class="vq">
+    <div class="vq-label">The question</div>
+    <p class="vq-plain">How can I actually track every activity that gives or takes spoons?</p>
+    <p class="vq-formal">In research terms: do the app's presets capture the activities that drive my energy, based on 90 days of real behavior?</p>
+  </div>
   <p>I started using the app every day in March, and I made an update whenever my usage showed me something. I started with 17 activity presets, the obvious stuff: physical therapy (PT), my exercise class, grocery shopping, cooking, walks with my dog Charlie, sleep. That felt like enough at the time. It wasn't.</p>
   <p>I was hitting "custom entry" constantly. Occupational therapy (OT) exercises every morning, no preset. Phone calls with friends every week, no preset. Job search work eating real cognitive energy, no category for it at all. And at some point I realized I had started putting "Take Shower" on my calendar, and it had nowhere to go in the app either. That one stopped me cold.</p>
   <div class="callout">
@@ -459,16 +468,6 @@
     <div class="stat-card"><div class="num">13+</div><div class="label">Uncovered activities</div></div>
     <div class="stat-card"><div class="num">3</div><div class="label">Missing categories</div></div>
   </div>
-</section>
-
-<section id="rqs">
-  <div class="section-label">Research Questions</div>
-  <h2>What I Needed to Figure Out</h2>
-  <ul class="rq-list">
-    <li><p>What am I actually doing every week that the app has no preset for, and how often is it happening?</p></li>
-    <li><p>Are there patterns in how I use energy (stacking activities, things that feel similar but cost differently) that the app isn't capturing?</p></li>
-    <li><p>What should I add first, and what should each new activity cost?</p></li>
-  </ul>
 </section>
 
 <section id="method">
@@ -530,6 +529,11 @@
 <section id="phase2">
   <div class="section-label">June – July 2026</div>
   <h2>Version Two: Simpler, and Ready for Someone Else</h2>
+  <div class="vq">
+    <div class="vq-label">The question</div>
+    <p class="vq-plain">Can someone besides me use it?</p>
+    <p class="vq-formal">In research terms: can a new user set up the app and log their day without the designer's context?</p>
+  </div>
   <h3>The Feature I Cut</h3>
   <p>In June I added zones, based on Gay Hendricks' framework from <em>The Big Leap</em>, plus a fifth zone, Maintenance, for PT, OT, SLP, and my exercise class. On paper it made sense. In daily use it made logging confusing, and easy logging is the whole point. Zones didn't add value, so I took them out.</p>
   <h3>The July Release</h3>
@@ -546,6 +550,11 @@
 <section id="coda">
   <div class="section-label">October 2026</div>
   <h2>Version Three: What's Useful to Me Isn't What Everyone Needs</h2>
+  <div class="vq">
+    <div class="vq-label">The question</div>
+    <p class="vq-plain">Will I actually use it when I need it most?</p>
+    <p class="vq-formal">In research terms: does daily logging cost less energy than it helps me save?</p>
+  </div>
   <p>Opening the app to new people taught me that what's most useful to me isn't what everyone needs. I had to keep what I needed and hide it from the general use case. A new person sees a clean app. I still see my own setup. It's been easy and enjoyable to use.</p>
   <h3>What Changed</h3>
   <ul class="change-list">
