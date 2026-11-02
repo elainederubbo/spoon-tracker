@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Spoon Tracker — UX Research Case Study · Elaine DeRubbo</title>
+  <title>Spoon Tracker · UX Research Case Study · Elaine DeRubbo</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;0,600;1,400&family=Nunito+Sans:ital,wght@0,300;0,400;0,600;0,700;1,400&display=swap" rel="stylesheet" />
@@ -371,6 +371,16 @@
       .outcome-row { grid-template-columns: 1fr; }
       .shower-block { padding: 24px 20px; }
     }
+    .change-list { list-style: disc; padding-left: 24px; margin: 0 0 24px; display: grid; gap: 8px; }
+    .change-list li::marker { color: var(--raspberry); }
+    .change-list p { margin: 0; }
+    .next-line { margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--hairline); color: var(--muted); }
+    .next-line strong { color: var(--plum); }
+    .shot-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; align-items: start; margin: 8px 0 32px; }
+    .shot-grid figure { margin: 0; min-width: 0; }
+    .shot-grid img { display: block; width: 100%; height: auto; border: 1px solid var(--hairline); border-radius: 12px; background: #FFFFFF; }
+    .shot-grid figcaption { margin-top: 8px; font-size: 14px; line-height: 22px; color: var(--muted); }
+    @media (max-width: 560px) { .shot-grid { grid-template-columns: 1fr; } .shot-grid figure { max-width: 340px; } }
   </style>
 </head>
 <body>
@@ -392,9 +402,9 @@
 <!-- PAGE HEADER -->
 <div class="page-wrap">
   <header class="case-header">
-    <div class="breadcrumb">UX Research<span>·</span>Personal Project<span>·</span>Hereditary Motor Neuropathy<span>·</span>2026</div>
+    <div class="breadcrumb">UX Research<span>·</span>Personal Project<span>·</span>Motor Neuropathy with Ataxia<span>·</span>2026</div>
     <h1>Spoon Tracker: Building the Tool I Actually Needed</h1>
-    <p class="intro">I was between jobs and had been sick for months. I used that time to build the energy tracker I couldn't find anywhere else, with AI writing the code. Ninety days of living in it showed me what was missing. So I kept building. Still am.</p>
+    <p class="intro">I built the energy tracker I couldn't find anywhere else, with AI writing the code. Living in it showed me what was missing. So I kept building, and I still am.</p>
     <div class="meta-row">
       <div class="meta-item">
         <label>Role</label>
@@ -402,15 +412,15 @@
       </div>
       <div class="meta-item">
         <label>Methods</label>
-        <span>Behavioral Audit · Calendar Analysis · AI-Assisted Synthesis</span>
+        <span>Behavioral Audit · Calendar Analysis · Iterative Redesign</span>
       </div>
       <div class="meta-item">
-        <label>Study Period</label>
-        <span>March – June 2026</span>
+        <label>Timeline</label>
+        <span>March – November 2026</span>
       </div>
       <div class="meta-item">
-        <label>Phases</label>
-        <span>Phase 1: 90-day audit · Phase 2: Zone framework</span>
+        <label>Versions</label>
+        <span>1: Mar – Jun · 2: Jun – Jul · 3: Oct 2026</span>
       </div>
     </div>
   </header>
@@ -420,35 +430,26 @@
 <div class="page-wrap">
 
 <section id="bluf">
-  <div class="section-label">BLUF — Bottom Line Up Front</div>
-  <h2>What I Did, and Why It Matters Twice</h2>
-  <p>I built an energy-tracking app for my hereditary motor neuropathy, lived in it for 90 days, then audited my real calendar against its presets. The audit showed the app was blind to a third of my life. I shipped 17 new activity presets and 3 new categories, with AI writing the code, without breaking a single existing log entry. Daily "custom entry" workarounds dropped to almost none. The result matters on two levels:</p>
-  <div class="outcome-row" style="margin-top:1.2rem;">
-    <div class="outcome-cell">
-      <div style="font-size:1.4rem; font-family:'Lora',serif; font-weight:500; color:var(--plum); margin-bottom:0.6rem;">Personal impact</div>
-      <p style="font-size:0.95rem; color:var(--black); line-height:1.7; margin:0;">I use this app every day to decide what my body can afford. It surfaced energy I was spending without noticing: showers, paperwork, phone calls, travel days. Because of what it showed me, I now spread appointments out instead of batching them, count massage as recovery instead of cost, and plan around a flight like the major expense it is. It's not a side project. It's infrastructure.</p>
-    </div>
-    <div class="outcome-cell">
-      <div style="font-size:1.4rem; font-family:'Lora',serif; font-weight:500; color:var(--plum); margin-bottom:0.6rem;">Professional impact</div>
-      <p style="font-size:0.95rem; color:var(--black); line-height:1.7; margin:0;">This is my research practice applied to the hardest participant to study honestly: myself. Behavioral data over self-report, taxonomy design, tiered prioritization, and one hard ship constraint (don't break months of logged data). AI wrote every line of code. I scoped the problems, wrote the prompts, caught the mistakes, and shipped. Those are skills I'm building on purpose, and this project is where I build them.</p>
-    </div>
+  <div class="section-label">Summary</div>
+  <h2>Three Versions, One Tool I Use Every Day</h2>
+  <div class="callout">
+    <p>I built Spoon Tracker to pace my own energy, and to learn to build with AI while I did it. Over three versions I audited my own behavior against the app, simplified it so other people could use it, and rebuilt it around its main goal. Version three puts the most important action on every screen above the fold, and it's the tool I'm using to get through surgery.</p>
   </div>
+  <p>I scoped the problems, wrote the prompts, caught the mistakes, and shipped. AI wrote every line of code.</p>
 </section>
 
 <section id="background">
   <div class="section-label">Background</div>
   <h2>I Needed a Tool That Didn't Exist</h2>
-  <p>I first heard about spoon theory from a counselor when I lived in DC, about eight years ago. The idea stuck with me — you start each day with a limited number of spoons, every activity costs one, and when they're gone, they're gone. Running out mid-afternoon doesn't mean you're tired. It means you might not be able to cook dinner, take a shower, or hold a conversation. It requires actual planning, not just willpower.</p>
-  <p>I've been working through a diagnosis for over a decade. Full genomic sequencing at NIH finally gave me an answer: Charcot-Marie-Tooth Type 2U, from a variant on the MARS1 gene. It felt like the thing I had been searching for my entire life. Then an aunt with the same disease tested negative for MARS1, and we were back to square one. My neurologist at Johns Hopkins calls it hereditary motor neuropathy, because that's what we know for certain. I identify closely with the CMT2 community because the pattern looks like theirs. For most of my 20s and early 30s the neuropathy was there, but I could outrun it. Not anymore. A full day of appointments, a flight, a grocery run: these have real consequences now. Pacing myself isn't something I ever thought I'd need to do, and then suddenly it was.</p>
-  <p>From December through April I was on medical leave, sick in a way I hadn't been for a while. Months in bed. Around the third month I knew I needed two things to change. My body needed an actual system, not a mental note. And I needed to stop watching AI tools improve from the sidelines and build something real with them. The app became both at once: the pacing tool my body needed, and hands-on practice building with AI. I'm still learning. I expect I will be for a while.</p>
-  <p>I looked for an app that tracked energy the way I actually needed. I didn't find one. So I built one: <strong>spoon-tracker</strong>, on GitHub Pages. I'm a UX researcher, not a developer. I used Claude to write the code. This isn't a case study about building the app. It's about what happened after I'd been living in it for 90 days and realized it still wasn't seeing my whole life.</p>
+  <p>I first heard about spoon theory from a counselor about eight years ago. You start each day with a limited number of spoons, every activity costs one, and when they're gone, they're gone. Running out mid-afternoon can mean you can't cook dinner or take a shower. It takes actual planning, not willpower.</p>
+  <p>I looked for an app that tracked energy the way I needed. I didn't find one, so I built one. I'm a UX researcher, not a developer, and I used Claude to write the code. Building it was also how I stopped watching AI tools improve from the sidelines.</p>
 </section>
 
 <section id="problem">
-  <div class="section-label">The Problem</div>
-  <h2>The Tracker Couldn't See My Whole Day</h2>
-  <p>When I built the app, I started with 17 activity presets — the obvious stuff: PT, CMT class, grocery shopping, cooking, walks with my dog Charlie, sleep. That felt like enough at the time. It wasn't.</p>
-  <p>Pretty quickly I noticed I was hitting "custom entry" constantly. OT exercises every single morning — no preset. Phone calls with friends every week — no preset. Job search work eating up real cognitive energy — no category for it at all. And at some point I realized I had started putting "Take Shower" on my calendar, and that it had nowhere to go in the app either. That one stopped me cold.</p>
+  <div class="section-label">March – June 2026</div>
+  <h2>Version One: The Tracker Couldn't See My Whole Day</h2>
+  <p>I started using the app every day in March, and I made an update whenever my usage showed me something. I started with 17 activity presets, the obvious stuff: physical therapy (PT), my exercise class, grocery shopping, cooking, walks with my dog Charlie, sleep. That felt like enough at the time. It wasn't.</p>
+  <p>I was hitting "custom entry" constantly. Occupational therapy (OT) exercises every morning, no preset. Phone calls with friends every week, no preset. Job search work eating real cognitive energy, no category for it at all. And at some point I realized I had started putting "Take Shower" on my calendar, and it had nowhere to go in the app either. That one stopped me cold.</p>
   <div class="callout">
     <p><strong>The thing about designing for yourself:</strong> The presets you build at the start reflect what you think you do. Ninety days of actual use shows you what you actually do. The gap between those two things is what this is about.</p>
   </div>
@@ -464,8 +465,8 @@
   <div class="section-label">Research Questions</div>
   <h2>What I Needed to Figure Out</h2>
   <ul class="rq-list">
-    <li><p>What am I actually doing every week that the app has no preset for — and how often is it happening?</p></li>
-    <li><p>Are there patterns in how I use energy (stacking activities, calendar noise, things that feel similar but cost differently) that the app isn't capturing?</p></li>
+    <li><p>What am I actually doing every week that the app has no preset for, and how often is it happening?</p></li>
+    <li><p>Are there patterns in how I use energy (stacking activities, things that feel similar but cost differently) that the app isn't capturing?</p></li>
     <li><p>What should I add first, and what should each new activity cost?</p></li>
   </ul>
 </section>
@@ -473,123 +474,45 @@
 <section id="method">
   <div class="section-label">How I Did It</div>
   <h2>90 Days of Calendar as Data</h2>
-  <p>I didn't run a usability study on myself. What I did was look at my Google Calendar — 90 days of it, March through June 2026 — and compare every recurring event against the app's 17 presets to see what wasn't covered.</p>
+  <p>I compared 90 days of my Google Calendar, March through June 2026, against the app's 17 presets to see what wasn't covered.</p>
   <div class="callout">
-    <p><strong>Why the calendar and not the app logs?</strong> Because the app logs only show what the presets let me log easily. If there's no preset for OT exercises, those entries either go in as "custom" or they don't get logged at all — either way, the log misses them. My calendar captured my actual days, not just the days my app was designed to see.</p>
+    <p><strong>Why the calendar and not the app logs?</strong> App logs only show what the presets let me log easily. If there's no preset for OT exercises, those entries go in as "custom" or don't get logged at all. My calendar captured my actual days, not just the days my app was designed to see.</p>
   </div>
   <ul class="method-steps">
-    <li><div class="step-num">1</div><div class="step-body"><h4>Pull everything</h4><p>Went through 90 days of calendar events and catalogued every recurring activity by name, how often it showed up, and roughly what it costs me.</p></div></li>
-    <li><div class="step-num">2</div><div class="step-body"><h4>Find the gaps</h4><p>Compared each calendar event to the 17 existing presets. Anything without a good match got flagged.</p></div></li>
-    <li><div class="step-num">3</div><div class="step-body"><h4>Assign costs from experience</h4><p>For each gap, I estimated a spoon cost based on how those activities actually feel — not a formula, just lived knowledge. Then sorted them into zones.</p></div></li>
-    <li><div class="step-num">4</div><div class="step-body"><h4>Look at the bigger picture</h4><p>Asked whether the gaps were individual missing presets or whether whole categories of my life were unaccounted for. (They were.)</p></div></li>
-    <li><div class="step-num">5</div><div class="step-body"><h4>Prioritize and build</h4><p>Sorted everything into tiers by frequency and impact, then worked with AI to write and ship the code changes.</p></div></li>
+    <li><div class="step-num">1</div><div class="step-body"><h4>Pull everything</h4><p>Catalogued every recurring activity, how often it showed up, and roughly what it costs me.</p></div></li>
+    <li><div class="step-num">2</div><div class="step-body"><h4>Find the gaps</h4><p>Flagged anything without a good match among the 17 presets.</p></div></li>
+    <li><div class="step-num">3</div><div class="step-body"><h4>Assign costs from experience</h4><p>Estimated a spoon cost for each gap from lived knowledge, then sorted them into zones.</p></div></li>
+    <li><div class="step-num">4</div><div class="step-body"><h4>Look at the bigger picture</h4><p>Asked whether whole categories of my life were missing. They were.</p></div></li>
+    <li><div class="step-num">5</div><div class="step-body"><h4>Prioritize and build</h4><p>Sorted everything into tiers by frequency and impact, then shipped the changes with AI.</p></div></li>
   </ul>
 </section>
 
 <section id="findings">
   <div class="section-label">What I Found</div>
   <h2>What 90 Days Actually Looks Like</h2>
-
-  <h3>Coverage Gaps by Tier</h3>
-  <p>Thirteen recurring activities had no preset. The gaps sorted into three groups by frequency.</p>
-
-  <div class="findings-table-wrap">
-    <table>
-      <thead><tr><th></th><th>Activity</th><th>Cost</th><th>Category</th><th>Zone</th><th>Frequency</th></tr></thead>
-      <tbody>
-        <tr><td class="emoji-col">🤲</td><td><strong>OT Exercises</strong><span class="tier-1">Tier 1</span></td><td class="spoon-pos">+1</td><td>medical</td><td>maintenance</td><td>Daily for 2 months — 100% custom entries</td></tr>
-        <tr><td class="emoji-col">🗣️</td><td><strong>SLP Work</strong><span class="tier-1">Tier 1</span></td><td class="spoon-pos">+1</td><td>medical</td><td>maintenance</td><td>Weekday-recurring</td></tr>
-        <tr><td class="emoji-col">🏃</td><td><strong>Daily Workout (15 min)</strong><span class="tier-1">Tier 1</span></td><td class="spoon-pos">+2</td><td>exercise</td><td>maintenance</td><td>Calendared daily; actual completion is variable</td></tr>
-        <tr><td class="emoji-col">📞</td><td><strong>Phone/Video Catch-up</strong><span class="tier-1">Tier 1</span></td><td class="spoon-pos">+1</td><td>social</td><td>competence</td><td>Weekly+ across several people</td></tr>
-        <tr><td class="emoji-col">💻</td><td><strong>Work / Job Search Block</strong><span class="tier-1">Tier 1</span></td><td class="spoon-pos">+3</td><td>work (new)</td><td>excellence</td><td>Multiple times/week — zero coverage previously</td></tr>
-        <tr><td class="emoji-col">✈️</td><td><strong>Travel Day (Flight)</strong><span class="tier-1">Tier 1</span></td><td class="spoon-pos">+5</td><td>travel (new)</td><td>competence</td><td>Highest single-day cost in the study period</td></tr>
-        <tr><td class="emoji-col">💆</td><td><strong>Massage</strong><span class="tier-1">Tier 1</span></td><td class="spoon-neg">−2</td><td>recovery</td><td>maintenance</td><td>Recovery credit — was logging as a cost</td></tr>
-        <tr><td class="emoji-col">🍽️</td><td><strong>Restaurant Meal</strong><span class="tier-2">Tier 2</span></td><td class="spoon-pos">+2</td><td>social</td><td>competence</td><td>Sensory + social, distinct from "Social Outing"</td></tr>
-        <tr><td class="emoji-col">🐾</td><td><strong>Pet Care</strong><span class="tier-2">Tier 2</span></td><td class="spoon-pos">+2</td><td>errand</td><td>competence</td><td>Vet + boarding logistics</td></tr>
-        <tr><td class="emoji-col">📦</td><td><strong>Decluttering Session</strong><span class="tier-2">Tier 2</span></td><td class="spoon-pos">+3</td><td>household</td><td>competence</td><td>10+ calendar occurrences; not the same as heavy chores</td></tr>
-        <tr><td class="emoji-col">📋</td><td><strong>Admin / Paperwork</strong><span class="tier-2">Tier 2</span></td><td class="spoon-pos">+1</td><td>work (new)</td><td>competence</td><td>Spending tracker, bills, medical history</td></tr>
-        <tr><td class="emoji-col">🚿</td><td><strong>Shower</strong><span class="tier-2">Tier 2</span></td><td class="spoon-pos">+1</td><td>self-care (new)</td><td>maintenance</td><td>Calendared deliberately — no preset existed</td></tr>
-        <tr><td class="emoji-col">🎬</td><td><strong>Movie / Live Event</strong><span class="tier-2">Tier 2</span></td><td class="spoon-pos">+2</td><td>social</td><td>competence</td><td>Sensory load differs from casual social</td></tr>
-      </tbody>
-    </table>
-  </div>
-
-  <div class="callout">
-    <p><strong>A limitation worth naming:</strong> Calendar data captures what you planned, not what happened. The daily 6:30 AM workout is on the calendar every day — I don't always do it. App logs would show the real frequency. The calendar can't tell the difference between "did this" and "meant to do this."</p>
-  </div>
-
+  <p>Thirteen recurring activities had no preset, and three whole parts of my life had no category: work, travel, and self-care.</p>
   <h3>The Shower Finding</h3>
   <div class="shower-block">
-    <p>I was scheduling "Take Shower" in my calendar. Not as a preference or a reminder. As a necessity — to make sure I didn't forget it, or run out of energy to do it before the day ended.</p>
-    <div class="attribution">— Week 3 of the study period</div>
+    <p>I was scheduling "Take Shower" in my calendar. Not as a preference or a reminder. As a necessity, to make sure I didn't forget it or run out of energy to do it before the day ended.</p>
+    <div class="attribution">Week 3 of the study period</div>
   </div>
-  <p>This is the one that made me stop and sit with it for a while. A shower isn't just a missing preset. It's a thing healthy people never think about and my neuropathy makes me plan for. The app had <code>rest</code> for downtime and <code>recovery</code> for restorative credit, but nothing for the basic cost of maintaining a functional human body — showering, getting dressed, hygiene. Those things cost spoons. They were just invisible.</p>
-  <p>Adding a <code>self-care</code> category wasn't a taxonomy cleanup. It was the app finally being honest about what my days actually involve.</p>
-
-  <h3>Other Things I Noticed</h3>
-  <p>Missing presets weren't the only problem. There were patterns in how my days were structured that the app didn't have a way to handle.</p>
-  <div class="pattern-grid">
-    <div class="pattern-card"><div class="pattern-icon">⚡</div><h4>Activity Stacking</h4><p>Morning blocks frequently combined Mastermind Meeting with Team Platypus/Training. Stacking amplifies depletion beyond the sum of parts — but only gets caught when all activities are logged.</p></div>
-    <div class="pattern-card"><div class="pattern-icon">📅</div><h4>Calendar Noise</h4><p>Some shared calendar events (Dan's soccer, Dan's yard work) weren't mine. On a shared calendar these could create false positive activity data.</p></div>
-    <div class="pattern-card"><div class="pattern-icon">🐕</div><h4>Granularity Matters</h4><p>Dog walk and Charlie playtime aren't the same thing. One involves physical exertion; the other is closer to recovery. One preset misrepresents both.</p></div>
-    <div class="pattern-card"><div class="pattern-icon">💆</div><h4>Recovery Is Active</h4><p>Massage isn't neutral. It was logging as a cost rather than a credit. Passive rest and active recovery need to be treated differently.</p></div>
-  </div>
-
-  <h3>Missing Categories</h3>
-  <p>It wasn't just individual activities missing — whole parts of my life had no category at all.</p>
-  <div class="cat-grid">
-    <div class="cat-tag"><div class="dot" style="background:var(--muted)"></div> medical</div>
-    <div class="cat-tag"><div class="dot" style="background:var(--muted)"></div> exercise</div>
-    <div class="cat-tag"><div class="dot" style="background:var(--muted)"></div> errand</div>
-    <div class="cat-tag"><div class="dot" style="background:var(--muted)"></div> household</div>
-    <div class="cat-tag"><div class="dot" style="background:var(--muted)"></div> social</div>
-    <div class="cat-tag"><div class="dot" style="background:var(--muted)"></div> rest</div>
-    <div class="cat-tag"><div class="dot" style="background:var(--muted)"></div> recovery</div>
-    <div class="cat-tag new"><div class="dot" style="background:var(--plum)"></div> work ✦ new</div>
-    <div class="cat-tag new"><div class="dot" style="background:var(--plum)"></div> travel ✦ new</div>
-    <div class="cat-tag new"><div class="dot" style="background:var(--plum)"></div> self-care ✦ new</div>
-  </div>
-  <p><strong>Work</strong> was the biggest miss — job search blocks, case study work, Job Searching Groups, applications. All happening multiple times a week with nowhere to go. <strong>Travel</strong> exists because a flight to Dallas is nothing like a grocery run, even though "errand" was technically covering both. <strong>Self-care</strong> is there because of the shower — and everything like it that costs spoons but had been invisible.</p>
-</section>
-
-<section id="recommendations">
-  <div class="section-label">What I Added</div>
-  <h2>The Full List, With Reasoning</h2>
-  <p>Sorted into three tiers. Tier 1 was the non-negotiable stuff — high frequency, missing entirely. Tiers 2 and 3 were worth adding, just with less urgency.</p>
-  <div class="findings-table-wrap">
-    <table>
-      <thead><tr><th>Tier</th><th></th><th>Activity</th><th>Cost</th><th>Rationale</th></tr></thead>
-      <tbody>
-        <tr><td><span class="tier-1">Tier 1</span></td><td class="emoji-col">🤲</td><td>OT Exercises</td><td class="spoon-pos">+1</td><td>Daily for 2 months; 100% of entries were custom</td></tr>
-        <tr><td><span class="tier-1">Tier 1</span></td><td class="emoji-col">🗣️</td><td>SLP Work</td><td class="spoon-pos">+1</td><td>Weekday-recurring; low cost, high frequency</td></tr>
-        <tr><td><span class="tier-1">Tier 1</span></td><td class="emoji-col">🏃</td><td>Daily Workout (15 min)</td><td class="spoon-pos">+2</td><td>Distinct from CMT class or gym; needs a home even if inconsistent</td></tr>
-        <tr><td><span class="tier-1">Tier 1</span></td><td class="emoji-col">📞</td><td>Phone/Video Catch-up</td><td class="spoon-pos">+1</td><td>Weekly+ with multiple people; lower cost than in-person social</td></tr>
-        <tr><td><span class="tier-1">Tier 1</span></td><td class="emoji-col">💻</td><td>Work / Job Search Block</td><td class="spoon-pos">+3</td><td>Highest-frequency untracked category; cognitive load is real</td></tr>
-        <tr><td><span class="tier-1">Tier 1</span></td><td class="emoji-col">✈️</td><td>Travel Day (Flight)</td><td class="spoon-pos">+5</td><td>Highest single-day cost in the study period</td></tr>
-        <tr><td><span class="tier-1">Tier 1</span></td><td class="emoji-col">💆</td><td>Massage</td><td class="spoon-neg">−2</td><td>Active recovery; was logging as a cost rather than a credit</td></tr>
-        <tr><td><span class="tier-2">Tier 2</span></td><td class="emoji-col">🍽️</td><td>Restaurant Meal</td><td class="spoon-pos">+2</td><td>Sensory + social load distinct from a generic social outing</td></tr>
-        <tr><td><span class="tier-2">Tier 2</span></td><td class="emoji-col">🐾</td><td>Pet Care</td><td class="spoon-pos">+2</td><td>Vet + boarding logistics; distinct from a dog walk</td></tr>
-        <tr><td><span class="tier-2">Tier 2</span></td><td class="emoji-col">📦</td><td>Decluttering Session</td><td class="spoon-pos">+3</td><td>10+ calendar occurrences; not captured by "Heavy Chores"</td></tr>
-        <tr><td><span class="tier-2">Tier 2</span></td><td class="emoji-col">📋</td><td>Admin / Paperwork</td><td class="spoon-pos">+1</td><td>Desk work that costs spoons but had no home in the taxonomy</td></tr>
-        <tr><td><span class="tier-2">Tier 2</span></td><td class="emoji-col">🚿</td><td>Shower</td><td class="spoon-pos">+1</td><td>Being calendared deliberately; real cost, previously invisible</td></tr>
-        <tr><td><span class="tier-2">Tier 2</span></td><td class="emoji-col">🎬</td><td>Movie / Live Event</td><td class="spoon-pos">+2</td><td>Sensory load of concerts/screenings differs from casual social</td></tr>
-        <tr><td><span class="tier-3">Tier 3</span></td><td class="emoji-col">🧳</td><td>Packing for Trip</td><td class="spoon-pos">+2</td><td>Pre-trip cognitive load</td></tr>
-        <tr><td><span class="tier-3">Tier 3</span></td><td class="emoji-col">🎤</td><td>Conference / Event</td><td class="spoon-pos">+3</td><td>The Collider, Purpose First AI Second</td></tr>
-        <tr><td><span class="tier-3">Tier 3</span></td><td class="emoji-col">📮</td><td>Quick Errand</td><td class="spoon-pos">+1</td><td>Oil change, mailing — less than a full grocery run</td></tr>
-        <tr><td><span class="tier-3">Tier 3</span></td><td class="emoji-col">🥧</td><td>Baking Project</td><td class="spoon-pos">+2</td><td>Distinct from quick meal prep</td></tr>
-      </tbody>
-    </table>
+  <p>A shower isn't just a missing preset. It's a thing healthy people never think about and my neuropathy makes me plan for. The app had <code>rest</code> for downtime and <code>recovery</code> for restorative credit, but nothing for the basic cost of maintaining a body: showering, getting dressed, hygiene. Adding a <code>self-care</code> category was the app finally being honest about what my days involve.</p>
+  <h3>Stacking</h3>
+  <p>Activities stacked back to back drain more than the sum of their parts, and the app only catches it when every activity gets logged. That finding kept coming back, and in version three it turned out to matter more than anything else.</p>
+  <div class="callout">
+    <p><strong>A limitation worth naming:</strong> Calendar data captures what you planned, not what happened. My daily workout is on the calendar every day, and I don't always do it. The calendar can't tell the difference between "did this" and "meant to do this."</p>
   </div>
 </section>
 
 <section id="implementation">
   <div class="section-label">Shipping It</div>
   <h2>From Findings to Live App</h2>
-  <p>I worked with Claude to write the code changes — one clean update to <code>DEFAULT_ACTIVITIES</code> and <code>DEFAULT_ZONES</code> in <code>app.js</code>. The only hard constraint was that all 17 original activity IDs had to stay exactly as they were. Everything I'd already logged lived in localStorage keyed to those IDs. Renaming anything would have broken months of real data. So the update was purely additive: 17 new presets, nothing touched that was already there.</p>
-  <p>Three new categories got added to the UI — <code>work</code>, <code>travel</code>, <code>self-care</code> — with new color styling. Quick-access defaults on the Today screen got updated from the arbitrary initial set to the five activities I actually log most. One commit, pushed to main, GitHub Pages rebuilt automatically.</p>
+  <p>I added 17 presets in three tiers. Tier 1 was the non-negotiable stuff, high frequency and missing entirely: OT exercises, speech-language pathology (SLP) work, a daily workout, phone and video catch-ups, job search blocks, travel days, and massage as a recovery credit instead of a cost.</p>
+  <p>The one hard constraint: all 17 original activity IDs had to stay exactly as they were. Everything I'd already logged was keyed to those IDs, and renaming anything would have broken months of real data. So the update was purely additive. One commit, pushed to main, and GitHub Pages rebuilt automatically.</p>
   <div class="callout">
-    <p><strong>No regressions.</strong> Commit message: <em>"Expand default activities based on 90-day calendar analysis."</em> All existing log entries still intact. The app still knows about every spoon I spent before the update.</p>
+    <p><strong>No regressions.</strong> Every existing log entry stayed intact. The app still knows about every spoon I spent before the update.</p>
   </div>
+  <p>Some fixes only show up by living in it. A week later I found the app defaulted to Coordinated Universal Time (UTC), so my "today" rolled over at the wrong hour. One conversation, one prompt, one commit.</p>
 </section>
 
 <section id="outcomes">
@@ -601,83 +524,73 @@
     <div class="outcome-cell"><div class="oc-label">Custom Entries Required</div><div class="oc-before">Daily</div><div class="oc-after">Rare</div><div class="oc-note">Most recurring activities now have a home</div></div>
     <div class="outcome-cell"><div class="oc-label">Data Continuity</div><div class="oc-before">At risk</div><div class="oc-after">Intact</div><div class="oc-note">Zero existing log entries broken</div></div>
   </div>
-  <p>The quick-log screen defaults to my actual highest-frequency activities instead of whatever I guessed at launch. Recovery activities — massage, meditation — show correctly as credits rather than costs. A normal week now shouldn't need any custom entries. That was the whole point.</p>
+  <p class="next-line"><strong>What pushed me to version two:</strong> the app could finally see my whole day, but it was getting harder to use, and I was the only person who could use it.</p>
+</section>
+
+<section id="phase2">
+  <div class="section-label">June – July 2026</div>
+  <h2>Version Two: Simpler, and Ready for Someone Else</h2>
+  <h3>The Feature I Cut</h3>
+  <p>In June I added zones, based on Gay Hendricks' framework from <em>The Big Leap</em>, plus a fifth zone, Maintenance, for PT, OT, SLP, and my exercise class. On paper it made sense. In daily use it made logging confusing, and easy logging is the whole point. Zones didn't add value, so I took them out.</p>
+  <h3>The July Release</h3>
+  <p>On July 21 I shipped the main version two release. The goal was to simplify, and to let other people use the app.</p>
+  <ul class="change-list">
+    <li><p>Redesigned the Today tab around energy checks and a quicker check-in.</p></li>
+    <li><p>Added Quick Log buttons you can edit right from Today.</p></li>
+    <li><p>Added the Patterns tab, so trends show up over time.</p></li>
+    <li><p>Added profiles and onboarding, so a new person can set up the app for themselves.</p></li>
+  </ul>
+  <p class="next-line"><strong>What pushed me to version three:</strong> I scheduled laparoscopic surgery for early November. By then I had stopped using the app. There was just too much going on in it, and using it was costing me spoons. I needed it to be something I'd actually reach for every day while I recovered.</p>
+</section>
+
+<section id="coda">
+  <div class="section-label">October 2026</div>
+  <h2>Version Three: What's Useful to Me Isn't What Everyone Needs</h2>
+  <p>Opening the app to new people taught me that what's most useful to me isn't what everyone needs. I had to keep what I needed and hide it from the general use case. A new person sees a clean app. I still see my own setup. It's been easy and enjoyable to use.</p>
+  <h3>What Changed</h3>
+  <ul class="change-list">
+    <li><p>Simplified the whole app so its main goal is front and center.</p></li>
+    <li><p>Put the most important action on every tab above the fold, so nobody has to scroll for it.</p></li>
+    <li><p>Tightened the Activity Log and added categories and tags to activities for future analysis.</p></li>
+    <li><p>Built out the Patterns tab with more charts to see trends over time.</p></li>
+  </ul>
+  <h3>Before and After: The Home Screen</h3>
+  <div class="shot-grid">
+    <figure><img src="v2-spoons-july.jpg" width="600" height="1164" loading="lazy" alt="July home screen: a morning check-in banner, spoons remaining, a full energy check form, and the Quick Log list starting below the fold."><figcaption>July, version two: a check-in banner and a full energy form push logging below the fold.</figcaption></figure>
+    <figure><img src="v3-spoons.jpg" width="600" height="1020" loading="lazy" alt="October home screen: spoons remaining in large green type, used and recovered counts, the latest energy check, and one large Log an activity button."><figcaption>October, version three: spoons left and one button to log, on one screen.</figcaption></figure>
+  </div>
+  <h3>The Other Tabs</h3>
+  <div class="shot-grid">
+    <figure><img src="v3-log.jpg" width="600" height="1039" loading="lazy" alt="Log an Activity screen: a calendar import option, today's logged activities with spoon costs and credits, a search box, tag filters, and a New item button."><figcaption>Log: today's entries, search, and tags up top.</figcaption></figure>
+    <figure><img src="v3-energy-check.jpg" width="600" height="1020" loading="lazy" alt="Energy Check screen: a completed morning check-in, a prompt for the next check-in, a 1 to 10 energy scale, an optional note, and a Save Energy Check button."><figcaption>Energy Check: a morning check-in, then quick check-ins through the day.</figcaption></figure>
+    <figure><img src="v3-history.jpg" width="600" height="1182" loading="lazy" alt="History screen: a list of recent days, each with activities logged, spoons used, and spoons left in a green or yellow pill."><figcaption>History: every day at a glance, colored by what was left.</figcaption></figure>
+    <figure><img src="v3-patterns.jpg" width="506" height="1726" loading="lazy" alt="Patterns screen: the week at a glance, weekly totals, a 30-day chart of morning energy against closing balance, spoons by category, and daily spoons used against budget."><figcaption>Patterns: the week, energy against balance, and where the spoons went.</figcaption></figure>
+  </div>
+  <h3>What Surprised Me</h3>
+  <p>Stacking tasks turned out to matter more than I expected. It has helped me take more breaks. When my to-do list is long and my energy is in the yellow, I give myself time so I don't burn out. If things move days, that ends up being fine.</p>
+  <h3>What's Next</h3>
+  <p>After I recover from surgery, I'll run user tests and stakeholder interviews with new people, and I'm already working out where to recruit them.</p>
 </section>
 
 <section id="reflection">
   <div class="section-label">Reflection</div>
   <h2>What Worked, What Didn't, What I'd Do Differently</h2>
-  <p>Using calendar data instead of app logs was the right call. App logs feel like the natural source — they're structured, timestamped, already in the system. But they only show what your presets let you see. The calendar saw my whole day regardless of whether the app was ready for it.</p>
-  <p>Being the only participant in your own study is a real validity problem and I'm not going to pretend otherwise. Every spoon cost I assigned is a judgment call based on how things feel, not a measured value. My 1-spoon shower might be someone else's 3-spoon shower. There's no external calibration here. But for a personal health tool, lived knowledge from the inside is actually the right data. Trying to make it more "objective" would make it less accurate for the person it's built for.</p>
+  <p>Using calendar data instead of app logs was the right call. App logs only show what your presets let you see. The calendar saw my whole day whether the app was ready for it or not.</p>
+  <p>Being the only participant in your own study is a real validity problem, and I'm not going to pretend otherwise. Every spoon cost I assigned is a judgment call, not a measured value. My 1-spoon shower might be someone else's 3-spoon shower. For a personal tool, lived knowledge is the right data. For other people, it's a hypothesis, which is why testing comes next.</p>
   <div class="callout">
-    <p><strong>What I'd do differently:</strong> From day one, I'd log custom entries separately with the raw text typed. That would have surfaced gaps automatically instead of requiring a manual calendar comparison — and made this kind of audit much faster the next time.</p>
+    <p><strong>What I'd do differently:</strong> From day one, I'd log custom entries separately with the raw text typed. That would have surfaced gaps automatically instead of requiring a manual calendar comparison.</p>
   </div>
-  <p>The thing I keep coming back to: behavioral data and what you think you do are almost never the same thing. I built this app because I thought I knew what I was spending my energy on. Ninety days of data showed me I was missing a third of it.</p>
-</section>
-
-<section id="phase2">
-  <div class="section-label">Phase 2 — Zone Intelligence</div>
-  <h2>The Framework I'd Already Built Without Knowing It</h2>
-  <p>I recently took over as Moderator for my Never Search Alone Job Search Council, a small group of people who've been in each other's corners through a tough job market. After one of our meetings, I ran the transcript through Granola.ai. The AI summary pointed me toward Gay Hendricks' four zones from <em>The Big Leap</em>, and I realized I'd already built something that looked almost exactly like it. The app had zones from the start: maintenance, competence, excellence, genius. I'd designed them from what felt true about how activities land differently. The Hendricks framework gave me language for what I'd built intuitively, and surfaced one important gap I'd missed.</p>
-
-  <h3>Five Zones (the Four Hendricks + One I Had to Add)</h3>
-  <div class="zone-grid">
-    <div class="zone-card"><div class="zone-icon">🔴</div><h4>Zone of Incompetence</h4><p>Activities someone else should do entirely. Flagged with a gentle prompt: "Could someone else do this?" Full spoon cost.</p></div>
-    <div class="zone-card"><div class="zone-icon">⚪</div><h4>Zone of Competence</h4><p>Functional, unremarkable. You can do it, but it doesn't energize you. Errands, Slack checks. Full spoon cost.</p></div>
-    <div class="zone-card"><div class="zone-icon">🟠</div><h4>Zone of Excellence</h4><p>You're great at it, which is why people keep asking — but it quietly drains you. Cost +0.5 to surface the hidden drain.</p></div>
-    <div class="zone-card"><div class="zone-icon">🟢</div><h4>Zone of Genius</h4><p>Time disappears. This is the target. 50% of normal spoon cost, because it gives back. The goal: more of the week here.</p></div>
-    <div class="zone-card"><div class="zone-icon">🔵</div><h4>Zone of Maintenance</h4><p>The fifth zone — added because my situation required it. PT, OT, SLP, CMT class. Not leaks. Infrastructure. Protected, tracked separately, never penalized.</p></div>
-  </div>
-
-  <h3>The Asterisk That Generic Advice Misses</h3>
-  <p>Granola surfaced a rule-of-thumb: if more than 20% of your week is in Incompetence + Competence zones, you're leaking energy. I get why that works for most people. But Granola also labeled "medical appointments" as Zone of Incompetence. That framing doesn't work for me.</p>
-  <div class="callout">
-    <p><strong>PT, OT, SLP, CMT class — these aren't leaks.</strong> They're the reason I can do anything else. Any advice built for an able-bodied baseline needs this asterisk. The Maintenance zone is that asterisk — visible but never penalized.</p>
-  </div>
-  <p>Granola also suggested batching appointments. I already know what that feels like: one Thursday I had Doctor at 7 AM, PT at 9:30, CMT class at 11. Felt efficient. Required a 2-hour nap. Spreading appointments out feels less tidy — but it's actually how I protect the rest of the day.</p>
-
-  <h3>What's Actually in My Zone of Genius</h3>
-  <p>The Granola conversation surfaced a question I hadn't asked myself directly: what am I doing when I lose track of time?</p>
-  <p>Building playlists for specific people. Reorganizing files and folders for someone else. Researching and reaching back out to people from my past. I go into flow when I'm creating structure or making a connection in service of another person. That's mine — and it's also a design input. The Zone of Genius tracker isn't just motivating. It's the actual measure of whether the pacing is working.</p>
-
-  <h3>What Phase 2 Adds to the App</h3>
-  <p>Phase 1 was about taxonomy — what activities to add. Phase 2 changes the mechanics of how the app thinks about energy.</p>
-  <div class="findings-table-wrap">
-    <table>
-      <thead><tr><th>Feature</th><th>Description</th><th>Rationale</th></tr></thead>
-      <tbody>
-        <tr><td><strong>Zone tagging</strong></td><td>5-zone tag on every logged activity (optional row of colored buttons)</td><td>Transforms zone data from a label into a behavioral dataset.</td></tr>
-        <tr><td><strong>Zone-adjusted spoon cost</strong></td><td>Genius = 50% cost · Excellence = cost +0.5 · others = full cost</td><td>Makes zones mechanically meaningful — the spoon budget rewards Genius time.</td></tr>
-        <tr><td><strong>Incompetence flag</strong></td><td>"🔴 Could someone else do this?" prompt on Incompetence-zone logs</td><td>Non-punitive nudge. Doesn't block the log.</td></tr>
-        <tr><td><strong>Weekly Energy Audit</strong></td><td>Zone breakdown by %, Leak Warning, Maintenance line (protected), Genius Tracker (spoons + hours, week-over-week)</td><td>The 20% rule needs the Maintenance split to be honest for someone with a chronic condition.</td></tr>
-        <tr><td><strong>Energy direction</strong></td><td>Optional +/–/0 marker per log entry</td><td>Captures subjective experience alongside objective cost. They're not always correlated.</td></tr>
-        <tr><td><strong>Customizable Quick Log</strong></td><td>Settings screen to choose any 5 activities as Quick Log buttons</td><td>Defaults were set at build time. This lets them reflect actual usage going forward.</td></tr>
-      </tbody>
-    </table>
-  </div>
-  <div class="callout">
-    <p><strong>On AI as a thinking partner:</strong> Granola didn't do the research — it summarized a meeting. But that external read on my own conversation surfaced a connection I'd missed and prompted the most generative question of the whole project. AI works well when you give it real, specific material.</p>
-  </div>
-</section>
-
-<section id="coda">
-  <div class="section-label">Status: Ongoing</div>
-  <h2>This Is a Living Thing</h2>
-  <p>The app gets updated when real life shows me something's missing. That's how Phase 1 happened. That's how Phase 2 happened. There's no finished version, just the version that's most accurate right now.</p>
-  <p>I want to be honest about what this project has been for me beyond the pacing. I never thought I would vibe-code anything. But I asked Claude to write the code, iterated on it, pushed it to GitHub, and now I use the result every day. That's been the most useful way I've stayed current with what AI tools can actually do. Not by reading about it. By building something real that matters to me.</p>
-  <p>A concrete example of how that iteration works: the app was defaulting to UTC for all date handling, so my "today" sometimes rolled over at the wrong time and the 5:15 AM check-in wasn't firing at 5:15 Eastern. It took living in the app to notice. One conversation to diagnose it, one Claude Code prompt, one commit: <code>America/New_York</code> hard-coded as the default. My pacing is anchored to my home routine, not UTC. That's the kind of thing you don't spec up front. You find it by using the thing.</p>
-  <p>I'm not done. There are things in the current version I already know I want to test; some will stick, some won't. The app will keep changing as long as I keep using it. It's the tool I needed for myself. That's why I built it. And it keeps getting better because I keep using it, which is how any good tool should work.</p>
 </section>
 
 <section id="reveal" style="border-bottom:none;">
   <div class="section-label">One More Thing</div>
   <h2>And Here It Is, Actually Running</h2>
-  <p>Everything above describes the app. This is the app: all six screens, scrolling through a real week of demo data. Today's budget, the activity library, history, the weekly energy audit, the five zones, and settings.</p>
+  <p>This is the app, scrolling through a week of demo data.</p>
   <div class="callout">
-    <p><strong>A note on this recording:</strong> This tour shows the app as it was when this case study went live. The latest version (v10) was posted after further feedback, and the app has kept evolving since — so some screens here differ from what's running today.</p>
+    <p><strong>A note on this recording:</strong> This tour shows an earlier version. The app has kept changing since, so some screens differ from what's running today.</p>
   </div>
   <div class="reveal-panel">
-    <video src="https://elainederubbo.github.io/spoon-tracker/spoon-tracker-app-tour.mp4" autoplay muted loop playsinline aria-label="Scrolling tour of the Spoon Tracker app: Today, Log, History, Weekly, Zones, and Settings screens"></video>
+    <video src="https://elainederubbo.github.io/spoon-tracker/spoon-tracker-app-tour.mp4" autoplay muted loop playsinline aria-label="Scrolling tour of an earlier version of the Spoon Tracker app"></video>
   </div>
 </section>
 
