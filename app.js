@@ -1,7 +1,7 @@
 'use strict';
 
 // Build version — shown in Settings so it's easy to confirm the running code.
-const APP_VERSION = '16';
+const APP_VERSION = '17';
 
 // ═══════════════════════════════════════════════════════
 // CONSTANTS & DEFAULTS
@@ -29,23 +29,23 @@ const DATA_KEYS = [
 
 // Specialized presets that belong only to the owner's (Elaine's) profile. New users
 // don't see these in their library; they can add their own via Custom.
-const SPECIALIZED_IDS = ['cmt_class', 'ot_ex', 'slp', 'charlie_time'];
+const SPECIALIZED_IDS = ['pt', 'pt_ex', 'daily_workout', 'cmt_class', 'ot_ex', 'slp', 'charlie_time'];
 
 // Suggested starter Quick Log for brand-new users (universal activities, pre-checked
 // during onboarding — they adjust before finishing).
-const STARTER_QUICK = ['shower', 'cooking', 'nap', 'dog_walk', 'daily_workout', 'meditation', 'grocery', 'call', 'tv_rest'];
+const STARTER_QUICK = ['shower', 'cooking', 'nap', 'dog_walk', 'yoga', 'meditation', 'grocery', 'call', 'tv_rest'];
 
 const DEFAULT_ACTIVITIES = [
   // Medical / therapy
-  { id: 'pt',            name: 'PT Session',              emoji: '🏥', spoons: 4,  category: 'medical',    recovery: false },
-  { id: 'pt_ex',         name: 'PT Exercises',            emoji: '🦵', spoons: 1,  category: 'medical',    recovery: false },
+  { id: 'pt',            name: 'PT Session',              emoji: '🏥', spoons: 2,  category: 'medical',    recovery: false, specialized: true },
+  { id: 'pt_ex',         name: 'PT Exercises',            emoji: '🦵', spoons: 1,  category: 'medical',    recovery: false, specialized: true },
   { id: 'ot_ex',         name: 'OT Exercises',            emoji: '🤲', spoons: 1,  category: 'medical',    recovery: false, specialized: true },
-  { id: 'slp',           name: 'SLP Work',                emoji: '🗣️', spoons: 1,  category: 'medical',    recovery: false, specialized: true },
+  { id: 'slp',           name: 'SLP Work',                emoji: '🗣️', spoons: 1,  category: 'medical',    recovery: false, specialized: true, retired: true },
   { id: 'doctor',        name: 'Doctor Appointment',      emoji: '👨‍⚕️', spoons: 2,  category: 'medical',    recovery: false },
-  { id: 'cmt_class',     name: 'CMT Exercise Class',      emoji: '💪', spoons: 3,  category: 'exercise',   recovery: false, specialized: true },
+  { id: 'cmt_class',     name: 'ABC Exercise Class',      emoji: '💪', spoons: 2,  category: 'exercise',   recovery: false, specialized: true },
 
   // Exercise
-  { id: 'daily_workout', name: 'Daily Workout (15 min)',  emoji: '🏃', spoons: 2,  category: 'exercise',   recovery: false },
+  { id: 'daily_workout', name: 'Daily Workout (15 min)',  emoji: '🏃', spoons: 1,  category: 'exercise',   recovery: false, specialized: true },
   { id: 'yoga',          name: 'Yoga',                    emoji: '🧘', spoons: 2,  category: 'exercise',   recovery: false },
   { id: 'gym',           name: 'Gym',                     emoji: '🏋️', spoons: 3,  category: 'exercise',   recovery: false },
   { id: 'dog_walk',      name: 'Walking Dog',             emoji: '🐕', spoons: 1,  category: 'exercise',   recovery: false },
@@ -62,25 +62,26 @@ const DEFAULT_ACTIVITIES = [
 
   // Errands / travel
   { id: 'grocery',       name: 'Grocery Shopping',        emoji: '🛒', spoons: 2,  category: 'errand',     recovery: false },
-  { id: 'errand',        name: 'Quick Errand',            emoji: '📮', spoons: 1,  category: 'errand',     recovery: false },
+  { id: 'errand',        name: 'Quick Errand',            emoji: '📮', spoons: 1,  category: 'errand',     recovery: false, retired: true },
   { id: 'driving',       name: 'Driving',                 emoji: '🚗', spoons: 1,  category: 'errand',     recovery: false },
   { id: 'pet_care',      name: 'Pet Care (vet/boarding)', emoji: '🐾', spoons: 2,  category: 'errand',     recovery: false },
   { id: 'travel_day',    name: 'Travel Day (Flight)',      emoji: '✈️', spoons: 5,  category: 'travel',     recovery: false },
   { id: 'packing',       name: 'Packing for Trip',        emoji: '🧳', spoons: 2,  category: 'travel',     recovery: false },
 
   // Household
-  { id: 'cooking',       name: 'Cooking Meal',            emoji: '🍳', spoons: 1,  category: 'household',  recovery: false },
-  { id: 'baking',        name: 'Baking Project',          emoji: '🥧', spoons: 2,  category: 'household',  recovery: false },
+  { id: 'cooking',       name: 'Cooking Meal',            emoji: '🍳', spoons: 1.5,  category: 'household',  recovery: false },
+  { id: 'baking',        name: 'Baking',                  emoji: '🥧', spoons: 2,  category: 'household',  recovery: false },
   { id: 'chores_lt',     name: 'Light Chores',            emoji: '🧹', spoons: 1,  category: 'household',  recovery: false },
   { id: 'chores_hv',     name: 'Heavy Chores',            emoji: '🏠', spoons: 2,  category: 'household',  recovery: false },
-  { id: 'declutter',     name: 'Decluttering Session',    emoji: '📦', spoons: 3,  category: 'household',  recovery: false },
-  { id: 'laundry',       name: 'Folding Laundry',         emoji: '🧺', spoons: 1,  category: 'household',  recovery: false },
+  { id: 'declutter',     name: 'Decluttering Session',    emoji: '📦', spoons: 3,  category: 'household',  recovery: false, retired: true },
+  { id: 'laundry',       name: 'Folding Laundry',         emoji: '🧺', spoons: 2,  category: 'household',  recovery: false },
+  { id: 'plant_care',    name: 'Plant Care',              emoji: '🪴', spoons: 1,  category: 'household',  recovery: false },
 
   // Self-care / rest / recovery
   { id: 'shower',              name: 'Shower',                    emoji: '🚿', spoons: 1,    category: 'self-care',  recovery: false },
   { id: 'shower_hair',         name: 'Shower — Hair Wash',        emoji: '🧴', spoons: 1.5,  category: 'self-care',  recovery: false },
-  { id: 'tv_rest',             name: 'Watching TV / Resting',     emoji: '📺', spoons: 0,    category: 'rest',       recovery: false },
-  { id: 'journaling',          name: 'Journaling',                emoji: '✍️', spoons: 0,    category: 'rest',       recovery: false },
+  { id: 'tv_rest',             name: 'Watching TV / Resting',     emoji: '📺', spoons: 0.5,    category: 'rest',       recovery: false },
+  { id: 'journaling',          name: 'Journaling',                emoji: '✍️', spoons: 1,    category: 'rest',       recovery: false },
   { id: 'meditation',          name: 'Meditation',                emoji: '🧘‍♀️', spoons: -1,   category: 'recovery',   recovery: true  },
   { id: 'yin_yoga',            name: 'Restorative / Yin Yoga',    emoji: '🛋️', spoons: -1,   category: 'recovery',   recovery: true  },
   { id: 'morning_pages',       name: 'Morning Pages',             emoji: '📝', spoons: -1,   category: 'recovery',   recovery: true  },
@@ -98,8 +99,29 @@ const DEFAULT_ACTIVITIES = [
   { id: 'bowel',               name: 'Bowel Movement',            emoji: '🚽', spoons: 0.5,  category: 'self-care',  recovery: false },
   { id: 'massage',             name: 'Massage',                   emoji: '💆', spoons: -2,   category: 'recovery',   recovery: true  },
   { id: 'nap',                 name: 'Nap',                       emoji: '😴', spoons: -1,   category: 'recovery',   recovery: true  },
-  { id: 'sleep',               name: 'Full Night Sleep',          emoji: '🌙', spoons: -5,   category: 'recovery',   recovery: true  },
+  { id: 'sleep',               name: 'Full Night Sleep',          emoji: '🌙', spoons: -5,   category: 'recovery',   recovery: true, retired: true },
+  { id: 'sleep_cpap',          name: 'Full Night Sleep (CPAP)',   emoji: '🌙', spoons: -4,   category: 'recovery',   recovery: true  },
+  { id: 'lying_down',          name: 'Lying Down / Feet Up',      emoji: '🛏️', spoons: -0.5, category: 'recovery',   recovery: true  },
+  { id: 'heat_soak',           name: 'Heat or Warm Soak',         emoji: '♨️', spoons: -1,   category: 'recovery',   recovery: true  },
+  { id: 'stretching',          name: 'Gentle Stretching / Foam Rolling', emoji: '🤸', spoons: -1, category: 'recovery', recovery: true },
+  { id: 'quiet_time',          name: 'Quiet / Dark-Room Time',    emoji: '🌑', spoons: -0.5, category: 'recovery',   recovery: true  },
+  { id: 'pacing_break',        name: 'Pacing Break (5-10 min)',   emoji: '⏸️', spoons: -0.5, category: 'recovery',   recovery: true  },
+  { id: 'podcast',             name: 'Podcast / Audiobook',       emoji: '🎙️', spoons: -1,   category: 'recovery',   recovery: true  },
+  { id: 'loved_one_time',      name: 'Low-Key Time with a Loved One', emoji: '🫂', spoons: -0.5, category: 'recovery', recovery: true },
+  { id: 'comedy',              name: 'Laughing / Comedy',         emoji: '😂', spoons: -0.5, category: 'recovery',   recovery: true  },
+  { id: 'creative_time',       name: 'Creative Time',             emoji: '🎨', spoons: -1.5, category: 'recovery',   recovery: true  },
+  { id: 'accepted_help',       name: 'Accepted Help / Meal Made for Me', emoji: '🤝', spoons: -1, category: 'recovery', recovery: true },
+  { id: 'being_driven',        name: 'Being Driven',              emoji: '🚙', spoons: -1,   category: 'recovery',   recovery: true  },
+  { id: 'bed_rest',            name: 'Bed Rest',                  emoji: '🛌', spoons: -2,   category: 'recovery',   recovery: true  },
+  { id: 'ice_elevate',         name: 'Ice and Elevation',         emoji: '🧊', spoons: -1.5, category: 'recovery',   recovery: true  },
 ];
+
+// Retired presets stay in the list above so old entries can still be resolved by id,
+// but getAllActivities() leaves them out of everything you can pick from.
+
+// Rest activities exempt from the after-6 PM surcharge. Stamped on the entry when it's
+// logged, so entries logged before this rule keep the cost they already had.
+const NO_EVENING_SURCHARGE = new Set(['tv_rest', 'journaling']);
 
 // Category display order + labels (for reporting only — never in daily log)
 const CATEGORIES = [
@@ -127,7 +149,7 @@ const DEFAULT_ZONES = {
   pet_care: 'competence', travel_day: 'competence', packing: 'competence',
   cooking: 'competence', baking: 'competence', chores_lt: 'competence',
   chores_hv: 'competence', declutter: 'competence', laundry: 'competence',
-  shower: 'maintenance', shower_hair: 'maintenance', tv_rest: 'competence', journaling: 'genius',
+  shower: 'maintenance', shower_hair: 'maintenance', tv_rest: 'competence', journaling: 'competence',
   meditation: 'genius', yin_yoga: 'maintenance', morning_pages: 'genius',
   gratitude_journal: 'genius', charlie_time: 'genius', nature_time: 'genius',
   reading_fiction: 'genius', reading_nonfiction: 'competence',
@@ -189,13 +211,15 @@ function getSettings() { return { ...DEFAULT_SETTINGS, ...(load(KEYS.SETTINGS) |
 function saveSettings(s) { save(KEYS.SETTINGS, s); }
 function getCustomActivities() { return load(KEYS.CUSTOM_ACT) || []; }
 
-function getAllActivities() {
+// Everything you can pick from. Pass { forHistory: true } to also resolve retired and
+// owner-only presets, for looking up what an already-logged item was.
+function getAllActivities({ forHistory = false } = {}) {
   const settings = getSettings();
   const overrides = settings.overrides || {};
   const legacyCost = settings.spoonOverrides || {};
   // Specialized presets are only part of the owner's library.
   const owner = isOwner();
-  const presets = DEFAULT_ACTIVITIES.filter(a => owner || !a.specialized).map(a => {
+  const presets = DEFAULT_ACTIVITIES.filter(a => forHistory || ((owner || !a.specialized) && !a.retired)).map(a => {
     const ov = overrides[a.id] || {};
     const cost = ov.spoons ?? legacyCost[a.id] ?? a.spoons;
     const category = ov.category ?? a.category;
@@ -486,7 +510,7 @@ function calcEntryEffectiveCost(entry, allEntries, settings) {
   if (zone === 'genius') cost = Math.round((cost * 0.5) * 2) / 2;
   else if (zone === 'excellence') cost += 0.5;
 
-  if (settings.enableAfterSixModifier && isAfterSix(entry.timestamp)) cost += 0.5;
+  if (settings.enableAfterSixModifier && !entry.noEveningSurcharge && isAfterSix(entry.timestamp)) cost += 0.5;
 
   return parseFloat(cost.toFixed(1));
 }
@@ -562,7 +586,7 @@ function getTodayAlerts() {
   }
   const ids = entries.map(e => e.activityId);
   if (ids.includes('pt') && ids.includes('cmt_class')) {
-    alerts.push({ type: 'yellow', icon: '📊', text: "PT + CMT class same day has caused next-day fatigue before. Plan light tomorrow." });
+    alerts.push({ type: 'yellow', icon: '📊', text: "PT + ABC class same day has caused next-day fatigue before. Plan light tomorrow." });
   }
   if (settings.enableStackingPenalty && entries.filter(e => !e.isRecovery && e.baseCost >= 3).length >= 2) {
     alerts.push({ type: 'yellow', icon: '📈', text: "Stacking penalty applied: 2+ high-cost activities today cost an extra spoon." });
@@ -988,6 +1012,7 @@ function logActivity(act, opts) {
     zone: getActivityDefaultZone(act.id) || null,
     tags: act.tags || [],
   };
+  if (NO_EVENING_SURCHARGE.has(act.id)) entry.noEveningSurcharge = true;
   entry.effectiveCost = calcEntryEffectiveCost(entry, entries, settings);
   saveActivityForDate(d, entry);
   return entry;
@@ -1667,7 +1692,8 @@ const CAL_ALIASES = [
 ];
 
 const CAL_STOPWORDS = new Set(['night', 'time', 'with', 'full', 'session', 'class', 'light', 'heavy',
-  'quick', 'other', 'favorite', 'artists', 'playlists', 'block', 'meal', 'getting', 'search', 'outing', 'project', 'trip']);
+  'quick', 'other', 'favorite', 'artists', 'playlists', 'block', 'meal', 'getting', 'search', 'outing', 'project', 'trip',
+  'help', 'made', 'down', 'feet', 'room', 'dark', 'warm', 'heat', 'being', 'break', 'rest', 'loved', 'accepted', 'gentle']);
 
 function getCalEvents(ds) { return (load(KEYS.CAL_EVENTS) || {})[ds] || []; }
 function saveCalEvents(ds, list) {
@@ -1867,7 +1893,7 @@ function drawCalendarReview() {
     body.appendChild(toggle);
     if (_calReviewedOpen) {
       reviewed.forEach(ev => {
-        const act = acts.find(a => a.id === ev.activityId);
+        const act = getAllActivities({ forHistory: true }).find(a => a.id === ev.activityId);
         const line = document.createElement('div');
         line.className = 'cal-done';
         line.innerHTML = `<span>${ev.allDay ? 'All day' : fmtTime(ev.start)} · ${escapeHTML(ev.title)}</span>
@@ -2260,7 +2286,7 @@ function renderWeekly() {
   const patternDiv = el('weekly-patterns');
   patternDiv.innerHTML = '';
   if (patterns.includes('pt+cmt_class')) {
-    patternDiv.innerHTML = `<div class="pattern-warning"><div class="pw-title">⚠️ Pattern Detected</div><div class="pw-text">PT + CMT class on the same day has led to high next-day fatigue in the last 30 days. Consider spacing these activities.</div></div>`;
+    patternDiv.innerHTML = `<div class="pattern-warning"><div class="pw-title">⚠️ Pattern Detected</div><div class="pw-text">PT + ABC class on the same day has led to high next-day fatigue in the last 30 days. Consider spacing these activities.</div></div>`;
   } else {
     patternDiv.innerHTML = `<p style="font-size:13px;color:var(--text-muted)">No crash patterns detected yet. Keep logging to build your pattern library.</p>`;
   }
@@ -2711,6 +2737,28 @@ function migrateQuickIds() {
   saveSettings(s);
 }
 
+// One-time v17 activity update. Past entries are not touched: each one saved its own
+// cost, name and category when logged. This only clears device-level edits that would
+// hide the new defaults, and tidies Quick Log. Runs once per device (guarded by a flag).
+function migrateActivityUpdateV17() {
+  const s = load(KEYS.SETTINGS) || {};
+  if (s.activityUpdate17) return;
+  ['pt', 'cmt_class', 'daily_workout', 'cooking', 'laundry', 'tv_rest', 'journaling'].forEach(id => {
+    if (s.overrides?.[id]) delete s.overrides[id].spoons;
+    if (s.spoonOverrides) delete s.spoonOverrides[id];
+  });
+  ['cmt_class', 'baking'].forEach(id => { if (s.overrides?.[id]) delete s.overrides[id].name; });
+  if (s.zoneDefaults) delete s.zoneDefaults.journaling;
+  if (Array.isArray(s.quickIds)) {
+    const owner = isOwner();
+    const gone = new Set(DEFAULT_ACTIVITIES.filter(a => a.retired || (!owner && a.specialized)).map(a => a.id));
+    const swapped = s.quickIds.map(id => id === 'sleep' ? 'sleep_cpap' : id);
+    s.quickIds = [...new Set(swapped)].filter(id => !gone.has(id));
+  }
+  s.activityUpdate17 = true;
+  saveSettings(s);
+}
+
 let _swReloading = false;
 
 // A device that already has tracking data but no profile is the original owner
@@ -2735,6 +2783,7 @@ function init() {
 
 function startApp() {
   migrateQuickIds();
+  migrateActivityUpdateV17();
   if ('serviceWorker' in navigator) {
     // When a new service worker takes control (after an update), reload once so the
     // page immediately runs the new code instead of waiting for a manual refresh.

@@ -1,4 +1,4 @@
-const CACHE = 'spoon-tracker-v16';
+const CACHE = 'spoon-tracker-v17';
 // Relative to this file, so it works under /spoon-tracker/ (not the site root).
 const ASSETS = ['./', './index.html', './styles.css', './app.js', './manifest.json'];
 
